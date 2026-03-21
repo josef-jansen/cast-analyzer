@@ -53,33 +53,22 @@ const video = document.getElementById('vid');
 document.getElementById('btnConnect').onclick = async () => {
 
     try {
+    const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+    });
 
-        // Camera
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-        });
+    const server = await device.gatt.connect();
+    alert("Connected to GATT");   // 👈 NIEUW
 
-        video.srcObject = stream;
+    const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+    alert("Service gevonden");    // 👈 NIEUW
 
-        // BLE
-        const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-        });
+    sensorChar = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+    alert("Characteristic OK");   // 👈 NIEUW
 
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        sensorChar = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-
-        document.getElementById('btnStart').disabled = false;
-
-        initCharts();
-
-    } catch (e) {
-        alert("Fout: " + e.message);
-        console.error(e);
-    }
+} catch (e) {
+    alert("Fout: " + e.message);
 };
 
 // ===============================
