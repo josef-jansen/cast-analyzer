@@ -85,6 +85,9 @@ document.getElementById('btnStart').onclick = async () => {
 
     await char.startNotifications();
 
+    // 👇 🔥 BELANGRIJK (iOS timing)
+    await new Promise(r => setTimeout(r, 200));
+
     mediaRecorder.start();
 
     document.getElementById('btnStart').disabled = true;
