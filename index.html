@@ -1,39 +1,18 @@
 <!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cast Analyzer</title>
-</head>
+<html>
+<body style="font-family:sans-serif; text-align:center; padding:40px;">
 
-<body style="font-family:sans-serif; text-align:center; padding:20px;">
-
-<h2>🎣 Cast Analyzer</h2>
-
-<video id="vid" autoplay playsinline muted style="width:100%; max-width:500px; background:black;"></video>
-
-<br><br>
-
-<button id="btnConnect">1. Koppel Sensor</button>
-<button id="btnStart" disabled>2. Start</button>
-<button id="btnStop" disabled>3. Stop</button>
+<h2>Sensor Test</h2>
+<button id="btn">Start</button>
 
 <script>
 
-let stream, mediaRecorder, char;
-let videoChunks = [];
-let sensorData = [];
+let char;
+let count = 0;
 
-const video = document.getElementById('vid');
-
-// =====================
-// CONNECT
-// =====================
-document.getElementById('btnConnect').onclick = async () => {
+document.getElementById('btn').onclick = async () => {
 
     try {
-
-        // 🔵 EERST BLE
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true,
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
@@ -43,82 +22,22 @@ document.getElementById('btnConnect').onclick = async () => {
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
 
-        // 🔵 DAN PAS CAMERA
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-        });
+        char.oncharacteristicvaluechanged = (e) => {
+            count++;
+            if (count % 20 === 0) {
+                console.log("data:", count);
+            }
+        };
 
-        video.srcObject = stream;
-        await video.play(); // 👈 extra zekerheid
+        await char.startNotifications();
 
-        document.getElementById('btnStart').disabled = false;
-
-        alert("Verbonden");
+        alert("Sensor loopt");
 
     } catch (e) {
         alert("FOUT: " + e.message);
     }
 };
 
-// =====================
-// START
-// =====================
-document.getElementById('btnStart').onclick = async () => {
-
-    sensorData = [];
-    videoChunks = [];
-
-    mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm'
-    });
-
-    mediaRecorder.ondataavailable = e => videoChunks.push(e.data);
-
-    char.oncharacteristicvaluechanged = (e) => {
-        const v = e.target.value;
-
-        sensorData.push({
-            t: Date.now(),
-            ax: v.getInt16(0, true)/100
-        });
-    };
-
-    await char.startNotifications();
-
-    // 👇 🔥 BELANGRIJK (iOS timing)
-    await new Promise(r => setTimeout(r, 200));
-
-    mediaRecorder.start();
-
-    document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled = false;
-};
-
-// =====================
-// STOP
-// =====================
-document.getElementById('btnStop').onclick = () => {
-
-    mediaRecorder.stop();
-    char.stopNotifications();
-
-    mediaRecorder.onstop = () => {
-
-        const blob = new Blob(videoChunks, { type: 'video/webm' });
-
-        video.srcObject = null;
-        video.src = URL.createObjectURL(blob);
-        video.controls = true;
-
-        alert("Opname klaar. Sensorpunten: " + sensorData.length);
-
-        document.getElementById('btnStop').disabled = true;
-        document.getElementById('btnStart').disabled = false;
-    };
-};
-
 </script>
-
 </body>
 </html>
