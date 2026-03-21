@@ -32,24 +32,25 @@ const video = document.getElementById('vid');
 document.getElementById('btnConnect').onclick = async () => {
 
     try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" }, // 👈 meteen goed zetten
-            audio: false
-        });
 
-        video.srcObject = stream;
-
+        // 🔵 EERST BLE
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true,
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
 
         const server = await device.gatt.connect();
-
-        video.play(); // 👈 🔥 DIT IS DE FIX
-
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+
+        // 🔵 DAN PAS CAMERA
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play(); // 👈 extra zekerheid
 
         document.getElementById('btnStart').disabled = false;
 
