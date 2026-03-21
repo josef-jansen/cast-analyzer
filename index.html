@@ -16,24 +16,25 @@
 
 document.getElementById('btn').onclick = async () => {
 
-    alert("Klik werkt");
-
     try {
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true,
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
 
-        alert("Device gekozen");
-
         const server = await device.gatt.connect();
-        alert("Connected");
-
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        alert("Service OK");
-
         const char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-        alert("Characteristic OK");
+
+        // 👇 NIEUW: data ontvangen
+        char.oncharacteristicvaluechanged = (e) => {
+            const v = e.target.value;
+            console.log(v.getInt16(0, true));
+        };
+
+        await char.startNotifications();
+
+        alert("Data loopt!");
 
     } catch (e) {
         alert("FOUT: " + e.message);
