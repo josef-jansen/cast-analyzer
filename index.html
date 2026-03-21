@@ -2,174 +2,45 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cast Analyzer</title>
-
-<!-- ✅ FIX: juiste Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body { font-family: -apple-system, sans-serif; background: #f0f0f7; margin: 0; padding: 15px; text-align: center; }
-.container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 20px; }
-video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; }
-button { padding: 15px 25px; font-size: 16px; border: none; border-radius: 12px; margin: 5px; color: white; }
-#btnConnect { background: #5856d6; }
-#btnStart { background: #34c759; }
-#btnStop { background: #ff3b30; }
-button:disabled { background: #aaa !important; }
-.chart-box { height: 180px; margin-top: 20px; }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLE Test</title>
 </head>
 
-<body>
-<div class="container">
+<body style="font-family: sans-serif; text-align:center; padding:40px;">
 
-<h2>🎣 Cast Analyzer</h2>
+<h2>BLE Test</h2>
 
-<video id="vid" autoplay playsinline muted></video>
-
-<br>
-<button id="btnConnect">1. Koppel Sensor</button>
-<button id="btnStart" disabled>2. Start Opname</button>
-<button id="btnStop" disabled>3. Stop & Analyse</button>
-
-<div class="chart-box"><canvas id="accelChart"></canvas></div>
-<div class="chart-box"><canvas id="gyroChart"></canvas></div>
-
-</div>
+<button id="btn">Koppel Sensor</button>
 
 <script>
 
-let stream, mediaRecorder, sensorChar;
-let accelChart, gyroChart;
-let sensorData = [], videoChunks = [];
-let startTime;
+document.getElementById('btn').onclick = async () => {
 
-const video = document.getElementById('vid');
-
-// ===============================
-// CONNECT
-// ===============================
-document.getElementById('btnConnect').onclick = async () => {
+    alert("Klik werkt");
 
     try {
-    const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-    });
-
-    const server = await device.gatt.connect();
-    alert("Connected to GATT");   // 👈 NIEUW
-
-    const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-    alert("Service gevonden");    // 👈 NIEUW
-
-    sensorChar = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-    alert("Characteristic OK");   // 👈 NIEUW
-
-} catch (e) {
-    alert("Fout: " + e.message);
-};
-
-// ===============================
-// START
-// ===============================
-document.getElementById('btnStart').onclick = async () => {
-
-    sensorData = [];
-    videoChunks = [];
-    startTime = Date.now();
-
-    // ✅ iOS veilige recorder
-    mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm'
-    });
-
-    mediaRecorder.ondataavailable = e => videoChunks.push(e.data);
-
-    // ✅ eerst handler, dan start
-    sensorChar.oncharacteristicvaluechanged = (e) => {
-        const v = e.target.value;
-
-        sensorData.push({
-            t: (Date.now() - startTime) / 1000,
-            ax: v.getInt16(0, true)/100,
-            ay: v.getInt16(2, true)/100,
-            az: v.getInt16(4, true)/100,
-            gx: v.getInt16(6, true),
-            gy: v.getInt16(8, true),
-            gz: v.getInt16(10, true)
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
-    };
 
-    await sensorChar.startNotifications();
+        alert("Device gekozen");
 
-    mediaRecorder.start();
+        const server = await device.gatt.connect();
+        alert("Connected");
 
-    document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled = false;
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        alert("Service OK");
+
+        const char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        alert("Characteristic OK");
+
+    } catch (e) {
+        alert("FOUT: " + e.message);
+    }
 };
-
-// ===============================
-// STOP
-// ===============================
-document.getElementById('btnStop').onclick = () => {
-
-    mediaRecorder.stop();
-    sensorChar.stopNotifications();
-
-    mediaRecorder.onstop = () => {
-
-        const blob = new Blob(videoChunks, { type: 'video/webm' });
-
-        video.srcObject = null;
-        video.src = URL.createObjectURL(blob);
-        video.controls = true;
-
-        updateCharts();
-
-        document.getElementById('btnStop').disabled = true;
-        document.getElementById('btnStart').disabled = false;
-    };
-};
-
-// ===============================
-// CHARTS
-// ===============================
-function initCharts() {
-
-    const opt = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        scales: { x: { type: 'linear' } }
-    };
-
-    accelChart = new Chart(document.getElementById('accelChart'), {
-        type: 'line',
-        data: { datasets: [{ label: 'Accel X', data: [], borderColor: 'red', pointRadius: 0 }] },
-        options: opt
-    });
-
-    gyroChart = new Chart(document.getElementById('gyroChart'), {
-        type: 'line',
-        data: { datasets: [{ label: 'Gyro X', data: [], borderColor: 'blue', pointRadius: 0 }] },
-        options: opt
-    });
-}
-
-function updateCharts() {
-
-    accelChart.data.datasets[0].data =
-        sensorData.map(d => ({ x: d.t, y: d.ax }));
-
-    gyroChart.data.datasets[0].data =
-        sensorData.map(d => ({ x: d.t, y: d.gx }));
-
-    accelChart.update();
-    gyroChart.update();
-}
 
 </script>
+
 </body>
 </html>
