@@ -4,193 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cast Analyzer Pro</title>
-    <!-- Chart.js voor de grafieken -->
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f0f7; margin: 0; padding: 15px; color: #1c1c1e; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
-        h1 { font-size: 22px; text-align: center; margin-bottom: 20px; color: #007aff; }
-        
-        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; display: block; }
-        
-        .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        button { padding: 14px 20px; font-size: 15px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        
-        #btnConnect { background: #5856d6; color: white; }
-        #btnStart { background: #34c759; color: white; }
-        #btnStop { background: #ff3b30; color: white; }
-        button:disabled { background: #aeaeb2 !important; opacity: 0.6; }
-
-        .chart-box { height: 200px; margin-top: 15px; position: relative; }
-        .label { font-size: 12px; font-weight: bold; color: #8e8e93; text-transform: uppercase; margin-top: 10px; }
+        body { font-family: -apple-system, sans-serif; background: #f0f0f7; margin: 0; padding: 15px; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; }
+        button { padding: 15px 25px; font-size: 16px; border: none; border-radius: 12px; margin: 5px; font-weight: 600; color: white; cursor: pointer; }
+        #btnConnect { background: #5856d6; }
+        #btnStart { background: #34c759; }
+        #btnStop { background: #ff3b30; }
+        button:disabled { background: #aeaeb2 !important; }
+        .chart-box { height: 200px; margin-top: 20px; }
+        .label { font-size: 12px; font-weight: bold; color: #8e8e93; text-transform: uppercase; text-align: left; margin-top: 10px; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <h1>🎣 Cast Analyzer</h1>
-    
     <video id="vid" autoplay playsinline muted></video>
-    
     <div class="controls">
         <button id="btnConnect">1. Koppel Sensor</button>
         <button id="btnStart" disabled>2. Start Opname</button>
-        <button id="btnStop" disabled>3. Stop & Analyseer</button>
+        <button id="btnStop" disabled>3. Stop & Analyse</button>
     </div>
-
-    <div class="label">Versnelling (G-kracht)</div>
+    <div class="label">Versnelling (X/Y/Z)</div>
     <div class="chart-box"><canvas id="accelChart"></canvas></div>
-    
-    <div class="label">Rotatie (Graden/sec)</div>
+    <div class="label">Rotatie (X/Y/Z)</div>
     <div class="chart-box"><canvas id="gyroChart"></canvas></div>
 </div>
 
 <script>
-    let stream, mediaRecorder, sensorChar;
+    let stream, mediaRecorder, sensorChar, accelChart, gyroChart, startTime;
     let videoChunks = [], sensorData = [];
-    let accelChart, gyroChart;
-    let startTime;
-
     const video = document.getElementById('vid');
-    const btnConnect = document.getElementById('btnConnect');
-    const btnStart = document.getElementById('btnStart');
-    const btnStop = document.getElementById('btnStop');
 
-    // 1. VERBINDEN (Bluetooth + Camera)
-    btnConnect.onclick = async () => {
+    document.getElementById('btnConnect').onclick = async () => {
         try {
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'CastAnalyzer' }],
-                optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+                filters: [{ name: 'Cast' }], optionalServices: ['180d']
             });
             const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-            sensorChar = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-            
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment", frameRate: { ideal: 30 } }, 
-                audio: false 
-            });
+            const service = await server.getPrimaryService('180d');
+            sensorChar = await service.getCharacteristic('2a37');
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             video.srcObject = stream;
-            
-            btnConnect.innerText = "Verbonden ✓";
-            btnConnect.style.background = "#8e8e93";
-            btnStart.disabled = false;
-        } catch (err) {
-            alert("Verbinding mislukt: " + err);
-        }
+            document.getElementById('btnConnect').innerText = "Verbonden ✓";
+            document.getElementById('btnStart').disabled = false;
+        } catch (e) { alert("Fout: " + e); }
     };
 
-    // 2. START OPNAME
-    btnStart.onclick = () => {
-        videoChunks = [];
-        sensorData = [];
-        startTime = Date.now();
-        
-        // iPad Safari ondersteunt vaak alleen 'video/mp4' of standaard webm
+    document.getElementById('btnStart').onclick = () => {
+        videoChunks = []; sensorData = []; startTime = Date.now();
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = e => videoChunks.push(e.data);
-        
         sensorChar.startNotifications();
         sensorChar.oncharacteristicvaluechanged = (e) => {
             const v = e.target.value;
-            const t = (Date.now() - startTime) / 1000;
-            // Lees 6x Int16 (pakket uit Arduino)
             sensorData.push({
-                t: t,
-                ax: v.getInt16(0, true) / 100,
-                ay: v.getInt16(2, true) / 100,
-                az: v.getInt16(4, true) / 100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
+                t: (Date.now() - startTime) / 1000,
+                ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100,
+                gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true)
             });
         };
-
         mediaRecorder.start();
-        btnStart.disabled = true;
-        btnStop.disabled = false;
+        document.getElementById('btnStart').disabled = true;
+        document.getElementById('btnStop').disabled = false;
     };
 
-    // 3. STOP & OPSLAAN
-    btnStop.onclick = () => {
+    document.getElementById('btnStop').onclick = () => {
         mediaRecorder.stop();
         sensorChar.stopNotifications();
-        
         mediaRecorder.onstop = () => {
             const blob = new Blob(videoChunks, { type: 'video/mp4' });
-            video.srcObject = null;
-            video.src = URL.createObjectURL(blob);
+            video.srcObject = null; video.src = URL.createObjectURL(blob);
             video.controls = true;
-            
             initCharts();
-            downloadData(blob);
-            
-            btnStop.disabled = true;
-            btnStart.disabled = false;
-            btnStart.innerText = "Nieuwe Worp";
+            document.getElementById('btnStop').disabled = true;
+            document.getElementById('btnStart').disabled = false;
         };
     };
 
     function initCharts() {
-        const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { x: { type: 'linear', position: 'bottom', title: {display:true, text:'Seconden'} } },
-            plugins: { legend: { display: true } },
-            animation: false
+        const opt = { 
+            responsive: true, maintainAspectRatio: false, animation: false,
+            scales: { x: { type: 'linear', title: { display: true, text: 'Seconden' } } },
+            plugins: { legend: { display: true } }
         };
-
         if(accelChart) accelChart.destroy();
-        if(gyroChart) gyroChart.destroy();
-
         accelChart = new Chart(document.getElementById('accelChart'), {
-            type: 'line',
-            data: {
-                datasets: [
-                    { label: 'X (G)', data: sensorData.map(d => ({x: d.t, y: d.ax})), borderColor: 'red', pointRadius: 0 },
-                    { label: 'Y (G)', data: sensorData.map(d => ({x: d.t, y: d.ay})), borderColor: 'green', pointRadius: 0 },
-                    { label: 'Z (G)', data: sensorData.map(d => ({x: d.t, y: d.az})), borderColor: 'blue', pointRadius: 0 }
-                ]
-            },
-            options: commonOptions
+            type: 'line', 
+            data: { datasets: [
+                {label:'X', data:sensorData.map(d=>({x:d.t,y:d.ax})), borderColor:'red', pointRadius:0},
+                {label:'Y', data:sensorData.map(d=>({x:d.t,y:d.ay})), borderColor:'green', pointRadius:0},
+                {label:'Z', data:sensorData.map(d=>({x:d.t,y:d.az})), borderColor:'blue', pointRadius:0}
+            ]}, 
+            options: opt
         });
-
+        if(gyroChart) gyroChart.destroy();
         gyroChart = new Chart(document.getElementById('gyroChart'), {
-            type: 'line',
-            data: {
-                datasets: [
-                    { label: 'Rotatie X', data: sensorData.map(d => ({x: d.t, y: d.gx})), borderColor: 'orange', pointRadius: 0 },
-                    { label: 'Rotatie Y', data: sensorData.map(d => ({x: d.t, y: d.gy})), borderColor: 'purple', pointRadius: 0 }
-                ]
-            },
-            options: commonOptions
+            type: 'line', 
+            data: { datasets: [
+                {label:'X', data:sensorData.map(d=>({x:d.t,y:d.gx})), borderColor:'orange', pointRadius:0},
+                {label:'Y', data:sensorData.map(d=>({x:d.t,y:d.gy})), borderColor:'purple', pointRadius:0},
+                {label:'Z', data:sensorData.map(d=>({x:d.t,y:d.gz})), borderColor:'cyan', pointRadius:0}
+            ]}, 
+            options: opt
         });
     }
 
-    // De "Loper" synchronisatie
     video.ontimeupdate = () => {
-        if (!accelChart) return;
-        const time = video.currentTime;
+        if(!accelChart) return;
+        const t = video.currentTime;
         [accelChart, gyroChart].forEach(chart => {
             chart.options.plugins.annotation = {
-                annotations: {
-                    line1: { type: 'line', xMin: time, xMax: time, borderColor: 'black', lineWidth: 2 }
-                }
+                annotations: { line: { type: 'line', xMin: t, xMax: t, borderColor: 'black', lineWidth: 2 } }
             };
             chart.update('none');
         });
     };
-
-    function downloadData(vBlob) {
-        const ts = new Date().getTime();
-        // Sla CSV op
-        const csv = "tijd,ax,ay,az,gx,gy,gz\n" + sensorData.map(d => `${d.t},${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}`).join("\n");
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        a.download = `cast_${ts}.csv`;
-        a.click();
-    }
 </script>
 </body>
 </html>
