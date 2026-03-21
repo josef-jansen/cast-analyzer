@@ -64,7 +64,7 @@ document.getElementById('btnConnect').onclick = async () => {
 
         // BLE
         const device = await navigator.bluetooth.requestDevice({
-            filters: [{ namePrefix: 'Cast' }], // ✅ FIX
+            acceptAllDevices: true,
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
 
