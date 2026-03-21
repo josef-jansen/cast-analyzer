@@ -3,20 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BLE Test</title>
+<title>Cast Analyzer</title>
 </head>
 
-<body style="font-family: sans-serif; text-align:center; padding:40px;">
+<body style="font-family:sans-serif; text-align:center; padding:20px;">
 
-<h2>BLE Test</h2>
+<h2>🎣 Cast Analyzer</h2>
 
-<button id="btn">Koppel Sensor</button>
+<video id="vid" autoplay playsinline muted style="width:100%; max-width:500px; background:black;"></video>
+
+<br><br>
+
+<button id="btnConnect">1. Koppel Sensor</button>
+<button id="btnStart" disabled>2. Start</button>
+<button id="btnStop" disabled>3. Stop</button>
 
 <script>
 
-document.getElementById('btn').onclick = async () => {
+let stream, mediaRecorder, char;
+let videoChunks = [];
+let sensorData = [];
+
+const video = document.getElementById('vid');
+
+// =====================
+// CONNECT
+// =====================
+document.getElementById('btnConnect').onclick = async () => {
 
     try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        video.srcObject = stream;
+
         const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true,
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
@@ -24,21 +46,69 @@ document.getElementById('btn').onclick = async () => {
 
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        const char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
 
-        // 👇 NIEUW: data ontvangen
-        char.oncharacteristicvaluechanged = (e) => {
-            const v = e.target.value;
-            console.log(v.getInt16(0, true));
-        };
+        document.getElementById('btnStart').disabled = false;
 
-        await char.startNotifications();
-
-        alert("Data loopt!");
+        alert("Verbonden");
 
     } catch (e) {
         alert("FOUT: " + e.message);
     }
+};
+
+// =====================
+// START
+// =====================
+document.getElementById('btnStart').onclick = async () => {
+
+    sensorData = [];
+    videoChunks = [];
+
+    mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm'
+    });
+
+    mediaRecorder.ondataavailable = e => videoChunks.push(e.data);
+
+    char.oncharacteristicvaluechanged = (e) => {
+        const v = e.target.value;
+
+        sensorData.push({
+            t: Date.now(),
+            ax: v.getInt16(0, true)/100
+        });
+    };
+
+    await char.startNotifications();
+
+    mediaRecorder.start();
+
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStop').disabled = false;
+};
+
+// =====================
+// STOP
+// =====================
+document.getElementById('btnStop').onclick = () => {
+
+    mediaRecorder.stop();
+    char.stopNotifications();
+
+    mediaRecorder.onstop = () => {
+
+        const blob = new Blob(videoChunks, { type: 'video/webm' });
+
+        video.srcObject = null;
+        video.src = URL.createObjectURL(blob);
+        video.controls = true;
+
+        alert("Opname klaar. Sensorpunten: " + sensorData.length);
+
+        document.getElementById('btnStop').disabled = true;
+        document.getElementById('btnStart').disabled = false;
+    };
 };
 
 </script>
