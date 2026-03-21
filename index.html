@@ -8,7 +8,7 @@
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f0f7; margin: 0; padding: 15px; text-align: center; }
         .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; }
+        video { width: 100%; border-radius: 12px; background: #000; margin-bottom: 15px; height: 300px; object-fit: cover; }
         button { padding: 15px 25px; font-size: 16px; border: none; border-radius: 12px; margin: 5px; font-weight: 600; color: white; cursor: pointer; }
         #btnConnect { background: #5856d6; }
         #btnStart { background: #34c759; }
@@ -20,7 +20,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>🎣 Cast Analyzer</h1>
+    <h2>🎣 Cast Analyzer</h2>
     <video id="vid" autoplay playsinline muted></video>
     <div class="controls">
         <button id="btnConnect">1. Koppel Sensor</button>
@@ -38,21 +38,29 @@
     let videoChunks = [], sensorData = [];
     const video = document.getElementById('vid');
 
+    // 1. KOPPELEN (Camera + Bluetooth na klik)
     document.getElementById('btnConnect').onclick = async () => {
         try {
+            // Vraag eerst camera (voorkomt blokkade)
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream;
+
+            // Vraag dan Bluetooth
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'Cast' }], optionalServices: ['180d']
+                acceptAllDevices: true, optionalServices: ['180d']
             });
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('180d');
             sensorChar = await service.getCharacteristic('2a37');
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = stream;
+            
             document.getElementById('btnConnect').innerText = "Verbonden ✓";
             document.getElementById('btnStart').disabled = false;
-        } catch (e) { alert("Fout: " + e); }
+        } catch (e) { 
+            alert("Toegang geweigerd of Bluetooth uit. Controleer Instellingen > Bluefy! Fout: " + e); 
+        }
     };
 
+    // 2. START
     document.getElementById('btnStart').onclick = () => {
         videoChunks = []; sensorData = []; startTime = Date.now();
         mediaRecorder = new MediaRecorder(stream);
@@ -71,13 +79,14 @@
         document.getElementById('btnStop').disabled = false;
     };
 
+    // 3. STOP
     document.getElementById('btnStop').onclick = () => {
         mediaRecorder.stop();
         sensorChar.stopNotifications();
         mediaRecorder.onstop = () => {
             const blob = new Blob(videoChunks, { type: 'video/mp4' });
             video.srcObject = null; video.src = URL.createObjectURL(blob);
-            video.controls = true;
+            video.controls = true; video.muted = false;
             initCharts();
             document.getElementById('btnStop').disabled = true;
             document.getElementById('btnStart').disabled = false;
@@ -87,8 +96,7 @@
     function initCharts() {
         const opt = { 
             responsive: true, maintainAspectRatio: false, animation: false,
-            scales: { x: { type: 'linear', title: { display: true, text: 'Seconden' } } },
-            plugins: { legend: { display: true } }
+            scales: { x: { type: 'linear', title: { display: true, text: 'Seconden' } } }
         };
         if(accelChart) accelChart.destroy();
         accelChart = new Chart(document.getElementById('accelChart'), {
@@ -97,8 +105,7 @@
                 {label:'X', data:sensorData.map(d=>({x:d.t,y:d.ax})), borderColor:'red', pointRadius:0},
                 {label:'Y', data:sensorData.map(d=>({x:d.t,y:d.ay})), borderColor:'green', pointRadius:0},
                 {label:'Z', data:sensorData.map(d=>({x:d.t,y:d.az})), borderColor:'blue', pointRadius:0}
-            ]}, 
-            options: opt
+            ]}, options: opt
         });
         if(gyroChart) gyroChart.destroy();
         gyroChart = new Chart(document.getElementById('gyroChart'), {
@@ -107,8 +114,7 @@
                 {label:'X', data:sensorData.map(d=>({x:d.t,y:d.gx})), borderColor:'orange', pointRadius:0},
                 {label:'Y', data:sensorData.map(d=>({x:d.t,y:d.gy})), borderColor:'purple', pointRadius:0},
                 {label:'Z', data:sensorData.map(d=>({x:d.t,y:d.gz})), borderColor:'cyan', pointRadius:0}
-            ]}, 
-            options: opt
+            ]}, options: opt
         });
     }
 
