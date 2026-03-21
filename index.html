@@ -24,9 +24,7 @@ document.getElementById('btn').onclick = async () => {
 
         char.oncharacteristicvaluechanged = (e) => {
             count++;
-            if (count % 20 === 0) {
-                console.log("data:", count);
-            }
+            document.body.innerHTML = "Data count: " + count;
         };
 
         await char.startNotifications();
