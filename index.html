@@ -101,7 +101,20 @@ video {
             align-items: center;
             justify-content: center;
         }
-        
+
+        /* Professionele videokaart */
+        .video-card {
+            background: #000;
+            border-radius: 12px;
+            margin: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            height: calc(var(--content-h) - 20px);
+            overflow: hidden; /* voorkomt dat video buiten de randen komt */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+       
     </style>
 </head>
 <body>
@@ -139,10 +152,13 @@ video {
             </div>
         </div>
     
-    <div class="section video-container">
-        <video id="vLive" playsinline muted autoplay></video>
-        <video id="vBack" playsinline></video>
-    </div>
+        <div class="section">
+            <div class="video-card">
+                <video id="vLive" playsinline muted autoplay></video>
+                <video id="vBack" playsinline></video>
+            </div>
+        </div>
+
 
     <div class="bottom-area">
         <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
