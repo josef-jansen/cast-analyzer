@@ -186,6 +186,10 @@ document.getElementById('btnStart').onclick = async () => {
         elLive.style.display = "none"; elBack.style.display = "block";
         elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
         document.getElementById('btnSave').disabled = false; slider.disabled = false;
+
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
+        
         setTimeout(updateUI, 1000);
     };
     recorder.start();
