@@ -206,13 +206,13 @@ function render(id, points, color, label, unit, progress) {
     ctx.clearRect(0, 0, w, h);
     let maxAbs = Math.max(...points.map(Math.abs), 1);
     const scaleY = (gH / 2) / maxAbs;
-    ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 1 * dpr;
+    ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 0.5 * dpr;
     for (let i = -4; i <= 4; i++) {
         const y = center - ((maxAbs / 4) * i * scaleY);
         ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
     }
-    ctx.strokeStyle = "#bbb"; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(pL, center); ctx.lineTo(w - pR, center); ctx.stroke();
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 4 * dpr; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#bbb"; ctx.lineWidth = 1 * dpr; ctx.beginPath(); ctx.moveTo(pL, center); ctx.lineTo(w - pR, center); ctx.stroke();
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = "round";
     points.forEach((p, i) => {
         const x = pL + (i / (points.length - 1)) * gW, y = center - (p * scaleY);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
@@ -220,7 +220,7 @@ function render(id, points, color, label, unit, progress) {
     ctx.stroke();
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 3 * dpr;
+        ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 1 * dpr;
         ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
     ctx.fillStyle = "#333"; ctx.font = "bold " + (18 * dpr) + "px Arial"; ctx.textAlign = "left"; ctx.fillText(label + " (" + unit + ")", 20, 35 * dpr);
