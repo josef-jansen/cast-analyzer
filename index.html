@@ -194,29 +194,48 @@ document.getElementById('btnSave').onclick = () => {
     tx.oncomplete = () => { loadArchiveList(); alert("Opgeslagen!"); };
 };
 
-document.getElementById('btnReset').onclick = () => {
+document.getElementById('btnReset').onclick = async () => {
+
+    // 1. Stop BLE notificaties (als actief)
+    try { 
+        if (char) await char.stopNotifications(); 
+    } catch(e) {}
+
+    // 2. Stop recorder (als actief)
+    try { 
+        if (recorder && recorder.state !== "inactive") recorder.stop(); 
+    } catch(e) {}
+
+    // 3. Video terug naar live
     elBack.pause();
     elBack.src = "";
     elBack.style.display = "none";
-
     elLive.style.display = "block";
 
+    // 4. Data resetten
     data = [];
+    chunks = [];
     elCount.innerText = "0";
 
+    // 5. Slider resetten
     slider.value = 0;
     slider.disabled = true;
 
+    // 6. Tijdlabel resetten
     timeLabel.innerText = "0.00s / 0.00s";
 
+    // 7. Grafieken leegmaken
     draw();
 
+    // 8. UI terugzetten
     document.getElementById('btnStart').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnSave').disabled = true;
 
+    // 9. Selectie wissen
     archiveSelect.value = "";
 };
+
     
 function deleteSession() {
     if (!archiveSelect.value || !confirm("Verwijderen?")) return;
