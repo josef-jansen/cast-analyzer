@@ -195,8 +195,8 @@ function setAxis(a) {
 function draw() {
     if (data.length < 2) return;
     let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
-    render("cAcc", data.map(d => d['a' + axis]), "#007aff", "Acc " + axis.toUpperCase(), "m/s2", progress);
-    render("cGyro", data.map(d => d['g' + axis]), "#ff3b30", "Gyro " + axis.toUpperCase(), "deg/s", progress);
+    render("cAcc", data.map(d => d['a' + axis]), "#007aff", "Versnelling " + axis.toUpperCase(), "m/s²", progress);
+    render("cGyro", data.map(d => d['g' + axis]), "#ff3b30", "Rotatie " + axis.toUpperCase(), "°/s", progress);
 }
 
 function render(id, points, color, label, unit, progress) {
