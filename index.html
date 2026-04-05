@@ -43,8 +43,24 @@ video {
 
 
         /* Buttons & UI */
-        button { padding: 10px 12px; margin: 2px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; }
-        #btnConnect { background: #5856d6; } #btnStart { background: #34c759; } #btnStop { background: #ff3b30; } #btnSave { background: #ff9500; }
+        /* Professionele knopstijl */
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #fff;
+            margin-right: 6px;
+            background: #666; /* fallback */
+        }
+
+        /* Kleuren per knop */
+        #btnConnect { background: #007aff; }  /* blauw */
+        #btnStart   { background: #34c759; }  /* groen */
+        #btnStop    { background: #ff3b30; }  /* rood */
+        #btnSave    { background: #5856d6; }  /* paars */
+        #btnReset   { background: #8e8e93; }  /* grijs */
+
         .axisBtn { background: #8e8e93; min-width: 38px; } .axisBtn.active { background: #007aff; }
         select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 13px; width: 65%; margin-top: 8px; }
         .status-text { font-size: 10px; color: #666; margin-top: 4px; }
