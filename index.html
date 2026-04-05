@@ -1,41 +1,230 @@
 <!DOCTYPE html>
-<html>
-<body style="font-family:sans-serif; text-align:center; padding:40px;">
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cast Analyzer Pro Slider</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
+        
+        /* Layout verdeling */
+        .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
+        
+        :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
+        
+        .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
+        .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
+        
+        /* De Brede Slider onderaan */
+        .bottom-area { 
+            height: var(--bottom-area); width: 100%; background: #f2f2f7; 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        #syncSlider { width: 85%; height: 50px; cursor: pointer; }
+        #timeLabel { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; }
 
-<h2>Sensor Test</h2>
-<button id="btn">Start</button>
+        canvas { width: 100% !important; height: 100% !important; display: block; }
+        video { height: 100%; max-width: 100%; object-fit: contain; }
+
+        /* Buttons & UI */
+        button { padding: 10px 12px; margin: 2px; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; }
+        #btnConnect { background: #5856d6; } #btnStart { background: #34c759; } #btnStop { background: #ff3b30; } #btnSave { background: #ff9500; }
+        .axisBtn { background: #8e8e93; min-width: 38px; } .axisBtn.active { background: #007aff; }
+        select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 13px; width: 65%; margin-top: 8px; }
+        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
+        #vBack { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button id="btnConnect">Connect</button>
+        <button id="btnStart" disabled>Start</button>
+        <button id="btnStop" disabled>Stop</button>
+        <button id="btnSave" disabled>Save</button>
+        
+        <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
+        
+        <select id="archiveSelect">
+            <option value="">-- Worp Selecteren --</option>
+        </select>
+        <button onclick="deleteSession()" style="background:#8e8e93; padding:6px 10px;">Del</button>
+
+        <div style="margin-top:8px;">
+            <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
+            <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
+            <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
+        </div>
+    </div>
+
+    <div class="section"><canvas id="cAcc"></canvas></div>
+    <div class="section"><canvas id="cGyro"></canvas></div>
+    <div class="section video-container">
+        <video id="vLive" playsinline muted autoplay></video>
+        <video id="vBack" playsinline></video>
+    </div>
+
+    <div class="bottom-area">
+        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
+        <div id="timeLabel">0.00s / 0.00s</div>
+    </div>
 
 <script>
+let char, stream, recorder, db, data = [];
+let axis = 'x', chunks = [];
 
-let char;
-let count = 0;
+const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
+const archiveSelect = document.getElementById('archiveSelect'), slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
 
-document.getElementById('btn').onclick = async () => {
+// --- DATABASE ---
+const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
+dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true }); };
+dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 
-    try {
-        const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-        });
+function loadArchiveList() {
+    archiveSelect.innerHTML = '<option value="">-- Worp Selecteren --</option>';
+    const store = db.transaction("sessions", "readonly").objectStore("sessions");
+    store.openCursor(null, "prev").onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+            const opt = document.createElement("option");
+            opt.value = cursor.value.id; opt.textContent = cursor.value.name;
+            archiveSelect.appendChild(opt); cursor.continue();
+        }
+    };
+}
 
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+archiveSelect.onchange = () => {
+    if (!archiveSelect.value) return;
+    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(archiveSelect.value)).onsuccess = (e) => {
+        const s = e.target.result;
+        data = s.sensorData;
+        elBack.src = URL.createObjectURL(s.videoBlob);
+        axis = s.axis || 'x';
+        elLive.style.display = "none"; elBack.style.display = "block";
+        slider.disabled = false;
+        setTimeout(updateUI, 500);
+    };
+};
 
-        char.oncharacteristicvaluechanged = (e) => {
-            count++;
-            document.body.innerHTML = "Data count: " + count;
-        };
-
-        await char.startNotifications();
-
-        alert("Sensor loopt");
-
-    } catch (e) {
-        alert("FOUT: " + e.message);
+// --- SLIDER & UI ---
+slider.oninput = () => {
+    if (elBack.duration > 0) {
+        elBack.currentTime = (slider.value / 1000) * elBack.duration;
+        updateUI();
     }
 };
 
+function updateUI() {
+    if (elBack.duration > 0) {
+        timeLabel.innerText = elBack.currentTime.toFixed(2) + "s / " + elBack.duration.toFixed(2) + "s";
+    }
+    draw();
+}
+
+elBack.ontimeupdate = () => {
+    if (!recorder || recorder.state !== "recording") {
+        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        updateUI();
+    }
+};
+
+// --- CORE ---
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        elLive.srcObject = stream;
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            const v = e.target.value;
+            data.push({ ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100, gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true) });
+            elCount.innerText = data.length;
+        });
+        document.getElementById('btnConnect').disabled = true; document.getElementById('btnStart').disabled = false;
+    } catch (e) { alert(e); }
+};
+
+document.getElementById('btnStart').onclick = async () => {
+    data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
+    await char.startNotifications();
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+        elLive.style.display = "none"; elBack.style.display = "block";
+        elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+        document.getElementById('btnSave').disabled = false; slider.disabled = false;
+        setTimeout(updateUI, 1000);
+    };
+    recorder.start();
+    elBack.style.display = "none"; elLive.style.display = "block";
+    document.getElementById('btnStart').disabled = true; document.getElementById('btnStop').disabled = false;
+};
+
+document.getElementById('btnStop').onclick = async () => {
+    try { await char.stopNotifications(); } catch(e) {}
+    recorder.stop();
+    document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
+};
+
+document.getElementById('btnSave').onclick = () => {
+    const name = prompt("Naam:", "Worp " + new Date().toLocaleTimeString());
+    if (!name) return;
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").add({ name, sensorData: data, videoBlob: new Blob(chunks, { type: 'video/mp4' }), axis, date: new Date() });
+    tx.oncomplete = () => { loadArchiveList(); alert("Opgeslagen!"); };
+};
+
+function deleteSession() {
+    if (!archiveSelect.value || !confirm("Verwijderen?")) return;
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(archiveSelect.value));
+    tx.oncomplete = () => { loadArchiveList(); elBack.src = ""; draw(); };
+}
+
+function setAxis(a) {
+    axis = a;
+    document.querySelectorAll('.axisBtn').forEach(b => b.classList.toggle('active', b.id === 'b'+a.toUpperCase()));
+    updateUI();
+}
+
+function draw() {
+    if (data.length < 2) return;
+    let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
+    render("cAcc", data.map(d => d['a' + axis]), "#007aff", "Acc " + axis.toUpperCase(), "m/s2", progress);
+    render("cGyro", data.map(d => d['g' + axis]), "#ff3b30", "Gyro " + axis.toUpperCase(), "deg/s", progress);
+}
+
+function render(id, points, color, label, unit, progress) {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+    const w = c.width, h = c.height, pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1, gW = w - pL - pR, gH = h - pT - pB, center = h / 2;
+    ctx.clearRect(0, 0, w, h);
+    let maxAbs = Math.max(...points.map(Math.abs), 1);
+    const scaleY = (gH / 2) / maxAbs;
+    ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 1 * dpr;
+    for (let i = -4; i <= 4; i++) {
+        const y = center - ((maxAbs / 4) * i * scaleY);
+        ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
+    }
+    ctx.strokeStyle = "#bbb"; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(pL, center); ctx.lineTo(w - pR, center); ctx.stroke();
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 4 * dpr; ctx.lineJoin = "round";
+    points.forEach((p, i) => {
+        const x = pL + (i / (points.length - 1)) * gW, y = center - (p * scaleY);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 3 * dpr;
+        ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
+    }
+    ctx.fillStyle = "#333"; ctx.font = "bold " + (18 * dpr) + "px Arial"; ctx.textAlign = "left"; ctx.fillText(label + " (" + unit + ")", 20, 35 * dpr);
+}
 </script>
 </body>
 </html>
