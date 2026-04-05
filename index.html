@@ -204,14 +204,58 @@ function render(id, points, color, label, unit, progress) {
     c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
     const w = c.width, h = c.height, pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1, gW = w - pL - pR, gH = h - pT - pB, center = h / 2;
     ctx.clearRect(0, 0, w, h);
-    let maxAbs = Math.max(...points.map(Math.abs), 1);
-    const scaleY = (gH / 2) / maxAbs;
-    ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 0.5 * dpr;
-    for (let i = -4; i <= 4; i++) {
-        const y = center - ((maxAbs / 4) * i * scaleY);
-        ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
-    }
-    ctx.strokeStyle = "#bbb"; ctx.lineWidth = 1 * dpr; ctx.beginPath(); ctx.moveTo(pL, center); ctx.lineTo(w - pR, center); ctx.stroke();
+    
+ // --- SCHAALBEPALING ---
+let maxAbs = Math.max(...points.map(Math.abs), 1);
+const scaleY = (gH / 2) / maxAbs;
+
+// --- Y-AS TEKENEN ---
+ctx.strokeStyle = "#444";
+ctx.lineWidth = 1 * dpr;
+ctx.beginPath();
+ctx.moveTo(pL, pT);
+ctx.lineTo(pL, h - pB);
+ctx.stroke();
+
+// --- Y-AS LABELS ---
+ctx.fillStyle = "#333";
+ctx.font = (14 * dpr) + "px Arial";
+ctx.textAlign = "right";
+ctx.textBaseline = "middle";
+
+const steps = 4;
+for (let i = -steps; i <= steps; i++) {
+    const value = (maxAbs / steps) * i;
+    const y = center - (value * scaleY);
+
+    const rounded =
+        unit === "m/s2"
+            ? value.toFixed(1)       // acceleratie: 1 decimaal
+            : Math.round(value);     // gyro: hele getallen
+
+    ctx.fillText(rounded, pL - 8 * dpr, y);
+}
+
+// --- GRIDLINES ---
+ctx.strokeStyle = "#e0e0e0";
+ctx.lineWidth = 0.5 * dpr;
+for (let i = -steps; i <= steps; i++) {
+    const y = center - ((maxAbs / steps) * i * scaleY);
+    ctx.beginPath();
+    ctx.moveTo(pL, y);
+    ctx.lineTo(w - pR, y);
+    ctx.stroke();
+}
+
+// --- MIDDELLIJN ---
+ctx.strokeStyle = "#bbb";
+ctx.lineWidth = 1 * dpr;
+ctx.beginPath();
+ctx.moveTo(pL, center);
+ctx.lineTo(w - pR, center);
+ctx.stroke();
+
+    
     ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = "round";
     points.forEach((p, i) => {
         const x = pL + (i / (points.length - 1)) * gW, y = center - (p * scaleY);
@@ -223,7 +267,7 @@ function render(id, points, color, label, unit, progress) {
         ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 1 * dpr;
         ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
-    ctx.fillStyle = "#333"; ctx.font = "bold " + (18 * dpr) + "px Arial"; ctx.textAlign = "left"; ctx.fillText(label + " (" + unit + ")", 20, 35 * dpr);
+    ctx.fillStyle = "#333"; ctx.font = "bold " + (18 * dpr) + "px Arial"; ctx.textAlign = "left"; ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 20 * dpr);
 }
 </script>
 </body>
