@@ -93,6 +93,19 @@ let axis = 'x', chunks = [];
 const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
 const archiveSelect = document.getElementById('archiveSelect'), slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
 
+// ---------------------------------------------------------
+// Hulpfunctie: maakt beide grafieken volledig leeg
+// ---------------------------------------------------------
+function clearGraphs() {
+    const ids = ["cAcc", "cGyro"];
+    ids.forEach(id => {
+        const c = document.getElementById(id);
+        const ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, c.width, c.height);
+    });
+}
+
+    
 // --- DATABASE ---
 const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
 dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true }); };
@@ -225,7 +238,7 @@ document.getElementById('btnReset').onclick = async () => {
     timeLabel.innerText = "0.00s / 0.00s";
 
     // 7. Grafieken leegmaken
-    draw();
+    clearGraphs();
 
     // 8. UI terugzetten
     document.getElementById('btnStart').disabled = false;
