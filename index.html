@@ -58,6 +58,7 @@ video {
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
+        <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
         
@@ -193,6 +194,30 @@ document.getElementById('btnSave').onclick = () => {
     tx.oncomplete = () => { loadArchiveList(); alert("Opgeslagen!"); };
 };
 
+document.getElementById('btnReset').onclick = () => {
+    elBack.pause();
+    elBack.src = "";
+    elBack.style.display = "none";
+
+    elLive.style.display = "block";
+
+    data = [];
+    elCount.innerText = "0";
+
+    slider.value = 0;
+    slider.disabled = true;
+
+    timeLabel.innerText = "0.00s / 0.00s";
+
+    draw();
+
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnSave').disabled = true;
+
+    archiveSelect.value = "";
+};
+    
 function deleteSession() {
     if (!archiveSelect.value || !confirm("Verwijderen?")) return;
     const tx = db.transaction("sessions", "readwrite");
