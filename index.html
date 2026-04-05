@@ -89,6 +89,19 @@ video {
         select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 13px; width: 65%; margin-top: 8px; }
         .status-text { font-size: 10px; color: #666; margin-top: 4px; }
         #vBack { display: none; }
+
+        .graph-container {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 10px;
+            margin: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            height: calc(var(--content-h) - 20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
     </style>
 </head>
 <body>
@@ -114,8 +127,18 @@ video {
         </div>
     </div>
 
-    <div class="section"><canvas id="cAcc"></canvas></div>
-    <div class="section"><canvas id="cGyro"></canvas></div>
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cAcc"></canvas>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cGyro"></canvas>
+            </div>
+        </div>
+    
     <div class="section video-container">
         <video id="vLive" playsinline muted autoplay></video>
         <video id="vBack" playsinline></video>
