@@ -19,11 +19,23 @@
         /* De Brede Slider onderaan */
         .bottom-area { 
             height: var(--bottom-area); width: 100%; background: #f2f2f7; 
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 15px;
-            border-top: 1px solid #ddd;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            padding: 0 20px; border-top: 1px solid #ddd;
         }
-        #syncSlider { width: 85%; height: 50px; cursor: pointer; }
-        #timeLabel { font-size: 14px; font-weight: bold; color: #333; margin-top: 5px; }
+        #syncSlider { 
+            -webkit-appearance: none; width: 90%; height: 12px; 
+            background: #d1d1d6; border-radius: 6px; outline: none; margin: 20px 0; 
+        }
+        #syncSlider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
+            background: #007aff; border: 3px solid #fff; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
+        }
+        #timeLabel { 
+            font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; 
+            color: #007aff; background: #fff; padding: 4px 12px;
+            border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
         canvas { width: 100% !important; height: 100% !important; display: block; }
         
@@ -174,8 +186,8 @@
 
 
     <div class="bottom-area">
-        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         <div id="timeLabel">0.00s / 0.00s</div>
+        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
     </div>
 
 <script>
@@ -242,6 +254,7 @@ function updateUI() {
         timeLabel.innerText = elBack.currentTime.toFixed(2) + "s / " + elBack.duration.toFixed(2) + "s";
     }
     draw();
+    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
 
 elBack.ontimeupdate = () => {
