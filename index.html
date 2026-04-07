@@ -77,13 +77,19 @@
 
         /* X/Y/Z segmented control */
         .axisBtn {
-            padding: 6px 14px;
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
             border: 1px solid #007aff;
             border-radius: 6px;
             background: #fff;
             color: #007aff;
             font-size: 14px;
             margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .axisBtn.active {
@@ -175,9 +181,7 @@
         <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
     </div>
 
-
-
-        <div style="margin-top:10px;">
+        <div style="margin-top:10px; line-height: 1;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
             <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
