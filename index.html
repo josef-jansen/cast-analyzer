@@ -100,21 +100,26 @@
             border: none;
         }
         
-        select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-size: 13px; width: 65%; margin-top: 8px; }
-        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
-        #vBack { display: none; }
-
         #archiveSelect {
             appearance: none;
             -webkit-appearance: none;
-            height: 36px;
-            line-height: 36px;   /* CRUCIAAL voor iOS */
-            padding: 0 10px;     /* geen verticale padding */
-            font-size: 14px;
+            width: 80%;             /* Iets smaller om ruimte te laten voor de Del-knop */
+            height: 44px;
+            line-height: 44px;
+            padding: 0 15px;
+            font-size: 16px;
             border-radius: 8px;
             border: 1px solid #ccc;
             background: #fff;
+            margin-top: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
+        #vBack { display: none; }
+
         
         .graph-container {
             background: #ffffff;
@@ -153,13 +158,15 @@
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
-        
-        <select id="archiveSelect">
-            <option value="">-- Worp Selecteren --</option>
-        </select>
-        <button onclick="deleteSession()">Del</button>
 
-        <div style="margin-top:8px;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">
+            <select id="archiveSelect">
+                <option value="">-- Worp Selecteren --</option>
+            </select>
+            <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; height: 44px; margin: 0;">Del</button>
+        </div>
+
+        <div style="margin-top:10px;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
             <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
