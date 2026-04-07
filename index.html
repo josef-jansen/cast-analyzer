@@ -163,16 +163,18 @@
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        <!-- HIER MOET DE ID STAAN: -->
         <div id="customDropdown" style="width: 80%; position: relative;">
-            <div id="selectedDisplay" style="height: 44px; line-height: 44px; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                 -- Worp Selecteren --
             </div>
             <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            <!-- Hier komen de sessies -->
+                <!-- Hier komen de sessies -->
             </div>
         </div>
         <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
     </div>
+
 
 
         <div style="margin-top:10px;">
@@ -234,13 +236,19 @@ dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions
 dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 
 function loadArchiveList() {
-    const optionsList = document.getElementById('optionsList');
-    optionsList.innerHTML = "";
+    const list = document.getElementById("optionsList");
+    list.innerHTML = ""; 
+
     const store = db.transaction("sessions", "readonly").objectStore("sessions");
     store.openCursor(null, "prev").onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
             const item = document.createElement("div");
+            
+            // WE ZETTEN DE DATA NU HARD IN HET ELEMENT
+            const sid = cursor.value.id;
+            const sname = cursor.value.name;
+
             item.style.padding = "12px 10px";
             item.style.borderBottom = "1px solid #eee";
             item.style.fontSize = "16px";
@@ -248,18 +256,21 @@ function loadArchiveList() {
             item.style.overflow = "hidden";
             item.style.textOverflow = "ellipsis";
             item.style.textAlign = "left";
-            item.textContent = cursor.value.name;
+            item.textContent = sname;
             
-            item.onclick = () => {
-                selectSession(cursor.value.id, cursor.value.name);
-                optionsList.style.display = "none";
+            // De klik-functie gebruikt nu de bevroren variabelen sid en sname
+            item.onclick = function() {
+                console.log("Klik gedetecteerd op ID:", sid); // Voor controle
+                selectSession(sid, sname);
+                list.style.display = "none";
             };
             
-            optionsList.appendChild(item);
+            list.appendChild(item);
             cursor.continue();
         }
     };
 }
+
 
 function selectSession(id, name) {
     const display = document.getElementById("selectedDisplay");
@@ -526,6 +537,13 @@ ctx.stroke();
     }
     ctx.fillStyle = "#333";ctx.font = (14 * dpr) + "px Arial";ctx.textAlign = "left";ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
+
+window.onclick = (e) => {
+    if (!e.target.closest('#customDropdown')) {
+        document.getElementById("optionsList").style.display = "none";
+    }
+};
+    
 </script>
 </body>
 </html>
