@@ -219,15 +219,19 @@ dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 function loadArchiveList() {
     archiveSelect.innerHTML = '<option value="">-- Worp Selecteren --</option>';
     const store = db.transaction("sessions", "readonly").objectStore("sessions");
+    // "prev" zorgt ervoor dat de cursor bij de hoogste ID (de nieuwste) begint
     store.openCursor(null, "prev").onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
             const opt = document.createElement("option");
-            opt.value = cursor.value.id; opt.textContent = cursor.value.name;
-            archiveSelect.appendChild(opt); cursor.continue();
+            opt.value = cursor.value.id; 
+            opt.textContent = cursor.value.name;
+            archiveSelect.appendChild(opt); 
+            cursor.continue();
         }
     };
 }
+
 
 archiveSelect.onchange = () => {
     if (!archiveSelect.value) return;
