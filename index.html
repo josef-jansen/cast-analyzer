@@ -310,10 +310,26 @@ document.getElementById('btnStop').onclick = async () => {
 };
 
 document.getElementById('btnSave').onclick = () => {
-    const name = prompt("Naam:", "Worp " + new Date().toLocaleTimeString());
-    if (!name) return;
+    const nu = new Date();
+    const datumString = nu.getFullYear() + "-" + 
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
+        String(nu.getDate()).padStart(2, '0') + " " + 
+        String(nu.getHours()).padStart(2, '0') + ":" + 
+        String(nu.getMinutes()).padStart(2, '0');
+    
+    const inputNaam = prompt("Naam van de worp:", "Worp");
+    if (!inputNaam) return; 
+    
+    const name = datumString + " - " + inputNaam;
+
     const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({ name, sensorData: data, videoBlob: new Blob(chunks, { type: 'video/mp4' }), axis, date: new Date() });
+    tx.objectStore("sessions").add({ 
+        name, 
+        sensorData: data, 
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+        axis, 
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+    });
     tx.oncomplete = () => { loadArchiveList(); alert("Opgeslagen!"); };
 };
 
