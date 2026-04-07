@@ -159,12 +159,18 @@
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">
-            <select id="archiveSelect">
-                <option value="">-- Worp Selecteren --</option>
-            </select>
-            <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; height: 44px; margin: 0;">Del</button>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        <div id="customDropdown" style="width: 80%; position: relative;">
+            <div id="selectedDisplay" style="height: 44px; line-height: 44px; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                -- Worp Selecteren --
+            </div>
+            <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            <!-- Hier komen de sessies -->
+            </div>
         </div>
+        <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; height: 44px; margin: 0;">Del</button>
+    </div>
+
 
         <div style="margin-top:10px;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
@@ -203,7 +209,8 @@ let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
 
 const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
-const archiveSelect = document.getElementById('archiveSelect'), slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
+const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
+const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
 // ---------------------------------------------------------
 // Hulpfunctie: maakt beide grafieken volledig leeg
@@ -224,25 +231,37 @@ dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions
 dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 
 function loadArchiveList() {
-    archiveSelect.innerHTML = '<option value="">-- Worp Selecteren --</option>';
+    optionsList.innerHTML = "";
     const store = db.transaction("sessions", "readonly").objectStore("sessions");
-    // "prev" zorgt ervoor dat de cursor bij de hoogste ID (de nieuwste) begint
     store.openCursor(null, "prev").onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
-            const opt = document.createElement("option");
-            opt.value = cursor.value.id; 
-            opt.textContent = cursor.value.name;
-            archiveSelect.appendChild(opt); 
+            const item = document.createElement("div");
+            item.style.padding = "12px 10px";
+            item.style.borderBottom = "1px solid #eee";
+            item.style.fontSize = "16px";
+            item.style.whiteSpace = "nowrap";
+            item.style.overflow = "hidden";
+            item.style.textOverflow = "ellipsis";
+            item.style.textAlign = "left";
+            item.textContent = cursor.value.name;
+            
+            item.onclick = () => {
+                selectSession(cursor.value.id, cursor.value.name);
+                optionsList.style.display = "none";
+            };
+            
+            optionsList.appendChild(item);
             cursor.continue();
         }
     };
 }
 
+function selectSession(id, name) {
+    selectedDisplay.textContent = name;
+    selectedDisplay.dataset.value = id;
 
-archiveSelect.onchange = () => {
-    if (!archiveSelect.value) return;
-    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(archiveSelect.value)).onsuccess = (e) => {
+    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
         data = s.sensorData;
         elBack.src = URL.createObjectURL(s.videoBlob);
@@ -251,7 +270,13 @@ archiveSelect.onchange = () => {
         slider.disabled = false;
         setTimeout(updateUI, 500);
     };
+}
+
+// Zorg dat de lijst opent als je op de display klikt
+selectedDisplay.onclick = () => {
+    optionsList.style.display = optionsList.style.display === "none" ? "block" : "none";
 };
+
 
 // --- SLIDER & UI ---
 slider.oninput = () => {
@@ -341,7 +366,12 @@ document.getElementById('btnSave').onclick = () => {
         axis, 
         date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
-    tx.oncomplete = () => { loadArchiveList(); alert("Opgeslagen!"); };
+    tx.oncomplete = () => { 
+        loadArchiveList(); 
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
+        alert("Opgeslagen!"); 
+    };
 };
 
 document.getElementById('btnReset').onclick = async () => {
@@ -383,17 +413,28 @@ document.getElementById('btnReset').onclick = async () => {
     document.getElementById('btnSave').disabled = true;
 
     // 9. Selectie wissen
-    archiveSelect.value = "";
+    selectedDisplay.textContent = "-- Worp Selecteren --";
+    delete selectedDisplay.dataset.value;
+    optionsList.style.display = "none";
 };
 
-    
 function deleteSession() {
-    if (!archiveSelect.value || !confirm("Verwijderen?")) return;
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").delete(Number(archiveSelect.value));
-    tx.oncomplete = () => { loadArchiveList(); elBack.src = ""; draw(); };
-}
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId || !confirm("Verwijderen?")) return;
 
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(sessionId));
+    tx.oncomplete = () => {
+        selectedDisplay.textContent = "-- Worp Selecteren --";
+        delete selectedDisplay.dataset.value;
+        elBack.src = "";
+        elBack.style.display = "none";
+        elLive.style.display = "block";
+        loadArchiveList();
+        clearGraphs();
+    };
+}
+    
 function setAxis(a) {
     axis = a;
     document.querySelectorAll('.axisBtn').forEach(b => b.classList.toggle('active', b.id === 'b'+a.toUpperCase()));
