@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -18,19 +18,29 @@
         
         /* De Brede Slider onderaan */
         .bottom-area { 
-            height: var(--bottom-area); width: 100%; background: #f2f2f7; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            padding: 0 20px; border-top: 1px solid #ddd;
+            height: var(--bottom-area);
+            width: 100%;
+            background: #f2f2f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;   /* <<< FIX */
+            padding: 6px 20px 0 20px;      /* <<< FIX */
+            gap: 8px;                      /* <<< FIX */
+            border-top: 1px solid #ddd;
         }
+
         #syncSlider { 
             -webkit-appearance: none; width: 90%; height: 12px; 
             background: #d1d1d6; border-radius: 6px; outline: none; margin: 20px 0; 
         }
+        
         #syncSlider::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
             background: #007aff; border: 3px solid #fff; border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
         }
+        
         #timeLabel { 
             font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; 
             color: #007aff; background: #fff; padding: 4px 12px;
