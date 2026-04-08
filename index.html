@@ -467,8 +467,8 @@ function setAxis(a) {
 function draw() {
     if (data.length < 2) return;
     let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
-    render("cAcc", data.map(d => d['a' + axis]), "#007aff", "Versnelling " + axis.toUpperCase(), "m/s²", progress);
-    render("cGyro", data.map(d => d['g' + axis]), "#ff3b30", "Rotatie " + axis.toUpperCase(), "°/s", progress);
+    render("cAcc", data.map(d => d['a' + axis]), "#00bfff", "Versnelling " + axis.toUpperCase(), "m/s²", progress); // DeepSkyBlue
+    render("cGyro", data.map(d => d['g' + axis]), "#ff4500", "Rotatie " + axis.toUpperCase(), "°/s", progress); // OrangeRed
 }
 
 function render(id, points, color, label, unit, progress) {
@@ -490,7 +490,7 @@ ctx.lineTo(pL, h - pB);
 ctx.stroke();
 
 // --- Y-AS LABELS ---
-ctx.fillStyle = "#8e8e93";
+ctx.fillStyle = "#ffffff"; // Puur wit voor maximale leesbaarheid
 ctx.font = (14 * dpr) + "px Arial";
 ctx.textAlign = "right";
 ctx.textBaseline = "middle";
