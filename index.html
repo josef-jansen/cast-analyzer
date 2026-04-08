@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -107,6 +107,13 @@
             color: #fff;
         }
 
+        #playPauseBtn {
+            height: 32px;
+            line-height: 30px;
+            padding: 0 14px;
+        }
+
+        
         .speedBtn {
             padding: 0 14px;
             height: 32px;
@@ -240,19 +247,19 @@
 
         <div class="bottom-area">
             <div id="timeLabel">0.00s / 0.00s</div>
-            <div id="playControls" style="display:flex; gap:10px; margin-top:10px;">
-        <div id="playControls" style="display:flex; gap:10px; margin-top:10px;">
-            <button id="playPauseBtn">▶︎</button>
-            <button class="speedBtn" data-speed="0.25">0.25x</button>
-            <button class="speedBtn" data-speed="0.5">0.5x</button>
-            <button class="speedBtn" data-speed="1">1x</button>
-        </div>
-        
-        </div>
+
+            <div id="playControls" style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                <button id="playPauseBtn">▶︎</button>
+                <button class="speedBtn" data-speed="0.25">0.25x</button>
+                <button class="speedBtn" data-speed="0.5">0.5x</button>
+                <button class="speedBtn" data-speed="1">1x</button>
+            </div>
+
             <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         </div>
 
 <script>
+
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
 
