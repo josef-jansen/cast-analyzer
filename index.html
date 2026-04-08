@@ -491,24 +491,19 @@ function draw() {
 function render(id, points, color, label, unit, progress) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
-    const w = c.width, h = c.height, pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1, gW = w - pL - pR, gH = h - pT - pB, center = h / 2;
-    ctx.clearRect(0, 0, w, h);
-    
- // --- SCHAALBEPALING ---
-let scaleY, center, minVal;
-const maxVal = Math.max(...points, 1);
+    const w = c.width, h = c.height, pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1, gW = w - pL - pR, gH = h - pT - pB;
 
-if (axis === 'xyz') {
-    // XYZ is altijd positief: 0 onderaan, max bovenaan
-    minVal = 0;
-    scaleY = gH / maxVal;
-    center = h - pB; 
-} else {
-    // X, Y of Z: 0 in het midden voor positief/negatief
+    // --- SCHAALBEPALING ---
+    let scaleY, center;
     const maxAbs = Math.max(...points.map(Math.abs), 1);
-    scaleY = (gH / 2) / maxAbs;
-    center = h / 2;
-}
+
+    if (axis === 'xyz') {
+        scaleY = gH / maxAbs;
+        center = h - pB; // Nul-lijn onderaan
+    } else {
+        scaleY = (gH / 2) / maxAbs;
+        center = h / 2; // Nul-lijn in het midden
+    }
 
 // --- Y-AS TEKENEN ---
 ctx.strokeStyle = "#444";
