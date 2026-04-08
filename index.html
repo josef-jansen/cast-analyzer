@@ -185,6 +185,7 @@
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
             <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
+            <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
         </div>
     </div>
 
@@ -460,15 +461,31 @@ function deleteSession() {
     
 function setAxis(a) {
     axis = a;
-    document.querySelectorAll('.axisBtn').forEach(b => b.classList.toggle('active', b.id === 'b'+a.toUpperCase()));
+    document.querySelectorAll('.axisBtn').forEach(b => {
+    b.classList.toggle('active', b.id.toLowerCase() === 'b' + a.toLowerCase());
+    });
     updateUI();
 }
 
 function draw() {
     if (data.length < 2) return;
     let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
-    render("cAcc", data.map(d => d['a' + axis]), "#00bfff", "Versnelling " + axis.toUpperCase(), "m/s²", progress); // DeepSkyBlue
-    render("cGyro", data.map(d => d['g' + axis]), "#ff4500", "Rotatie " + axis.toUpperCase(), "°/s", progress); // OrangeRed
+    
+    let accPoints, gyroPoints, labelSuffix;
+
+    if (axis === 'xyz') {
+        // De 'vector' berekening: sqrt(x² + y² + z²)
+        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        labelSuffix = "Totaal";
+    } else {
+        accPoints = data.map(d => d['a' + axis]);
+        gyroPoints = data.map(d => d['g' + axis]);
+        labelSuffix = axis.toUpperCase();
+    }
+
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress);
 }
 
 function render(id, points, color, label, unit, progress) {
@@ -478,8 +495,20 @@ function render(id, points, color, label, unit, progress) {
     ctx.clearRect(0, 0, w, h);
     
  // --- SCHAALBEPALING ---
-let maxAbs = Math.max(...points.map(Math.abs), 1);
-const scaleY = (gH / 2) / maxAbs;
+let scaleY, center, minVal;
+const maxVal = Math.max(...points, 1);
+
+if (axis === 'xyz') {
+    // XYZ is altijd positief: 0 onderaan, max bovenaan
+    minVal = 0;
+    scaleY = gH / maxVal;
+    center = h - pB; 
+} else {
+    // X, Y of Z: 0 in het midden voor positief/negatief
+    const maxAbs = Math.max(...points.map(Math.abs), 1);
+    scaleY = (gH / 2) / maxAbs;
+    center = h / 2;
+}
 
 // --- Y-AS TEKENEN ---
 ctx.strokeStyle = "#444";
@@ -490,29 +519,32 @@ ctx.lineTo(pL, h - pB);
 ctx.stroke();
 
 // --- Y-AS LABELS ---
-ctx.fillStyle = "#ffffff"; // Puur wit voor maximale leesbaarheid
+ctx.fillStyle = "#ffffff";
 ctx.font = (14 * dpr) + "px Arial";
 ctx.textAlign = "right";
 ctx.textBaseline = "middle";
 
-const steps = 4;
-for (let i = -steps; i <= steps; i++) {
-    const value = (maxAbs / steps) * i;
-    const y = center - (value * scaleY);
-
-    const rounded =
-        unit === "m/s²"
-            ? value.toFixed(1)       // acceleratie: 1 decimaal
-            : Math.round(value);     // gyro: hele getallen
-
+for (let i = 0; i <= steps; i++) {
+    // Bereken waarde: bij XYZ van 0 naar Max, anders van -Max naar +Max
+    const val = (axis === 'xyz') 
+        ? (maxVal / steps) * i 
+        : (-maxAbs + (i * (2 * maxAbs / steps)));
+    
+    const y = center - (val * scaleY);
+    const rounded = unit === "m/s²" ? val.toFixed(1) : Math.round(val);
     ctx.fillText(rounded, pL - 8 * dpr, y);
 }
 
 // --- GRIDLINES ---
-ctx.strokeStyle = "rgba(255,255,255,0.15)";
+ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
 ctx.lineWidth = 0.5 * dpr;
-for (let i = -steps; i <= steps; i++) {
-    const y = center - ((maxAbs / steps) * i * scaleY);
+
+for (let i = 0; i <= steps; i++) {
+    const val = (axis === 'xyz') 
+        ? (maxVal / steps) * i 
+        : (-maxAbs + (i * (2 * maxAbs / steps)));
+        
+    const y = center - (val * scaleY);
     ctx.beginPath();
     ctx.moveTo(pL, y);
     ctx.lineTo(w - pR, y);
@@ -531,15 +563,15 @@ for (let i = 0; i <= timeSteps; i++) {
     ctx.stroke();
 }
 
-
 // --- MIDDELLIJN ---
-ctx.strokeStyle = "rgba(255,255,255,0.2)";
-ctx.lineWidth = 1 * dpr;
-ctx.beginPath();
-ctx.moveTo(pL, center);
-ctx.lineTo(w - pR, center);
-ctx.stroke();
-
+if (axis !== 'xyz') {
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(pL, center);
+    ctx.lineTo(w - pR, center);
+    ctx.stroke();
+}
     
     ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = "round";
     points.forEach((p, i) => {
