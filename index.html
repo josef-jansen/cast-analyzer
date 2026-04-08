@@ -97,6 +97,25 @@
             color: #fff;
         }
 
+        .speedBtn {
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
+            border: 1px solid #007aff;
+            border-radius: 6px;
+            background: #fff;
+            color: #007aff;
+            font-size: 14px;
+            margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+        }
+
+        .speedBtn.active {
+            background: #007aff;
+            color: #fff;
+        }
+        
         /* DEL knop in dezelfde stijl als Reset */
         #btnDel {
             background: #8e8e93;
@@ -333,6 +352,10 @@ elBack.ontimeupdate = () => {
         slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
         updateUI();
     }
+};
+
+elBack.onended = () => {
+    playPauseBtn.textContent = "▶︎";
 };
 
 // --- CORE ---
@@ -616,9 +639,15 @@ speedButtons.forEach(btn => {
     btn.addEventListener("click", () => {
         const speed = parseFloat(btn.dataset.speed);
         elBack.playbackRate = speed;
+
+        // highlight logica
+        speedButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
     });
 });
 
+document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+    
 // --- EINDE PLAY/SPEED CODE ---
 
     
