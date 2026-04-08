@@ -131,12 +131,12 @@
         #vBack { display: none; }
         
         .graph-container {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 10px;
-            margin: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-            height: calc(var(--content-h) - 20px);
+            background: #1c1c1e; /* Donkergrijs/zwart */
+            border-radius: 8px;
+            padding: 5px;
+            margin: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            height: calc(var(--content-h) - 16px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -490,7 +490,7 @@ ctx.lineTo(pL, h - pB);
 ctx.stroke();
 
 // --- Y-AS LABELS ---
-ctx.fillStyle = "#333";
+ctx.fillStyle = "#8e8e93";
 ctx.font = (14 * dpr) + "px Arial";
 ctx.textAlign = "right";
 ctx.textBaseline = "middle";
@@ -509,7 +509,7 @@ for (let i = -steps; i <= steps; i++) {
 }
 
 // --- GRIDLINES ---
-ctx.strokeStyle = "#e0e0e0";
+ctx.strokeStyle = "rgba(255,255,255,0.05)";
 ctx.lineWidth = 0.5 * dpr;
 for (let i = -steps; i <= steps; i++) {
     const y = center - ((maxAbs / steps) * i * scaleY);
@@ -520,7 +520,7 @@ for (let i = -steps; i <= steps; i++) {
 }
 
 // --- MIDDELLIJN ---
-ctx.strokeStyle = "#bbb";
+ctx.strokeStyle = "rgba(255,255,255,0.2)";
 ctx.lineWidth = 1 * dpr;
 ctx.beginPath();
 ctx.moveTo(pL, center);
@@ -539,7 +539,8 @@ ctx.stroke();
         ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 1 * dpr;
         ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
-    ctx.fillStyle = "#333";ctx.font = (14 * dpr) + "px Arial";ctx.textAlign = "left";ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = (14 * dpr) + "px Arial";ctx.textAlign = "left";ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
 window.onclick = (e) => {
