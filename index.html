@@ -496,6 +496,10 @@ function render(id, points, color, label, unit, progress) {
     // --- SCHAALBEPALING ---
     let scaleY, center;
     const maxAbs = Math.max(...points.map(Math.abs), 1);
+    const maxVal = maxAbs; // Nodig voor de XYZ loop
+    const steps = 4;       // Aantal horizontale verdelingen
+
+    ctx.clearRect(0, 0, w, h); // Maakt het canvas leeg voor de nieuwe tekening
 
     if (axis === 'xyz') {
         scaleY = gH / maxAbs;
