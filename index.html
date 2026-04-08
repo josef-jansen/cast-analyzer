@@ -212,12 +212,14 @@
         <div class="bottom-area">
             <div id="timeLabel">0.00s / 0.00s</div>
             <div id="playControls" style="display:flex; gap:10px; margin-top:10px;">
-                <button id="playPauseBtn">▶︎</button>
-                <button class="speedBtn" data-speed="0.25">0.25x</button>
-                <button class="speedBtn" data-speed="0.5">0.5x</button>
-                <button class="speedBtn" data-speed="1">1x</button>
-                <button class="speedBtn" data-speed="2">2x</button>
-            </div>
+        <div id="playControls" style="display:flex; gap:10px; margin-top:10px;">
+            <button id="playPauseBtn">▶︎</button>
+            <button class="speedBtn" data-speed="0.25">0.25x</button>
+            <button class="speedBtn" data-speed="0.5">0.5x</button>
+            <button class="speedBtn" data-speed="1">1x</button>
+        </div>
+        
+        </div>
             <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         </div>
 
@@ -294,6 +296,7 @@ function selectSession(id, name) {
         if (!s) return; // Veiligheidscheck
         data = s.sensorData;
         elBack.src = URL.createObjectURL(s.videoBlob);
+        elBack.pause();
         axis = s.axis || 'x';
         elLive.style.display = "none"; 
         elBack.style.display = "block";
