@@ -509,7 +509,7 @@ for (let i = -steps; i <= steps; i++) {
 }
 
 // --- GRIDLINES ---
-ctx.strokeStyle = "rgba(255,255,255,0.05)";
+ctx.strokeStyle = "rgba(255,255,255,0.15)";
 ctx.lineWidth = 0.5 * dpr;
 for (let i = -steps; i <= steps; i++) {
     const y = center - ((maxAbs / steps) * i * scaleY);
@@ -518,6 +518,19 @@ for (let i = -steps; i <= steps; i++) {
     ctx.lineTo(w - pR, y);
     ctx.stroke();
 }
+
+// --- VERTICALE GRIDLINES (TIJD) ---
+ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+ctx.lineWidth = 0.5 * dpr;
+const timeSteps = 10; // Verdeel de grafiek in 10 tijdsblokken
+for (let i = 0; i <= timeSteps; i++) {
+    const x = pL + (i / timeSteps) * gW;
+    ctx.beginPath();
+    ctx.moveTo(x, pT);
+    ctx.lineTo(x, h - pB);
+    ctx.stroke();
+}
+
 
 // --- MIDDELLIJN ---
 ctx.strokeStyle = "rgba(255,255,255,0.2)";
