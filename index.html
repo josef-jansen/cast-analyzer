@@ -1,7 +1,6 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cast-Analyzer</title>
@@ -219,12 +218,6 @@
             </div>
         </div>
         <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
-
-        <button id="openSession" 
-                style="background:#8e8e93; min-width: 100px; margin: 0; white-space: nowrap;">
-            Open
-        </button>
-
     </div>
 
         <div style="margin-top:10px; line-height: 1;">
@@ -269,13 +262,6 @@
 
 <script>
 
-document.getElementById("btnSave").disabled = true;
-    
-window.onerror = function(msg, url, line, col, error) {
-    alert("JS FOUT: " + msg);
-};
-
-    
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
 
@@ -410,24 +396,20 @@ document.getElementById('btnConnect').onclick = async () => {
 };
 
 document.getElementById('btnStart').onclick = async () => {
-    if (!char) { alert("Geen verbinding. Druk eerst op Connect."); return; }
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
     await char.startNotifications();
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = () => {
-            elLive.style.display = "none";
-            elBack.style.display = "block";
+    recorder.onstop = () => {
+        elLive.style.display = "none"; elBack.style.display = "block";
+        elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+        document.getElementById('btnSave').disabled = false; slider.disabled = false;
 
-            elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
-
-            document.getElementById("btnSave").disabled = false;   // <-- HIER
-
-            slider.disabled = false;
-            setAxis('y');
-            setTimeout(updateUI, 1000);
-        };
-
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
+        
+        setTimeout(updateUI, 1000);
+    };
     recorder.start();
     elBack.style.display = "none"; elLive.style.display = "block";
     document.getElementById('btnStart').disabled = true; document.getElementById('btnStop').disabled = false;
@@ -437,6 +419,35 @@ document.getElementById('btnStop').onclick = async () => {
     try { await char.stopNotifications(); } catch(e) {}
     recorder.stop();
     document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
+};
+
+document.getElementById('btnSave').onclick = () => {
+    const nu = new Date();
+    const datumString = nu.getFullYear() + "-" + 
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
+        String(nu.getDate()).padStart(2, '0') + " " + 
+        String(nu.getHours()).padStart(2, '0') + ":" + 
+        String(nu.getMinutes()).padStart(2, '0');
+    
+    const inputNaam = prompt("Naam van de worp:", "Worp");
+    if (!inputNaam) return; 
+    
+    const name = datumString + " - " + inputNaam;
+
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").add({ 
+        name, 
+        sensorData: data, 
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+        axis, 
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+    });
+    tx.oncomplete = () => { 
+        loadArchiveList(); 
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
+        alert("Opgeslagen!"); 
+    };
 };
 
 document.getElementById('btnReset').onclick = async () => {
@@ -657,41 +668,14 @@ speedButtons.forEach(btn => {
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
+
     
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-async function saveAsZip() {
-    if (data.length === 0 || chunks.length === 0) {
-        alert("Geen opname om op te slaan.");
-        return;
-    }
-
-    const jsonBlob = new Blob(
-        [JSON.stringify({ data })],
-        { type: "application/json" }
-    );
-
-    const videoBlob = new Blob(chunks, { type: "video/mp4" });
-
-    const zip = new JSZip();
-    zip.file("session.json", jsonBlob);
-    zip.file("video.mp4", videoBlob);
-
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(zipBlob);
-    a.download = "worp.zip";
-    a.click();
-}
-
-alert("BENEDEN AANGEKOMEN");
-document.getElementById("btnSave").onclick = saveAsZip;    
-
+    
 </script>
 </body>
 </html>
