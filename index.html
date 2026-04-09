@@ -402,6 +402,7 @@ document.getElementById('btnConnect').onclick = async () => {
 };
 
 document.getElementById('btnStart').onclick = async () => {
+    if (!char) { alert("Geen verbinding. Druk eerst op Connect."); return; }
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
     await char.startNotifications();
     recorder = new MediaRecorder(stream);
@@ -425,35 +426,6 @@ document.getElementById('btnStop').onclick = async () => {
     try { await char.stopNotifications(); } catch(e) {}
     recorder.stop();
     document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
-};
-
-document.getElementById('btnSave').onclick = () => {
-    const nu = new Date();
-    const datumString = nu.getFullYear() + "-" + 
-        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
-        String(nu.getDate()).padStart(2, '0') + " " + 
-        String(nu.getHours()).padStart(2, '0') + ":" + 
-        String(nu.getMinutes()).padStart(2, '0');
-    
-    const inputNaam = prompt("Naam van de worp:", "Worp");
-    if (!inputNaam) return; 
-    
-    const name = datumString + " - " + inputNaam;
-
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({ 
-        name, 
-        sensorData: data, 
-        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
-        axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
-    });
-    tx.oncomplete = () => { 
-        loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
-    };
 };
 
 document.getElementById('btnReset').onclick = async () => {
@@ -681,48 +653,33 @@ window.onclick = (e) => {
     }
 };
 
-// ---------------- ZIP SAVE ----------------
-
 async function saveAsZip() {
-    if (!currentSession) {
-        alert("Geen sessie om op te slaan.");
+    if (data.length === 0 || chunks.length === 0) {
+        alert("Geen opname om op te slaan.");
         return;
     }
 
-    // JSON maken
-    const jsonString = JSON.stringify({
-        data: currentSession.data
-    });
+    const jsonBlob = new Blob(
+        [JSON.stringify({ data })],
+        { type: "application/json" }
+    );
 
-    const jsonBlob = new Blob([jsonString], { type: "application/json" });
+    const videoBlob = new Blob(chunks, { type: "video/mp4" });
 
-    // Video-blob ophalen
-    const videoBlob = currentSession.videoBlob;
-
-    if (!videoBlob) {
-        alert("Geen video gevonden in deze sessie.");
-        return;
-    }
-
-    // ZIP maken
     const zip = new JSZip();
     zip.file("session.json", jsonBlob);
     zip.file("video.mp4", videoBlob);
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // Download triggeren
     const a = document.createElement("a");
     a.href = URL.createObjectURL(zipBlob);
     a.download = "worp.zip";
     a.click();
-    URL.revokeObjectURL(a.href);
 }
 
-// Save-knop koppelen
-document.getElementById("btnSave").onclick = saveAsZip;
+document.getElementById("btnSave").onclick = saveAsZip;    
 
-    
 </script>
 </body>
 </html>
