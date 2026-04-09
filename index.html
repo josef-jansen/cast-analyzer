@@ -681,6 +681,48 @@ window.onclick = (e) => {
     }
 };
 
+// ---------------- ZIP SAVE ----------------
+
+async function saveAsZip() {
+    if (!currentSession) {
+        alert("Geen sessie om op te slaan.");
+        return;
+    }
+
+    // JSON maken
+    const jsonString = JSON.stringify({
+        data: currentSession.data
+    });
+
+    const jsonBlob = new Blob([jsonString], { type: "application/json" });
+
+    // Video-blob ophalen
+    const videoBlob = currentSession.videoBlob;
+
+    if (!videoBlob) {
+        alert("Geen video gevonden in deze sessie.");
+        return;
+    }
+
+    // ZIP maken
+    const zip = new JSZip();
+    zip.file("session.json", jsonBlob);
+    zip.file("video.mp4", videoBlob);
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Download triggeren
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = "worp.zip";
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+// Save-knop koppelen
+document.getElementById("btnSave").onclick = saveAsZip;
+
+    
 </script>
 </body>
 </html>
