@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="nl">
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -203,7 +203,7 @@
         <button id="btnConnect">Connect</button>
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
-        <button id="btnSave" style="opacity:0.5; pointer-events:none;">Save</button>
+        <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
@@ -270,7 +270,7 @@
 <script>
 
 document.getElementById("btnSave").disabled = true;
-
+    
 window.onerror = function(msg, url, line, col, error) {
     alert("JS FOUT: " + msg);
 };
@@ -415,18 +415,19 @@ document.getElementById('btnStart').onclick = async () => {
     await char.startNotifications();
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-    recorder.onstop = () => {
-        elLive.style.display = "none"; elBack.style.display = "block";
-        elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
-        const btn = document.getElementById('btnSave');
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
+        recorder.onstop = () => {
+            elLive.style.display = "none";
+            elBack.style.display = "block";
 
-        // Na opname automatisch Y-as tonen
-        setAxis('y');
-        
-        setTimeout(updateUI, 1000);
-    };
+            elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+
+            document.getElementById("btnSave").disabled = false;   // <-- HIER
+
+            slider.disabled = false;
+            setAxis('y');
+            setTimeout(updateUI, 1000);
+        };
+
     recorder.start();
     elBack.style.display = "none"; elLive.style.display = "block";
     document.getElementById('btnStart').disabled = true; document.getElementById('btnStop').disabled = false;
