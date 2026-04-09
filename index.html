@@ -269,6 +269,11 @@
 
 <script>
 
+window.onerror = function(msg, url, line, col, error) {
+    alert("JS FOUT: " + msg);
+};
+
+    
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
 
