@@ -670,6 +670,44 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
 
+// ---- BEGIN EXPORT CODE ---
+
+document.getElementById('btnExport').onclick = exportSession;
+
+function exportSession(){
+
+    if(!selectedDisplay.dataset.value){
+        alert("Selecteer eerst een sessie");
+        return;
+    }
+
+    const sessionId = Number(selectedDisplay.dataset.value);
+
+    db.transaction("sessions","readonly")
+    .objectStore("sessions")
+    .get(sessionId).onsuccess = (e)=>{
+
+        const s = e.target.result;
+        if(!s) return;
+
+        // ---- VIDEO EXPORT ----
+        const videoURL = URL.createObjectURL(s.videoBlob);
+        window.open(videoURL);
+
+        // ---- CSV EXPORT ----
+        let csv = "ax,ay,az,gx,gy,gz\n";
+
+        s.sensorData.forEach(d=>{
+            csv += `${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}\n`;
+        });
+
+        const blob = new Blob([csv],{type:"text/csv"});
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+    }
+}    
+    
+// ---- EINDE EXPORT CODE ---
     
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
