@@ -712,42 +712,28 @@ function base64ToBlob(base64){
 
 // -------- EXPORT ALLE SESSIES --------
 
-document.getElementById("btnExport").onclick = async function(){
+// -------- EXPORT TEST --------
+
+document.getElementById("btnExport").onclick = function(){
 
     const tx = db.transaction("sessions","readonly");
     const store = tx.objectStore("sessions");
 
     const sessions = [];
 
-    store.openCursor().onsuccess = async function(e){
+    store.openCursor().onsuccess = function(e){
 
         const cursor = e.target.result;
 
         if(cursor){
 
-            const s = cursor.value;
-
-            const videoBase64 = await blobToBase64(s.videoBlob);
-
-            sessions.push({
-                name: s.name,
-                axis: s.axis,
-                date: s.date,
-                sensorData: s.sensorData,
-                video: videoBase64
-            });
-
+            sessions.push(cursor.value);
             cursor.continue();
 
         } else {
 
-            const backup = {
-                created: new Date(),
-                sessions: sessions
-            };
-
             const blob = new Blob(
-                [JSON.stringify(backup)],
+                [JSON.stringify(sessions,null,2)],
                 {type:"application/json"}
             );
 
@@ -755,13 +741,11 @@ document.getElementById("btnExport").onclick = async function(){
 
             const a = document.createElement("a");
             a.href = url;
-            a.download = "CastAnalyzer_Backup.json";
+            a.download = "cast_test_backup.json";
             a.click();
         }
     }
 };
-
-
 
 // -------- IMPORT SESSIES --------
 
