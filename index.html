@@ -679,12 +679,11 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
 function testDownload(){
 
-const blob = new Blob(["test"], {type:"text/plain"});
+    const blob = new Blob(["test"], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
 
-const a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = "test.txt";
-a.click();
+    window.open(url);
+
 }
     
 function backupSession(session){
