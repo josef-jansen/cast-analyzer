@@ -9,7 +9,16 @@
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
         
         /* Layout verdeling */
-        .controls { min-height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
+        .controls { 
+            height: 145px;
+            padding: 10px;
+            text-align: center;
+            background: #f2f2f7;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+            z-index: 20;
+            overflow: hidden;
+        }
         
         :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
         
