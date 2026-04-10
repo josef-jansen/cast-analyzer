@@ -435,13 +435,20 @@ document.getElementById('btnSave').onclick = () => {
     const name = datumString + " - " + inputNaam;
 
     const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({ 
-        name, 
-        sensorData: data, 
-        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
-        axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
-    });
+    const session = {
+        name,
+        sensorData: data,
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }),
+        axis,
+        date: nu
+    };
+    
+    tx.objectStore("sessions").add(session);
+
+    // automatische backup
+    backupSession(session);
+
+    
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
@@ -668,6 +675,33 @@ speedButtons.forEach(btn => {
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
+
+function backupSession(session){
+
+    // -------- VIDEO --------
+    const videoURL = URL.createObjectURL(session.videoBlob);
+
+    const videoLink = document.createElement("a");
+    videoLink.href = videoURL;
+    videoLink.download = session.name + ".mp4";
+    videoLink.click();
+
+    // -------- CSV SENSOR DATA --------
+    let csv = "ax,ay,az,gx,gy,gz\n";
+
+    session.sensorData.forEach(d => {
+        csv += `${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}\n`;
+    });
+
+    const csvBlob = new Blob([csv], {type:"text/csv"});
+    const csvURL = URL.createObjectURL(csvBlob);
+
+    const csvLink = document.createElement("a");
+    csvLink.href = csvURL;
+    csvLink.download = session.name + "_sensor.csv";
+    csvLink.click();
+}
+
 
     
 window.onclick = (e) => {
