@@ -447,7 +447,9 @@ document.getElementById('btnSave').onclick = () => {
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
         document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
+        alert("Opgeslagen!");
+
+        document.getElementById('btnExport').disabled = false;
     };
 };
 
