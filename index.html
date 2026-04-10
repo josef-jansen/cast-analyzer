@@ -204,6 +204,7 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
+        <button onclick="testDownload()">Test</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -676,6 +677,16 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
 
+function testDownload(){
+
+const blob = new Blob(["test"], {type:"text/plain"});
+
+const a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "test.txt";
+a.click();
+}
+    
 function backupSession(session){
 
     // -------- VIDEO --------
