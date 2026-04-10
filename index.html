@@ -445,10 +445,14 @@ document.getElementById('btnSave').onclick = () => {
     });
     tx.oncomplete = () => { 
         loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!");
 
+        const displayNaam = datumString + " - " + inputNaam;
+        const display = document.getElementById("selectedDisplay");
+
+        display.textContent = displayNaam;
+        display.dataset.value = tx.result;
+
+        alert("Opgeslagen!");
         document.getElementById('btnExport').disabled = false;
     };
 };
