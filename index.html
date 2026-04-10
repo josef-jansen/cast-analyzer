@@ -727,13 +727,21 @@ document.getElementById("btnExport").onclick = function(){
 
         if(cursor){
 
-            sessions.push(cursor.value);
+            const s = cursor.value;
+
+            sessions.push({
+                name: s.name,
+                axis: s.axis,
+                date: s.date,
+                sensorData: s.sensorData
+            });
+
             cursor.continue();
 
         } else {
 
             const blob = new Blob(
-                [JSON.stringify(sessions,null,2)],
+                [JSON.stringify(sessions)],
                 {type:"application/json"}
             );
 
@@ -741,8 +749,10 @@ document.getElementById("btnExport").onclick = function(){
 
             const a = document.createElement("a");
             a.href = url;
-            a.download = "cast_test_backup.json";
+            a.download = "cast_sensor_backup.json";
             a.click();
+
+            alert("Export klaar");
         }
     }
 };
