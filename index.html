@@ -9,16 +9,7 @@
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
         
         /* Layout verdeling */
-        .controls { 
-            height: 145px;
-            padding: 10px;
-            text-align: center;
-            background: #f2f2f7;
-            border-bottom: 1px solid #ddd;
-            position: relative;
-            z-index: 20;
-            overflow: hidden;
-        }
+        .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
         
         :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
         
@@ -214,28 +205,20 @@
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
-        <div class="status-text">
-            Data: <span id="dataCount">0</span> |
-            <span id="dbStatus">DB Ready</span>
-        </div>
+        <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
-        
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        <!-- HIER MOET DE ID STAAN: -->
         <div id="customDropdown" style="width: 80%; position: relative;">
             <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                 -- Worp Selecteren --
             </div>
-            
             <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                <!-- Hier komen de sessies -->
             </div>
-        
         </div>
-        
-            <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">
-                Del
-            </button>
-    
-        </div>
+        <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
+    </div>
 
         <div style="margin-top:10px; line-height: 1;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
@@ -243,7 +226,6 @@
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
         </div>
-    
     </div>
 
         <div class="section">
@@ -453,34 +435,13 @@ document.getElementById('btnSave').onclick = () => {
     const name = datumString + " - " + inputNaam;
 
     const tx = db.transaction("sessions", "readwrite");
-    const session = {
-        name,
-        sensorData: data,
-        videoBlob: new Blob(chunks, { type: 'video/mp4' }),
-        axis,
-        date: nu
-    };
-    
-    tx.objectStore("sessions").add(session);
-
-    tx.oncomplete = () => { 
-        loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
-    };
-};
-    
-document.getElementById('btnExport').onclick = exportSession;
-    
-function exportSession(){
-    alert("Export knop werkt");
-}
-    
-    // automatische backup
-    backupSession(session);
-
-    
+    tx.objectStore("sessions").add({ 
+        name, 
+        sensorData: data, 
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+        axis, 
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+    });
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
@@ -707,33 +668,6 @@ speedButtons.forEach(btn => {
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
-
-function backupSession(session){
-
-    // -------- VIDEO --------
-    const videoURL = URL.createObjectURL(session.videoBlob);
-
-    const videoLink = document.createElement("a");
-    videoLink.href = videoURL;
-    videoLink.download = session.name + ".mp4";
-    videoLink.click();
-
-    // -------- CSV SENSOR DATA --------
-    let csv = "ax,ay,az,gx,gy,gz\n";
-
-    session.sensorData.forEach(d => {
-        csv += `${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}\n`;
-    });
-
-    const csvBlob = new Blob([csv], {type:"text/csv"});
-    const csvURL = URL.createObjectURL(csvBlob);
-
-    const csvLink = document.createElement("a");
-    csvLink.href = csvURL;
-    csvLink.download = session.name + "_sensor.csv";
-    csvLink.click();
-}
-
 
     
 window.onclick = (e) => {
