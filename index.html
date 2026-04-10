@@ -702,11 +702,15 @@ function exportSession(){
             return;
         }
 
-        // VIDEO EXPORT
+        // ---- VIDEO DOWNLOAD ----
         const videoURL = URL.createObjectURL(s.videoBlob);
-        window.open(videoURL,"_blank");
 
-        // CSV EXPORT
+        const vlink = document.createElement("a");
+        vlink.href = videoURL;
+        vlink.download = "cast_video.mp4";
+        vlink.click();
+
+        // ---- CSV DOWNLOAD ----
         let csv = "ax,ay,az,gx,gy,gz\n";
 
         s.sensorData.forEach(d=>{
@@ -714,9 +718,12 @@ function exportSession(){
         });
 
         const blob = new Blob([csv],{type:"text/csv"});
-        const url = URL.createObjectURL(blob);
+        const csvURL = URL.createObjectURL(blob);
 
-        window.open(url,"_blank");
+        const clink = document.createElement("a");
+        clink.href = csvURL;
+        clink.download = "sensor_data.csv";
+        clink.click();
     };
 }
     
