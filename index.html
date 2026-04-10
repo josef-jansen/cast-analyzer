@@ -213,22 +213,29 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-    </div>
         
-        <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
+        <div class="status-text">
+            Data: <span id="dataCount">0</span> |
+            <span id="dbStatus">DB Ready</span>
+        </div>
 
-    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
-        <!-- HIER MOET DE ID STAAN: -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        
         <div id="customDropdown" style="width: 80%; position: relative;">
             <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                 -- Worp Selecteren --
             </div>
+            
             <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <!-- Hier komen de sessies -->
             </div>
+        
         </div>
-        <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
-    </div>
+        
+            <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">
+                Del
+            </button>
+    
+        </div>
 
         <div style="margin-top:10px; line-height: 1;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
@@ -236,6 +243,7 @@
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
         </div>
+    
     </div>
 
         <div class="section">
