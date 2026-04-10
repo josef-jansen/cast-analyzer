@@ -203,8 +203,8 @@
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
+        <button onclick="exportSession()">Export</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button onclick="testDownload()">Test</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -446,6 +446,43 @@ document.getElementById('btnSave').onclick = () => {
     
     tx.objectStore("sessions").add(session);
 
+function exportSession(){
+
+    const sessionId = selectedDisplay.dataset.value;
+
+    if (!sessionId) {
+        alert("Selecteer eerst een worp");
+        return;
+    }
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    store.get(Number(sessionId)).onsuccess = (e) => {
+
+        const s = e.target.result;
+
+        // -------- VIDEO --------
+        const videoURL = URL.createObjectURL(s.videoBlob);
+        window.open(videoURL);
+
+        // -------- CSV --------
+        let csv = "ax,ay,az,gx,gy,gz\n";
+
+        s.sensorData.forEach(d => {
+            csv += `${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}\n`;
+        });
+
+        const csvBlob = new Blob([csv], {type:"text/csv"});
+        const csvURL = URL.createObjectURL(csvBlob);
+
+        setTimeout(() => {
+            window.open(csvURL);
+        }, 800);
+
+    };
+}
+    
     // automatische backup
     backupSession(session);
 
@@ -677,15 +714,6 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
 
-function testDownload(){
-
-    const blob = new Blob(["test"], {type:"text/plain"});
-    const url = URL.createObjectURL(blob);
-
-    window.open(url);
-
-}
-    
 function backupSession(session){
 
     // -------- VIDEO --------
