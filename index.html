@@ -684,25 +684,29 @@ function exportSession(){
 
     alert("Export knop gedrukt");
 
-    if(!selectedDisplay.dataset.value){
-        alert("Selecteer eerst een sessie");
+    const sessionId = Number(selectedDisplay.dataset.value);
+
+    if(!sessionId){
+        alert("Geen sessie geselecteerd");
         return;
     }
 
-    const sessionId = Number(selectedDisplay.dataset.value);
+    const store = db.transaction("sessions","readonly").objectStore("sessions");
 
-    db.transaction("sessions","readonly")
-    .objectStore("sessions")
-    .get(sessionId).onsuccess = (e)=>{
+    store.get(sessionId).onsuccess = (e)=>{
 
         const s = e.target.result;
-        if(!s) return;
 
-        // ---- VIDEO EXPORT ----
+        if(!s){
+            alert("Sessie niet gevonden");
+            return;
+        }
+
+        // VIDEO EXPORT
         const videoURL = URL.createObjectURL(s.videoBlob);
-        window.open(videoURL);
+        window.open(videoURL,"_blank");
 
-        // ---- CSV EXPORT ----
+        // CSV EXPORT
         let csv = "ax,ay,az,gx,gy,gz\n";
 
         s.sensorData.forEach(d=>{
@@ -711,9 +715,10 @@ function exportSession(){
 
         const blob = new Blob([csv],{type:"text/csv"});
         const url = URL.createObjectURL(blob);
-        window.open(url);
-    }
-}    
+
+        window.open(url,"_blank");
+    };
+}
     
 // ---- EINDE EXPORT CODE ---
     
