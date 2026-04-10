@@ -203,7 +203,8 @@
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
-        <button id="btnExport" disabled>Export</button>
+        <button id="btnExport">Export</button>
+        <button id="btnImport">Import</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
@@ -676,59 +677,142 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
 
-// ---- BEGIN EXPORT CODE ---
+// --- EINDE PLAY/SPEED CODE ---
 
-document.getElementById('btnExport').onclick = exportSession;
 
-function exportSession(){
+// -------- HELPER FUNCTIES --------
 
-    alert("Export knop gedrukt");
+// Helper 1: Blob → Base64
+function blobToBase64(blob){
+    return new Promise((resolve)=>{
+        const reader = new FileReader();
+        reader.onloadend = ()=>resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
+}
 
-    const sessionId = Number(selectedDisplay.dataset.value);
+// Helper 2: Base64 → Blob
+function base64ToBlob(base64){
 
-    if(!sessionId){
-        alert("Geen sessie geselecteerd");
-        return;
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
     }
 
-    const store = db.transaction("sessions","readonly").objectStore("sessions");
-
-    store.get(sessionId).onsuccess = (e)=>{
-
-        const s = e.target.result;
-
-        if(!s){
-            alert("Sessie niet gevonden");
-            return;
-        }
-
-        // ---- VIDEO DOWNLOAD ----
-        const videoURL = URL.createObjectURL(s.videoBlob);
-
-        const vlink = document.createElement("a");
-        vlink.href = videoURL;
-        vlink.download = "cast_video.mp4";
-        vlink.click();
-
-        // ---- CSV DOWNLOAD ----
-        let csv = "ax,ay,az,gx,gy,gz\n";
-
-        s.sensorData.forEach(d=>{
-            csv += `${d.ax},${d.ay},${d.az},${d.gx},${d.gy},${d.gz}\n`;
-        });
-
-        const blob = new Blob([csv],{type:"text/csv"});
-        const csvURL = URL.createObjectURL(blob);
-
-        const clink = document.createElement("a");
-        clink.href = csvURL;
-        clink.download = "sensor_data.csv";
-        clink.click();
-    };
+    return new Blob([u8arr],{type:mime});
 }
-    
-// ---- EINDE EXPORT CODE ---
-    
+
+
+
+// -------- EXPORT ALLE SESSIES --------
+
+document.getElementById("btnExport").onclick = async function(){
+
+    const tx = db.transaction("sessions","readonly");
+    const store = tx.objectStore("sessions");
+
+    const sessions = [];
+
+    store.openCursor().onsuccess = async function(e){
+
+        const cursor = e.target.result;
+
+        if(cursor){
+
+            const s = cursor.value;
+
+            const videoBase64 = await blobToBase64(s.videoBlob);
+
+            sessions.push({
+                name: s.name,
+                axis: s.axis,
+                date: s.date,
+                sensorData: s.sensorData,
+                video: videoBase64
+            });
+
+            cursor.continue();
+
+        } else {
+
+            const backup = {
+                created: new Date(),
+                sessions: sessions
+            };
+
+            const blob = new Blob(
+                [JSON.stringify(backup)],
+                {type:"application/json"}
+            );
+
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "cast_analyzer_backup.json";
+            a.click();
+        }
+    }
+};
+
+
+
+// -------- IMPORT SESSIES --------
+
+document.getElementById("btnImport").onclick = function(){
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = function(e){
+
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(){
+
+            const backup = JSON.parse(reader.result);
+
+            const tx = db.transaction("sessions","readwrite");
+            const store = tx.objectStore("sessions");
+
+            backup.sessions.forEach(s=>{
+
+                const videoBlob = base64ToBlob(s.video);
+
+                store.add({
+                    name: s.name,
+                    axis: s.axis,
+                    date: s.date,
+                    sensorData: s.sensorData,
+                    videoBlob: videoBlob
+                });
+
+            });
+
+            tx.oncomplete = ()=>{
+                alert("Import klaar");
+                loadArchiveList();
+            };
+        };
+
+        reader.readAsText(file);
+    };
+
+    input.click();
+};
+
+
+
+// -------- EINDE SCRIPT --------
+
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
