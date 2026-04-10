@@ -203,8 +203,9 @@
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
-        <button onclick="exportSession()">Export</button>
+        <button id="btnExport">Export</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
+    </div>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -446,6 +447,16 @@ document.getElementById('btnSave').onclick = () => {
     
     tx.objectStore("sessions").add(session);
 
+    tx.oncomplete = () => { 
+        loadArchiveList(); 
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
+        alert("Opgeslagen!"); 
+    };
+};
+    
+document.getElementById('btnExport').onclick = exportSession;
+    
 function exportSession(){
     alert("Export knop werkt");
 }
