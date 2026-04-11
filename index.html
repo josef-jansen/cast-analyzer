@@ -435,13 +435,16 @@ document.getElementById('btnSave').onclick = () => {
     const name = datumString + " - " + inputNaam;
 
     const tx = db.transaction("sessions", "readwrite");
+    
     tx.objectStore("sessions").add({ 
         name, 
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+        date: nu,
+        synced: false
     });
+    
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
