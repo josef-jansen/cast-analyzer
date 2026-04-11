@@ -326,24 +326,28 @@ function loadArchiveList() {
 }
 
 
-function selectSession(id, name) {
-    const display = document.getElementById("selectedDisplay");
-    display.textContent = name;
-    display.dataset.value = id;
+db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+    const s = e.target.result;
+    if (!s) return;
 
-    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
-        const s = e.target.result;
-        if (!s) return; // Veiligheidscheck
-        data = s.sensorData;
-        elBack.src = URL.createObjectURL(s.videoBlob);
-        elBack.pause();
-        axis = s.axis || 'x';
-        elLive.style.display = "none"; 
-        elBack.style.display = "block";
-        slider.disabled = false;
-        setTimeout(updateUI, 500);
-    };
-}
+    data = s.sensorData;
+    elBack.src = URL.createObjectURL(s.videoBlob);
+    elBack.pause();
+    axis = s.axis || 'x';
+    elLive.style.display = "none"; 
+    elBack.style.display = "block";
+    slider.disabled = false;
+    setTimeout(updateUI, 500);
+
+    // 👉 NIEUW
+    if (s.sensorData && s.sensorData.length > 0) {
+        const json = JSON.stringify(s.sensorData);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        window.open(url, "_blank");
+    }
+};
 
 
 // Zorg dat de lijst opent als je op de display klikt
