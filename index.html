@@ -706,12 +706,7 @@ document.getElementById("btnSync").onclick = () => {
 
                 // 👉 JSON download
                 const jsonUrl = URL.createObjectURL(jsonBlob);
-                const a = document.createElement("a");
-                a.href = jsonUrl;
-                a.download = baseName + ".json";
-                document.body.appendChild(a);   // 👈 belangrijk
-                a.click();
-                document.body.removeChild(a);   // 👈 opruimen
+                window.open(jsonUrl, "_blank");
                 }
 
             cursor.continue();
