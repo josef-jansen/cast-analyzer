@@ -685,31 +685,24 @@ window.onclick = (e) => {
     
 document.getElementById("btnSync").onclick = () => {
 
+    const id = selectedDisplay.dataset.value;
+
+    if (!id) {
+        alert("Selecteer eerst een sessie");
+        return;
+    }
+
     const tx = db.transaction("sessions", "readonly");
     const store = tx.objectStore("sessions");
 
-    const request = store.getAll();
+    const request = store.get(Number(id));
 
-    request.onsuccess = function(e) {
+    request.onsuccess = (e) => {
 
-        const sessions = e.target.result;
-
-        if (!sessions || sessions.length === 0) {
-            alert("Geen data");
-            return;
-        }
-
-        // 👉 pak eerste UNSYNCED
-        let s = null;
-        for (let i = 0; i < sessions.length; i++) {
-            if (!sessions[i].synced) {
-                s = sessions[i];
-                break;
-            }
-        }
+        const s = e.target.result;
 
         if (!s) {
-            alert("Alles al gesynced");
+            alert("Geen data");
             return;
         }
 
@@ -718,8 +711,8 @@ document.getElementById("btnSync").onclick = () => {
 
         const url = URL.createObjectURL(blob);
 
-        // 👉 dit MOET direct gebeuren
-        window.location.href = url;
+        // 👉 DIRECT vanuit klik
+        window.open(url, "_blank");
     };
 };
 
