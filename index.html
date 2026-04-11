@@ -724,7 +724,7 @@ document.getElementById("btnTestUpload").onclick = async () => {
         alert("Upload (json + video): " + res.status);
 
         } catch (err) {
-            alert("Upload fout");
+            alert("Upload fout: " + err.message);
         }
     };
 };
