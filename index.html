@@ -683,31 +683,44 @@ window.onclick = (e) => {
 
 // ---- BEGIN SYNC CODE ----
     
-document.getElementById("btnSync").onclick = async () => {
+document.getElementById("btnSync").onclick = () => {
 
     const tx = db.transaction("sessions", "readonly");
     const store = tx.objectStore("sessions");
 
     const request = store.getAll();
 
-    const sessions = await new Promise(resolve => {
-        request.onsuccess = e => resolve(e.target.result);
-    });
+    request.onsuccess = function(e) {
 
-    if (!sessions || sessions.length === 0) {
-        alert("Geen data");
-        return;
-    }
+        const sessions = e.target.result;
 
-    const s = sessions[0];
+        if (!sessions || sessions.length === 0) {
+            alert("Geen data");
+            return;
+        }
 
-    const json = JSON.stringify(s.sensorData, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+        // 👉 pak eerste UNSYNCED
+        let s = null;
+        for (let i = 0; i < sessions.length; i++) {
+            if (!sessions[i].synced) {
+                s = sessions[i];
+                break;
+            }
+        }
 
-    const url = URL.createObjectURL(blob);
+        if (!s) {
+            alert("Alles al gesynced");
+            return;
+        }
 
-    // 👉 DIRECT openen
-    window.open(url, "_blank");
+        const json = JSON.stringify(s.sensorData);
+        const blob = new Blob([json], { type: "application/json" });
+
+        const url = URL.createObjectURL(blob);
+
+        // 👉 dit MOET direct gebeuren
+        window.location.href = url;
+    };
 };
 
 // ---- EINDE SYNC CODE ----
