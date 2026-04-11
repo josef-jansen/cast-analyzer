@@ -683,29 +683,31 @@ window.onclick = (e) => {
 
 // ---- BEGIN SYNC CODE ----
     
-document.getElementById("btnSync").onclick = () => {
+document.getElementById("btnSync").onclick = async () => {
 
     const tx = db.transaction("sessions", "readonly");
     const store = tx.objectStore("sessions");
 
-    store.getAll().onsuccess = (e) => {
+    const request = store.getAll();
 
-        const sessions = e.target.result;
+    const sessions = await new Promise(resolve => {
+        request.onsuccess = e => resolve(e.target.result);
+    });
 
-        if (sessions.length === 0) {
-            alert("Geen data");
-            return;
-        }
+    if (!sessions || sessions.length === 0) {
+        alert("Geen data");
+        return;
+    }
 
-        const s = sessions[0]; // 👉 pak eerste
+    const s = sessions[0];
 
-        const json = JSON.stringify(s.sensorData, null, 2);
-        const blob = new Blob([json], { type: "application/json" });
+    const json = JSON.stringify(s.sensorData, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
 
-        const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-        window.location.href = url; // 👈 dit is de truc
-    };
+    // 👉 DIRECT openen
+    window.open(url, "_blank");
 };
 
 // ---- EINDE SYNC CODE ----
