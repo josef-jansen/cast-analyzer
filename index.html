@@ -299,7 +299,8 @@ function loadArchiveList() {
             
             // WE ZETTEN DE DATA NU HARD IN HET ELEMENT
             const sid = cursor.value.id;
-            const sname = cursor.value.name;
+            const s = cursor.value;
+            const sname = s.name + (s.synced ? "" : " •");
 
             item.style.padding = "12px 10px";
             item.style.borderBottom = "1px solid #eee";
