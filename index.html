@@ -684,38 +684,7 @@ window.onclick = (e) => {
 // ---- BEGIN SYNC CODE ----
     
 document.getElementById("btnSync").onclick = () => {
-
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-
-    store.getAll().onsuccess = (e) => {
-
-        const sessions = e.target.result;
-
-        for (let s of sessions) {
-
-            if (!s.synced) {
-
-                const json = JSON.stringify(s.sensorData);
-                const baseName = s.name.replace(/[: ]/g, "_");
-
-                const jsonBlob = new Blob([json], { type: "application/json" });
-
-                const jsonUrl = URL.createObjectURL(jsonBlob);
-
-                // 👉 DIRECT actie
-                const a = document.createElement("a");
-                a.href = jsonUrl;
-                a.download = baseName + ".json";
-
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                break; // 👈 alleen 1 bestand testen!
-            }
-        }
-    };
+    alert("klik werkt");
 };
 
 // ---- EINDE SYNC CODE ----
