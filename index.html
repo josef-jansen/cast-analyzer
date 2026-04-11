@@ -204,7 +204,7 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button id="btnExport" style="background:#007aff;">Export</button>
+        <button id="btnTestUpload" style="background:#ff9500;">Test Upload</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -677,45 +677,26 @@ window.onclick = (e) => {
     }
 };
 
-// ---- BEGIN EXPORT FUNCTIE ----
+// ---- BEGIN TEST FUNCTIE ----
 
-document.getElementById("btnExport").onclick = () => {
+document.getElementById("btnTestUpload").onclick = async () => {
 
-    const id = selectedDisplay.dataset.value;
+    try {
+        const res = await fetch("https://httpbin.org/post", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ test: "werkt" })
+        });
 
-    if (!id) {
-        alert("Selecteer eerst een sessie");
-        return;
+        alert("Upload test: " + res.status);
+    } catch (e) {
+        alert("Fout: geen internet?");
     }
-
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-
-    store.get(Number(id)).onsuccess = (e) => {
-
-        const s = e.target.result;
-
-        if (!s) {
-            alert("Geen data");
-            return;
-        }
-
-        const json = JSON.stringify(s.sensorData);
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        // 👉 echte klik context
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "session.json";
-
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
 };
     
-// ---- EINDE EXPORT FUNCTIE
+// ---- EINDE TEST FUNCTIE
     
     
 </script>
