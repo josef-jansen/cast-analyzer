@@ -204,6 +204,7 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
+        <button id="btnExport" style="background:#007aff;">Export</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -676,14 +677,14 @@ window.onclick = (e) => {
     }
 };
 
-// ---- begin test ----
+// ---- BEGIN EXPORT FUNCTIE ----
 
-document.body.addEventListener("dblclick", () => {
+document.getElementById("btnExport").onclick = () => {
 
     const id = selectedDisplay.dataset.value;
 
     if (!id) {
-        alert("Geen sessie geselecteerd");
+        alert("Selecteer eerst een sessie");
         return;
     }
 
@@ -691,10 +692,11 @@ document.body.addEventListener("dblclick", () => {
     const store = tx.objectStore("sessions");
 
     store.get(Number(id)).onsuccess = (e) => {
+
         const s = e.target.result;
 
         if (!s) {
-            alert("Geen data gevonden");
+            alert("Geen data");
             return;
         }
 
@@ -702,22 +704,18 @@ document.body.addEventListener("dblclick", () => {
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
-        // 👉 echte link in DOM
+        // 👉 echte klik context
         const a = document.createElement("a");
         a.href = url;
-        a.textContent = "Download JSON";
-        a.style.display = "block";
-        a.style.padding = "20px";
-        a.style.background = "#007aff";
-        a.style.color = "#fff";
-        a.style.textAlign = "center";
-        a.style.margin = "20px";
+        a.download = "session.json";
 
         document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
-});
+};
     
-// ---- eind test ----
+// ---- EINDE EXPORT FUNCTIE
     
     
 </script>
