@@ -677,7 +677,7 @@ window.onclick = (e) => {
     }
 };
 
-// ---- BEGIN TEST FUNCTIE ----
+// ---- BEGIN UPLOAD FUNCTIE ----
 
 document.getElementById("btnTestUpload").onclick = async () => {
 
@@ -700,19 +700,28 @@ document.getElementById("btnTestUpload").onclick = async () => {
             return;
         }
 
+        const formData = new FormData();
+
+        // JSON bestand
+        const jsonBlob = new Blob(
+            [JSON.stringify(s.sensorData)],
+            { type: "application/json" }
+        );
+
+        formData.append("json", jsonBlob, "data.json");
+
+        // VIDEO bestand
+        formData.append("video", s.videoBlob, "video.mp4");
+
+        formData.append("name", s.name);
+
         try {
             const res = await fetch("https://httpbin.org/post", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    name: s.name,
-                    data: s.sensorData
-                })
+                body: formData
             });
 
-            alert("Upload data: " + res.status);
+            alert("Upload (json + video): " + res.status);
 
         } catch (err) {
             alert("Upload fout");
@@ -720,7 +729,7 @@ document.getElementById("btnTestUpload").onclick = async () => {
     };
 };
     
-// ---- EINDE TEST FUNCTIE
+// ---- EINDE UPLOAD FUNCTIE
     
     
 </script>
