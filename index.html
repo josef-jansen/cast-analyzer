@@ -684,7 +684,15 @@ window.onclick = (e) => {
 // ---- BEGIN SYNC CODE ----
     
 document.getElementById("btnSync").onclick = () => {
-    alert("klik werkt");
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    store.getAll().onsuccess = (e) => {
+        const sessions = e.target.result;
+
+        alert("Aantal sessions: " + sessions.length);
+    };
 };
 
 // ---- EINDE SYNC CODE ----
