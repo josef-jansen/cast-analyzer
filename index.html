@@ -204,7 +204,6 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button id="btnTestUpload" style="background:#ff9500;">Test Upload</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -676,61 +675,6 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-// ---- BEGIN UPLOAD FUNCTIE ----
-
-document.getElementById("btnTestUpload").onclick = async () => {
-
-    const id = selectedDisplay.dataset.value;
-
-    if (!id) {
-        alert("Selecteer eerst een sessie");
-        return;
-    }
-
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-
-    store.get(Number(id)).onsuccess = async (e) => {
-
-        const s = e.target.result;
-
-        if (!s) {
-            alert("Geen data");
-            return;
-        }
-
-        const formData = new FormData();
-
-        // JSON bestand
-        const jsonBlob = new Blob(
-            [JSON.stringify(s.sensorData)],
-            { type: "application/json" }
-        );
-
-        formData.append("json", jsonBlob, "data.json");
-
-        // VIDEO bestand
-        formData.append("video", s.videoBlob, "video.mp4");
-
-        formData.append("name", s.name);
-
-        try {
-        const res = await fetch("http://192.168.178.33:3000/upload", {
-            method: "POST",
-            body: formData
-        });
-
-        alert("Upload (json + video): " + res.status);
-
-        } catch (err) {
-            alert("Upload fout: " + err.message);
-        }
-    };
-};
-    
-// ---- EINDE UPLOAD FUNCTIE
-    
     
 </script>
 </body>
