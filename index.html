@@ -698,7 +698,11 @@ document.body.addEventListener("dblclick", () => {
             return;
         }
 
-        alert("Data punten: " + s.sensorData.length);
+        const json = JSON.stringify(s.sensorData);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        window.location.href = url;
     };
 });
     
