@@ -704,14 +704,17 @@ document.getElementById("btnSync").onclick = () => {
                 const jsonBlob = new Blob([json], { type: "application/json" });
                 const videoBlob = s.videoBlob;
 
-                output += baseName + "\n";
-                output += "JSON: " + jsonBlob.size + " bytes\n";
-                output += "VIDEO: " + videoBlob.size + " bytes\n\n";
-            }
+                // 👉 JSON download
+                const jsonUrl = URL.createObjectURL(jsonBlob);
+                const a = document.createElement("a");
+                a.href = jsonUrl;
+                a.download = baseName + ".json";
+                a.click();
+                }
 
             cursor.continue();
         } else {
-            alert(output || "Geen data gevonden");
+            alert("Export klaar");
         }
     };
 };
