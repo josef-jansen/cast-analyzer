@@ -682,7 +682,27 @@ window.onclick = (e) => {
 };
 
 document.getElementById("btnSync").onclick = () => {
-    alert("Sync gestart (nog zonder upload)");
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    let count = 0;
+
+    store.openCursor().onsuccess = (e) => {
+        const cursor = e.target.result;
+
+        if (cursor) {
+            const s = cursor.value;
+
+            if (!s.synced) {
+                count++;
+            }
+
+            cursor.continue();
+        } else {
+            alert("Nog te syncen sessies: " + count);
+        }
+    };
 };
     
 </script>
