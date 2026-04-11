@@ -688,6 +688,8 @@ document.getElementById("btnSync").onclick = () => {
     const tx = db.transaction("sessions", "readonly");
     const store = tx.objectStore("sessions");
 
+    let output = "";
+
     store.openCursor().onsuccess = (e) => {
         const cursor = e.target.result;
 
@@ -696,22 +698,20 @@ document.getElementById("btnSync").onclick = () => {
 
             if (!s.synced) {
 
-                // 👉 JSON maken
                 const json = JSON.stringify(s.sensorData);
-
-                // 👉 bestand namen
                 const baseName = s.name.replace(/[: ]/g, "_");
 
                 const jsonBlob = new Blob([json], { type: "application/json" });
                 const videoBlob = s.videoBlob;
 
-                // 👉 test output
-                console.log("Klaar voor sync:", baseName);
-                console.log("JSON size:", jsonBlob.size);
-                console.log("Video size:", videoBlob.size);
+                output += baseName + "\n";
+                output += "JSON: " + jsonBlob.size + " bytes\n";
+                output += "VIDEO: " + videoBlob.size + " bytes\n\n";
             }
 
             cursor.continue();
+        } else {
+            alert(output || "Geen data gevonden");
         }
     };
 };
