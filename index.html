@@ -340,8 +340,6 @@ db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).o
     setTimeout(updateUI, 500);
 
     // 👉 NIEUW
-    alert("export trigger");
-
     if (s.sensorData && s.sensorData.length > 0) {
         const json = JSON.stringify(s.sensorData);
         const blob = new Blob([json], { type: "application/json" });
