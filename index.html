@@ -702,7 +702,18 @@ document.body.addEventListener("dblclick", () => {
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
-        window.location.href = url;
+        // 👉 echte link in DOM
+        const a = document.createElement("a");
+        a.href = url;
+        a.textContent = "Download JSON";
+        a.style.display = "block";
+        a.style.padding = "20px";
+        a.style.background = "#007aff";
+        a.style.color = "#fff";
+        a.style.textAlign = "center";
+        a.style.margin = "20px";
+
+        document.body.appendChild(a);
     };
 });
     
