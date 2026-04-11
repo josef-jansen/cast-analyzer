@@ -716,7 +716,7 @@ document.getElementById("btnTestUpload").onclick = async () => {
         formData.append("name", s.name);
 
         try {
-            const res = await fetch("https://httpbin.org/post", {
+            fetch("http://192.168.178.33:3000/upload", {
                 method: "POST",
                 body: formData
             });
