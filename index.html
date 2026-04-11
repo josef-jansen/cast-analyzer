@@ -681,19 +681,43 @@ window.onclick = (e) => {
 
 document.getElementById("btnTestUpload").onclick = async () => {
 
-    try {
-        const res = await fetch("https://httpbin.org/post", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ test: "werkt" })
-        });
+    const id = selectedDisplay.dataset.value;
 
-        alert("Upload test: " + res.status);
-    } catch (e) {
-        alert("Fout: geen internet?");
+    if (!id) {
+        alert("Selecteer eerst een sessie");
+        return;
     }
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    store.get(Number(id)).onsuccess = async (e) => {
+
+        const s = e.target.result;
+
+        if (!s) {
+            alert("Geen data");
+            return;
+        }
+
+        try {
+            const res = await fetch("https://httpbin.org/post", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: s.name,
+                    data: s.sensorData
+                })
+            });
+
+            alert("Upload data: " + res.status);
+
+        } catch (err) {
+            alert("Upload fout");
+        }
+    };
 };
     
 // ---- EINDE TEST FUNCTIE
