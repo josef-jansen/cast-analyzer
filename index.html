@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -204,7 +204,6 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button id="btnSync" style="background:#007aff;">Sync</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -300,8 +299,7 @@ function loadArchiveList() {
             
             // WE ZETTEN DE DATA NU HARD IN HET ELEMENT
             const sid = cursor.value.id;
-            const s = cursor.value;
-            const sname = s.name + (s.synced ? "" : " •");
+            const sname = cursor.value.name;
 
             item.style.padding = "12px 10px";
             item.style.borderBottom = "1px solid #eee";
@@ -326,28 +324,24 @@ function loadArchiveList() {
 }
 
 
-db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
-    const s = e.target.result;
-    if (!s) return;
+function selectSession(id, name) {
+    const display = document.getElementById("selectedDisplay");
+    display.textContent = name;
+    display.dataset.value = id;
 
-    data = s.sensorData;
-    elBack.src = URL.createObjectURL(s.videoBlob);
-    elBack.pause();
-    axis = s.axis || 'x';
-    elLive.style.display = "none"; 
-    elBack.style.display = "block";
-    slider.disabled = false;
-    setTimeout(updateUI, 500);
-
-    // 👉 NIEUW
-    if (s.sensorData && s.sensorData.length > 0) {
-        const json = JSON.stringify(s.sensorData);
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        window.open(url, "_blank");
-    }
-};
+    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+        const s = e.target.result;
+        if (!s) return; // Veiligheidscheck
+        data = s.sensorData;
+        elBack.src = URL.createObjectURL(s.videoBlob);
+        elBack.pause();
+        axis = s.axis || 'x';
+        elLive.style.display = "none"; 
+        elBack.style.display = "block";
+        slider.disabled = false;
+        setTimeout(updateUI, 500);
+    };
+}
 
 
 // Zorg dat de lijst opent als je op de display klikt
@@ -441,16 +435,13 @@ document.getElementById('btnSave').onclick = () => {
     const name = datumString + " - " + inputNaam;
 
     const tx = db.transaction("sessions", "readwrite");
-    
     tx.objectStore("sessions").add({ 
         name, 
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu,
-        synced: false
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
-    
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
@@ -684,43 +675,6 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-// ---- BEGIN SYNC CODE ----
-    
-document.getElementById("btnSync").onclick = () => {
-
-    const id = selectedDisplay.dataset.value;
-
-    if (!id) {
-        alert("Selecteer eerst een sessie");
-        return;
-    }
-
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-
-    const request = store.get(Number(id));
-
-    request.onsuccess = (e) => {
-
-        const s = e.target.result;
-
-        if (!s) {
-            alert("Geen data");
-            return;
-        }
-
-        const json = JSON.stringify(s.sensorData);
-        const blob = new Blob([json], { type: "application/json" });
-
-        const url = URL.createObjectURL(blob);
-
-        // 👉 DIRECT vanuit klik
-        window.open(url, "_blank");
-    };
-};
-
-// ---- EINDE SYNC CODE ----
     
 </script>
 </body>
