@@ -675,6 +675,35 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
+
+// ---- begin test ----
+
+document.body.addEventListener("dblclick", () => {
+
+    const id = selectedDisplay.dataset.value;
+
+    if (!id) {
+        alert("Geen sessie geselecteerd");
+        return;
+    }
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    store.get(Number(id)).onsuccess = (e) => {
+        const s = e.target.result;
+
+        if (!s) {
+            alert("Geen data gevonden");
+            return;
+        }
+
+        alert("Data punten: " + s.sensorData.length);
+    };
+});
+    
+// ---- eind test ----
+    
     
 </script>
 </body>
