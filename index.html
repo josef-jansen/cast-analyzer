@@ -686,21 +686,49 @@ window.onclick = (e) => {
     }
 };
 
-// ---------------------------------------------------------
-// Stap 2 — Lege ZIP-functie (nog geen ZIP-logica)
-// ---------------------------------------------------------
 async function exportSessionAsZip(name, data, videoBlob, axis, date) {
-    // Deze functie blijft voorlopig leeg.
-    // In stap 3 voegen we JSZip toe.
-    // In stap 4 vullen we de ZIP.
-    // In stap 5 genereren we de ZIP.
-    // In stap 6 openen we de iOS Files-dialoog.
-
     console.log("exportSessionAsZip() aangeroepen voor:", name);
-    // Test of JSZip beschikbaar is (zichtbaar op iPad)
+
+    // Debug zichtbaar op iPad
     document.getElementById("debug").textContent =
         "JSZip geladen: " + (typeof JSZip !== "undefined");
+
+    // ---------------------------------------------------------
+    // Stap 4a — ZIP-object maken
+    // ---------------------------------------------------------
+    const zip = new JSZip();
+
+    // ---------------------------------------------------------
+    // Stap 4b — Metadata toevoegen
+    // ---------------------------------------------------------
+    const meta = {
+        name,
+        axis,
+        date: date.toISOString(),
+        samples: data.length
+    };
+    zip.file("metadata.json", JSON.stringify(meta, null, 2));
+
+    // ---------------------------------------------------------
+    // Stap 4c — Sensor-data toevoegen
+    // ---------------------------------------------------------
+    zip.file("sensorData.json", JSON.stringify(data));
+
+    // ---------------------------------------------------------
+    // Stap 4d — Video toevoegen
+    // ---------------------------------------------------------
+    zip.file("video.mp4", videoBlob);
+
+    // ---------------------------------------------------------
+    // Stap 5 — ZIP genereren als Blob (nog niet opslaan)
+    // ---------------------------------------------------------
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Debug zichtbaar op iPad
+    document.getElementById("debug").textContent =
+        "ZIP gegenereerd (" + Math.round(zipBlob.size / 1024) + " KB)";
 }
+
     
 </script>
 </body>
