@@ -693,14 +693,10 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
     document.getElementById("debug").textContent =
         "JSZip geladen: " + (typeof JSZip !== "undefined");
 
-    // ---------------------------------------------------------
     // Stap 4a — ZIP-object maken
-    // ---------------------------------------------------------
     const zip = new JSZip();
 
-    // ---------------------------------------------------------
     // Stap 4b — Metadata toevoegen
-    // ---------------------------------------------------------
     const meta = {
         name,
         axis,
@@ -709,47 +705,37 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
     };
     zip.file("metadata.json", JSON.stringify(meta, null, 2));
 
-    // ---------------------------------------------------------
     // Stap 4c — Sensor-data toevoegen
-    // ---------------------------------------------------------
     zip.file("sensorData.json", JSON.stringify(data));
 
-    // ---------------------------------------------------------
     // Stap 4d — Video toevoegen
-    // ---------------------------------------------------------
     zip.file("video.mp4", videoBlob);
 
-    // ---------------------------------------------------------
-    // Stap 5 — ZIP genereren als Blob (nog niet opslaan)
-    // ---------------------------------------------------------
+    // Stap 5 — ZIP genereren als Blob
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // ---------------------------------------------------------
-    // Stap 6 — iOS Files-dialoog openen
-    // ---------------------------------------------------------
-    try {
-        const handle = await window.showSaveFilePicker({
-            suggestedName: name + ".zip",
-            types: [{
-                description: "ZIP-bestand",
-                accept: { "application/zip": [".zip"] }
-            }]
-        });
-
-        const writable = await handle.createWritable();
-        await writable.write(zipBlob);
-        await writable.close();
-
-        document.getElementById("debug").textContent =
-            "ZIP opgeslagen via Files-dialoog";
-    } catch (err) {
-        document.getElementById("debug").textContent =
-            "Opslaan geannuleerd of fout: " + err;
-    }
-    
     // Debug zichtbaar op iPad
     document.getElementById("debug").textContent =
         "ZIP gegenereerd (" + Math.round(zipBlob.size / 1024) + " KB)";
+
+    // ---------------------------------------------------------
+    // Stap 6 — ZIP opslaan via download-link (Bluefy compatible)
+    // ---------------------------------------------------------
+    const url = URL.createObjectURL(zipBlob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name + ".zip";   // Bestandsnaam
+    a.style.display = "none";
+
+    document.body.appendChild(a);
+    a.click();                    // Automatische klik → Files-dialoog opent
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+
+    document.getElementById("debug").textContent =
+        "ZIP download gestart (Bluefy)";
 }
 
     
