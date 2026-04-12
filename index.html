@@ -204,8 +204,10 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        
+
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
+
+        <div id="debug" style="font-size:12px; color:#555; margin-top:4px;"></div>
 
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
         <!-- HIER MOET DE ID STAAN: -->
@@ -448,9 +450,11 @@ document.getElementById('btnSave').onclick = () => {
         document.getElementById("selectedDisplay").textContent = displayNaam;
         alert("Opgeslagen!");
 
-        // 🔹 ZIP-export startpunt (hook)
-        console.log("ZIP-export startpunt bereikt voor:", name);
+        // 🔹 ZIP-export startpunt (zichtbaar op iPad)
+        document.getElementById("debug").textContent =
+            "ZIP-export startpunt bereikt voor: " + name;
     };
+
 
 
 };
