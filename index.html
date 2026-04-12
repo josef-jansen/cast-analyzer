@@ -689,17 +689,12 @@ if (axis !== 'xyz') {
     ctx.lineWidth = 1.5 * dpr; 
     ctx.lineJoin = "round";
     
-    const lastT = session.sensor[session.sensor.length - 1]?.t || 1;
-
     points.forEach((p, i) => {
-
-        const normT = session.sensor[i]?.t / lastT;
-
-        const x = pL + normT * gW;
+        const x = pL + (i / (points.length - 1)) * gW;
         const y = center - (p * scaleY);
 
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });;
+    });
     
     ctx.stroke();
     if (progress > 0) {
