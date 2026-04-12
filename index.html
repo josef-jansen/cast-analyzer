@@ -446,8 +446,13 @@ document.getElementById('btnSave').onclick = () => {
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
         document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
+        alert("Opgeslagen!");
+
+        // 🔹 ZIP-export startpunt (hook)
+        console.log("ZIP-export startpunt bereikt voor:", name);
     };
+
+
 };
 
 document.getElementById('btnReset').onclick = async () => {
