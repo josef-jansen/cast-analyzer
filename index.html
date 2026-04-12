@@ -719,24 +719,50 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
         "ZIP gegenereerd (" + Math.round(zipBlob.size / 1024) + " KB)";
 
     // ---------------------------------------------------------
-    // Stap 6 — ZIP opslaan via download-link (Bluefy compatible)
+    // Stap 6 — ECHTE download-knop tonen (Bluefy compatible)
     // ---------------------------------------------------------
-    const url = URL.createObjectURL(zipBlob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name + ".zip";   // Bestandsnaam
-    a.style.display = "none";
+    // Verwijder oude knop als die bestaat
+    const old = document.getElementById("realDownloadButton");
+    if (old) old.remove();
 
-    document.body.appendChild(a);
-    a.click();                    // Automatische klik → Files-dialoog opent
-    document.body.removeChild(a);
+    // Maak een ECHTE knop
+    const btn = document.createElement("button");
+    btn.id = "realDownloadButton";
+    btn.textContent = "Download ZIP-bestand";
+    btn.style.fontSize = "20px";
+    btn.style.padding = "14px 20px";
+    btn.style.marginTop = "20px";
+    btn.style.display = "block";
+    btn.style.width = "100%";
+    btn.style.background = "#007AFF";
+    btn.style.color = "white";
+    btn.style.border = "none";
+    btn.style.borderRadius = "8px";
 
-    URL.revokeObjectURL(url);
+    // Voeg hem toe ONDERAAN de pagina
+    document.body.appendChild(btn);
 
-    document.getElementById("debug").textContent =
-        "ZIP download gestart (Bluefy)";
+    // ECHTE user gesture → download werkt
+    btn.addEventListener("click", () => {
+        const url = URL.createObjectURL(zipBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name + ".zip";
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+
+        document.getElementById("debug").textContent =
+            "Download gestart — kies locatie in Files";
+    });
 }
+
     
 </script>
 </body>
