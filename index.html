@@ -195,6 +195,7 @@
         }
        
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -696,6 +697,9 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
     // In stap 6 openen we de iOS Files-dialoog.
 
     console.log("exportSessionAsZip() aangeroepen voor:", name);
+    // Test of JSZip beschikbaar is (zichtbaar op iPad)
+    document.getElementById("debug").textContent =
+        "JSZip geladen: " + (typeof JSZip !== "undefined");
 }
     
 </script>
