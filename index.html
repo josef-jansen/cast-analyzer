@@ -453,9 +453,10 @@ document.getElementById('btnSave').onclick = () => {
         // 🔹 ZIP-export startpunt (zichtbaar op iPad)
         document.getElementById("debug").textContent =
             "ZIP-export startpunt bereikt voor: " + name;
+
+        // 🔹 Stap 2: lege ZIP-functie aanroepen
+        exportSessionAsZip(name, data, new Blob(chunks, { type: 'video/mp4' }), axis, nu);
     };
-
-
 
 };
 
@@ -677,13 +678,25 @@ speedButtons.forEach(btn => {
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
-
     
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
     }
 };
+
+// ---------------------------------------------------------
+// Stap 2 — Lege ZIP-functie (nog geen ZIP-logica)
+// ---------------------------------------------------------
+async function exportSessionAsZip(name, data, videoBlob, axis, date) {
+    // Deze functie blijft voorlopig leeg.
+    // In stap 3 voegen we JSZip toe.
+    // In stap 4 vullen we de ZIP.
+    // In stap 5 genereren we de ZIP.
+    // In stap 6 openen we de iOS Files-dialoog.
+
+    console.log("exportSessionAsZip() aangeroepen voor:", name);
+}
     
 </script>
 </body>
