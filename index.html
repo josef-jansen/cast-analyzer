@@ -724,6 +724,29 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
     // ---------------------------------------------------------
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
+    // ---------------------------------------------------------
+    // Stap 6 — iOS Files-dialoog openen
+    // ---------------------------------------------------------
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: name + ".zip",
+            types: [{
+                description: "ZIP-bestand",
+                accept: { "application/zip": [".zip"] }
+            }]
+        });
+
+        const writable = await handle.createWritable();
+        await writable.write(zipBlob);
+        await writable.close();
+
+        document.getElementById("debug").textContent =
+            "ZIP opgeslagen via Files-dialoog";
+    } catch (err) {
+        document.getElementById("debug").textContent =
+            "Opslaan geannuleerd of fout: " + err;
+    }
+    
     // Debug zichtbaar op iPad
     document.getElementById("debug").textContent =
         "ZIP gegenereerd (" + Math.round(zipBlob.size / 1024) + " KB)";
