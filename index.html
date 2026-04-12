@@ -205,6 +205,7 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
+        <button id="btnDownloadZip" disabled style="background:#34C759;">Download ZIP</button>
 
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -687,16 +688,10 @@ window.onclick = (e) => {
 };
 
 async function exportSessionAsZip(name, data, videoBlob, axis, date) {
-    console.log("exportSessionAsZip() aangeroepen voor:", name);
 
-    // Debug zichtbaar op iPad
-    document.getElementById("debug").textContent =
-        "JSZip geladen: " + (typeof JSZip !== "undefined");
-
-    // Stap 4a — ZIP-object maken
+    // ZIP maken
     const zip = new JSZip();
 
-    // Stap 4b — Metadata toevoegen
     const meta = {
         name,
         axis,
@@ -704,64 +699,35 @@ async function exportSessionAsZip(name, data, videoBlob, axis, date) {
         samples: data.length
     };
     zip.file("metadata.json", JSON.stringify(meta, null, 2));
-
-    // Stap 4c — Sensor-data toevoegen
     zip.file("sensorData.json", JSON.stringify(data));
-
-    // Stap 4d — Video toevoegen
     zip.file("video.mp4", videoBlob);
 
-    // Stap 5 — ZIP genereren als Blob
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // Debug zichtbaar op iPad
     document.getElementById("debug").textContent =
         "ZIP gegenereerd (" + Math.round(zipBlob.size / 1024) + " KB)";
 
-    // ---------------------------------------------------------
-    // Stap 6 — ECHTE download-knop tonen (Bluefy compatible)
-    // ---------------------------------------------------------
+    // --- DOWNLOAD KNOP ACTIVEREN ---
 
-    // Verwijder oude knop als die bestaat
-    const old = document.getElementById("realDownloadButton");
-    if (old) old.remove();
+    const btn = document.getElementById("btnDownloadZip");
+    btn.disabled = false;   // knop wordt klikbaar
 
-    // Maak een ECHTE knop
-    const btn = document.createElement("button");
-    btn.id = "realDownloadButton";
-    btn.textContent = "Download ZIP-bestand";
-    btn.style.fontSize = "20px";
-    btn.style.padding = "14px 20px";
-    btn.style.marginTop = "20px";
-    btn.style.display = "block";
-    btn.style.width = "100%";
-    btn.style.background = "#007AFF";
-    btn.style.color = "white";
-    btn.style.border = "none";
-    btn.style.borderRadius = "8px";
-
-    // Voeg hem toe ONDERAAN de pagina
-    document.body.appendChild(btn);
-
-    // ECHTE user gesture → download werkt
-    btn.addEventListener("click", () => {
+    // Event handler instellen
+    btn.onclick = () => {
         const url = URL.createObjectURL(zipBlob);
 
         const a = document.createElement("a");
         a.href = url;
         a.download = name + ".zip";
-        a.style.display = "none";
-
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
 
         URL.revokeObjectURL(url);
 
         document.getElementById("debug").textContent =
             "Download gestart — kies locatie in Files";
-    });
+    };
 }
+
 
     
 </script>
