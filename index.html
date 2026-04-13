@@ -332,18 +332,24 @@ function selectSession(id, name) {
 
     db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
-        if (!s) return; // Veiligheidscheck
+        if (!s) return;
+
         data = s.sensorData;
         elBack.src = URL.createObjectURL(s.videoBlob);
         elBack.pause();
         axis = s.axis || 'x';
-        elLive.style.display = "none"; 
+
+        elLive.style.display = "none";
         elBack.style.display = "block";
+
         slider.disabled = false;
+
+        // ⭐ Export ZIP knop activeren
+        document.getElementById("btnExportZip").disabled = false;
+
         setTimeout(updateUI, 500);
     };
 }
-
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
@@ -441,13 +447,18 @@ document.getElementById('btnSave').onclick = () => {
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+        date: nu
     });
+
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
         document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
+
+        // ⭐ Export ZIP knop activeren
+        document.getElementById("btnExportZip").disabled = false;
+
+        alert("Opgeslagen!");
     };
 };
 
