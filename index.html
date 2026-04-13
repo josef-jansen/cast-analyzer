@@ -213,6 +213,10 @@
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
+        // ---- BEGIN TIJDELIJKE DEBUG ----
+        <div id="debugMsg" style="font-size:12px; color:#007aff; margin-top:4px;"></div>
+        // ---- EINDE TIJDELIJKE DEBUG ----
+
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
         <!-- HIER MOET DE ID STAAN: -->
         <div id="customDropdown" style="width: 80%; position: relative;">
@@ -512,6 +516,7 @@ document.getElementById('btnReset').onclick = async () => {
 };
 
 document.getElementById("btnExportZip").onclick = () => {
+    document.getElementById("debugMsg").textContent = "Knop werkt → functie wordt aangeroepen...";
     exportSessionAsZip();
 };
     
@@ -700,7 +705,7 @@ window.onclick = (e) => {
 // ---- BEGIN EXPORT ZIP FUNCTIE ----
     
 function exportSessionAsZip() {
-    console.log("Export ZIP functie aangeroepen (stap 4)");
+    document.getElementById("debugMsg").textContent = "ZIP functie aangeroepen!";
 }
 
 // ---- EINDE EXPORT ZIP FUNCTIE ----    
