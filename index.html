@@ -511,6 +511,10 @@ document.getElementById('btnReset').onclick = async () => {
     optionsList.style.display = "none";
 };
 
+document.getElementById("btnExportZip").onclick = () => {
+    exportSessionAsZip();
+};
+    
 function deleteSession() {
     const sessionId = selectedDisplay.dataset.value;
     if (!sessionId || !confirm("Verwijderen?")) return;
@@ -692,6 +696,14 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
+
+// ---- BEGIN EXPORT ZIP FUNCTIE ----
+    
+function exportSessionAsZip() {
+    console.log("Export ZIP functie aangeroepen (stap 4)");
+}
+
+// ---- EINDE EXPORT ZIP FUNCTIE ----    
     
 </script>
 </body>
