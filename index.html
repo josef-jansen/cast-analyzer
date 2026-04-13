@@ -16,7 +16,7 @@
         .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
         .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
         
-        /* De Brede Slider onderaan */
+        /* ---- DE BREDE SLIDER ONDERAAN ---- */
         .bottom-area {
             min-height: var(--bottom-area);
             height: auto;
@@ -58,7 +58,6 @@
             overflow: hidden;
         }
 
-
         video {
             width: 100%;
             height: auto;
@@ -66,11 +65,11 @@
             object-fit: cover;
         }
 
-        /* Buttons & UI */
+        /* ---- KNOPPEN EN UI ---- */
         button {
-            padding: 0 16px;       /* Padding boven/onder weg, we gebruiken height */
-            height: 44px;          /* Exact gelijk aan de Del knop en balk */
-            line-height: 44px;     /* Tekst verticaal centreren */
+            padding: 0 16px;
+            height: 44px;
+            line-height: 44px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -78,17 +77,17 @@
             background: #666;
             min-width: 90px; 
             margin: 4px;
-            box-sizing: border-box; /* Zorgt dat borders de knop niet groter maken */
+            box-sizing: border-box;
         }
         
-        /* Kleuren per knop */
-        #btnConnect { background: #007aff; }  /* blauw */
-        #btnStart   { background: #34c759; }  /* groen */
-        #btnStop    { background: #ff3b30; }  /* rood */
-        #btnSave    { background: #5856d6; }  /* paars */
-        #btnReset   { background: #8e8e93; }  /* grijs */
+        /* ---- KLEUREN PER KNOP ---- */
+        #btnConnect { background: #007aff; }  /* BLAUW */
+        #btnStart   { background: #34c759; }  /* GROEN */
+        #btnStop    { background: #ff3b30; }  /* ROOD */
+        #btnSave    { background: #5856d6; }  /* PAARS */
+        #btnReset   { background: #8e8e93; }  /* GRIJS */
 
-        /* X/Y/Z segmented control */
+        /* ---- X/Y/Z/XYZ SEGMETED CONTROL ---- */
         .axisBtn {
             padding: 0 14px;
             height: 32px;
@@ -115,7 +114,6 @@
             line-height: 30px;
             padding: 0 14px;
         }
-
         
         .speedBtn {
             padding: 0 14px;
@@ -136,7 +134,7 @@
             color: #fff;
         }
         
-        /* DEL knop in dezelfde stijl als Reset */
+        /* ---- DEL KNOP IN DEZELFDE STIJL ALS DE RESET KNOP ---- */
         #btnDel {
             background: #8e8e93;
             height: 36px;
@@ -149,11 +147,11 @@
         }
         
         #archiveSelect {
-            appearance: select; /* Terug naar de basis */
+            appearance: select;
             -webkit-appearance: select;
             width: 80%;
             height: 44px;
-            font-size: 18px; /* Iets groter om iPad te dwingen */
+            font-size: 18px;
             border-radius: 8px;
             border: 1px solid #ccc;
             background: #fff;
@@ -161,7 +159,7 @@
             padding: 0 10px;
         }
 
-        /* Dit zorgt dat de regels in het uitklapmenu ook groot zijn */
+        /* ---- DIR ZORGT ERVOOR DAT DE REGELS IN HET UITKLAPMENU OOK GROOT ZIJN ---- */
         #archiveSelect option {
             font-size: 18px;
         }
@@ -170,7 +168,7 @@
         #vBack { display: none; }
         
         .graph-container {
-            background: #1c1c1e; /* Donkergrijs/zwart */
+            background: #1c1c1e; /* DONKERGRIJS/ZWART */
             border-radius: 8px;
             padding: 5px;
             margin: 8px;
@@ -181,7 +179,7 @@
             justify-content: center;
         }
 
-        /* Professionele videokaart */
+        /* ---- VIDEO KAART ---- */
         .video-card {
             background: #000;
             border-radius: 12px;
@@ -247,7 +245,6 @@
             </div>
         </div>
 
-
         <div class="bottom-area">
         <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
             <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
@@ -269,9 +266,7 @@ const elLive = document.getElementById('vLive'), elBack = document.getElementByI
 const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
-// ---------------------------------------------------------
-// Hulpfunctie: maakt beide grafieken volledig leeg
-// ---------------------------------------------------------
+/* ---- FUNCTIE OM BEIDE GRAFIEKEN HELEMAAL LEEG TE MAKEN ---- */
 function clearGraphs() {
     const ids = ["cAcc", "cGyro"];
     ids.forEach(id => {
@@ -280,9 +275,8 @@ function clearGraphs() {
         ctx.clearRect(0, 0, c.width, c.height);
     });
 }
-
     
-// --- DATABASE ---
+/* ---- DATABASE ---- */
 const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
 dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true }); };
 dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
@@ -310,9 +304,8 @@ function loadArchiveList() {
             item.style.textAlign = "left";
             item.textContent = sname;
             
-            // De klik-functie gebruikt nu de bevroren variabelen sid en sname
             item.onclick = function() {
-                console.log("Klik gedetecteerd op ID:", sid); // Voor controle
+                console.log("Klik gedetecteerd op ID:", sid);
                 selectSession(sid, sname);
                 list.style.display = "none";
             };
@@ -323,7 +316,6 @@ function loadArchiveList() {
     };
 }
 
-
 function selectSession(id, name) {
     const display = document.getElementById("selectedDisplay");
     display.textContent = name;
@@ -331,7 +323,7 @@ function selectSession(id, name) {
 
     db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
-        if (!s) return; // Veiligheidscheck
+        if (!s) return;
         data = s.sensorData;
         elBack.src = URL.createObjectURL(s.videoBlob);
         elBack.pause();
@@ -343,14 +335,12 @@ function selectSession(id, name) {
     };
 }
 
-
-// Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
     optionsList.style.display = optionsList.style.display === "none" ? "block" : "none";
 };
 
 
-// --- SLIDER & UI ---
+/* ---- SLIDER & UI ---- */
 slider.oninput = () => {
     if (elBack.duration > 0) {
         elBack.currentTime = (slider.value / 1000) * elBack.duration;
@@ -377,7 +367,7 @@ elBack.onended = () => {
     playPauseBtn.textContent = "▶︎";
 };
 
-// --- CORE ---
+/* ---- CORE ---- */
 document.getElementById('btnConnect').onclick = async () => {
     try {
         const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast-Analyzer" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
@@ -440,7 +430,7 @@ document.getElementById('btnSave').onclick = () => {
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+        date: nu
     });
     tx.oncomplete = () => { 
         loadArchiveList(); 
@@ -452,43 +442,34 @@ document.getElementById('btnSave').onclick = () => {
 
 document.getElementById('btnReset').onclick = async () => {
 
-    // 1. Stop BLE notificaties (als actief)
     try { 
         if (char) await char.stopNotifications(); 
     } catch(e) {}
 
-    // 2. Stop recorder (als actief)
     try { 
         if (recorder && recorder.state !== "inactive") recorder.stop(); 
     } catch(e) {}
 
-    // 3. Video terug naar live
     elBack.pause();
     elBack.src = "";
     elBack.style.display = "none";
     elLive.style.display = "block";
 
-    // 4. Data resetten
     data = [];
     chunks = [];
     elCount.innerText = "0";
 
-    // 5. Slider resetten
     slider.value = 0;
     slider.disabled = true;
 
-    // 6. Tijdlabel resetten
     timeLabel.innerText = "0.00s / 0.00s";
 
-    // 7. Grafieken leegmaken
     clearGraphs();
 
-    // 8. UI terugzetten
     document.getElementById('btnStart').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnSave').disabled = true;
 
-    // 9. Selectie wissen
     selectedDisplay.textContent = "-- Worp Selecteren --";
     delete selectedDisplay.dataset.value;
     optionsList.style.display = "none";
@@ -561,7 +542,7 @@ function render(id, points, color, label, unit, progress) {
         center = h / 2; // Nul-lijn in het midden
     }
 
-// --- Y-AS TEKENEN ---
+/* ---- Y-AS TEKENEN ---- */
 ctx.strokeStyle = "#444";
 ctx.lineWidth = 1 * dpr;
 ctx.beginPath();
@@ -569,7 +550,7 @@ ctx.moveTo(pL, pT);
 ctx.lineTo(pL, h - pB);
 ctx.stroke();
 
-// --- Y-AS LABELS ---
+/* ---- Y-AS LABELS ---- */
 ctx.fillStyle = "#ffffff";
 ctx.font = (14 * dpr) + "px Arial";
 ctx.textAlign = "right";
@@ -586,7 +567,7 @@ for (let i = 0; i <= steps; i++) {
     ctx.fillText(rounded, pL - 8 * dpr, y);
 }
 
-// --- GRIDLINES ---
+/* ---- GRIDLINES ---- */
 ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
 ctx.lineWidth = 0.5 * dpr;
 
@@ -602,10 +583,10 @@ for (let i = 0; i <= steps; i++) {
     ctx.stroke();
 }
 
-// --- VERTICALE GRIDLINES (TIJD) ---
+/* ---- VERTICALE GRIDLINES (TIJD) ---- */
 ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
 ctx.lineWidth = 0.5 * dpr;
-const timeSteps = 10; // Verdeel de grafiek in 10 tijdsblokken
+const timeSteps = 10;
 for (let i = 0; i <= timeSteps; i++) {
     const x = pL + (i / timeSteps) * gW;
     ctx.beginPath();
@@ -614,7 +595,7 @@ for (let i = 0; i <= timeSteps; i++) {
     ctx.stroke();
 }
 
-// --- MIDDELLIJN ---
+/* ---- MIDDELLIJN ---- */
 if (axis !== 'xyz') {
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.lineWidth = 1 * dpr;
@@ -639,8 +620,7 @@ if (axis !== 'xyz') {
     ctx.font = (14 * dpr) + "px Arial";ctx.textAlign = "left";ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-// --- HIER KOMT DE PLAY/SPEED CODE ---
-
+/* ---- BEGIN PLAY/SPEED CODE ---- */
 const playPauseBtn = document.getElementById("playPauseBtn");
 const speedButtons = document.querySelectorAll(".speedBtn");
 
@@ -659,16 +639,13 @@ speedButtons.forEach(btn => {
         const speed = parseFloat(btn.dataset.speed);
         elBack.playbackRate = speed;
 
-        // highlight logica
         speedButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
     });
 });
 
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
-    
-// --- EINDE PLAY/SPEED CODE ---
-
+/* ---- EINDE PLAY/SPEED CODE ---- */
     
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
