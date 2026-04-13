@@ -68,9 +68,9 @@
 
         /* Buttons & UI */
         button {
-            padding: 0 16px;       /* Padding boven/onder weg, we gebruiken height */
-            height: 44px;          /* Exact gelijk aan de Del knop en balk */
-            line-height: 44px;     /* Tekst verticaal centreren */
+            padding: 0 16px;
+            height: 44px;
+            line-height: 44px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -78,7 +78,12 @@
             background: #666;
             min-width: 90px; 
             margin: 4px;
-            box-sizing: border-box; /* Zorgt dat borders de knop niet groter maken */
+            box-sizing: border-box;
+        }
+
+        button:disabled {
+            background: #b3b3b3 !important;
+            color: #eee !important;
         }
         
         /* Kleuren per knop */
