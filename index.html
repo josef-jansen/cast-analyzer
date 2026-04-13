@@ -68,9 +68,9 @@
 
         /* Buttons & UI */
         button {
-            padding: 0 16px;
-            height: 44px;
-            line-height: 44px;
+            padding: 0 16px;       /* Padding boven/onder weg, we gebruiken height */
+            height: 44px;          /* Exact gelijk aan de Del knop en balk */
+            line-height: 44px;     /* Tekst verticaal centreren */
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -78,12 +78,7 @@
             background: #666;
             min-width: 90px; 
             margin: 4px;
-            box-sizing: border-box;
-        }
-
-        button:disabled {
-            background: #b3b3b3 !important;
-            color: #eee !important;
+            box-sizing: border-box; /* Zorgt dat borders de knop niet groter maken */
         }
         
         /* Kleuren per knop */
@@ -208,14 +203,9 @@
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
-        <button id="btnExportZip" disabled>Export ZIP</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
-
-        // ---- BEGIN TIJDELIJKE DEBUG ----
-        <div id="debugMsg" style="font-size:12px; color:#007aff; margin-top:4px;"></div>
-        // ---- EINDE TIJDELIJKE DEBUG ----
 
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
         <!-- HIER MOET DE ID STAAN: -->
@@ -341,24 +331,18 @@ function selectSession(id, name) {
 
     db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
-        if (!s) return;
-
+        if (!s) return; // Veiligheidscheck
         data = s.sensorData;
         elBack.src = URL.createObjectURL(s.videoBlob);
         elBack.pause();
         axis = s.axis || 'x';
-
-        elLive.style.display = "none";
+        elLive.style.display = "none"; 
         elBack.style.display = "block";
-
         slider.disabled = false;
-
-        // ⭐ Export ZIP knop activeren
-        document.getElementById("btnExportZip").disabled = false;
-
         setTimeout(updateUI, 500);
     };
 }
+
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
@@ -456,18 +440,13 @@ document.getElementById('btnSave').onclick = () => {
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
-
     tx.oncomplete = () => { 
         loadArchiveList(); 
         const displayNaam = datumString + " - " + inputNaam;
         document.getElementById("selectedDisplay").textContent = displayNaam;
-
-        // ⭐ Export ZIP knop activeren
-        document.getElementById("btnExportZip").disabled = false;
-
-        alert("Opgeslagen!");
+        alert("Opgeslagen!"); 
     };
 };
 
@@ -515,11 +494,6 @@ document.getElementById('btnReset').onclick = async () => {
     optionsList.style.display = "none";
 };
 
-document.getElementById("btnExportZip").onclick = () => {
-    document.getElementById("debugMsg").textContent = "Knop werkt → functie wordt aangeroepen...";
-    exportSessionAsZip();
-};
-    
 function deleteSession() {
     const sessionId = selectedDisplay.dataset.value;
     if (!sessionId || !confirm("Verwijderen?")) return;
@@ -701,14 +675,6 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-// ---- BEGIN EXPORT ZIP FUNCTIE ----
-    
-function exportSessionAsZip() {
-    document.getElementById("debugMsg").textContent = "ZIP functie aangeroepen!";
-}
-
-// ---- EINDE EXPORT ZIP FUNCTIE ----    
     
 </script>
 </body>
