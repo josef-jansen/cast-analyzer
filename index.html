@@ -204,6 +204,7 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
+        <button id="btnExport" style="background:#5856d6;">Export</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -260,6 +261,8 @@
             <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         </div>
 
+<script src="jszip.min.js"></script>
+    
 <script>
 
 let char, stream, recorder, db, data = [];
@@ -561,6 +564,8 @@ function render(id, points, color, label, unit, progress) {
         center = h / 2; // Nul-lijn in het midden
     }
 
+document.getElementById('btnExport').onclick = exportSession;
+    
 // --- Y-AS TEKENEN ---
 ctx.strokeStyle = "#444";
 ctx.lineWidth = 1 * dpr;
@@ -675,6 +680,11 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
+
+function exportSession() {
+    alert("Export functie aangeroepen!");
+}
+
     
 </script>
 </body>
