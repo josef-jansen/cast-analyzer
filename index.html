@@ -58,6 +58,7 @@
             overflow: hidden;
         }
 
+
         video {
             width: 100%;
             height: auto;
@@ -194,9 +195,6 @@
         }
        
     </style>
-
-<link rel="manifest" href="manifest.json">
-    
 </head>
 <body>
 
@@ -206,8 +204,6 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button id="btnExport" style="background:#5856d6;">Export</button>
-        <button id="btnDownloadZip" style="background:#34c759; display:none;">Download ZIP</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -264,27 +260,7 @@
             <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         </div>
 
-<script src="jszip.min.js"></script>
-    
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const debug = document.createElement("div");
-    debug.style.position = "fixed";
-    debug.style.bottom = "10px";
-    debug.style.left = "10px";
-    debug.style.background = "yellow";
-    debug.style.padding = "5px 10px";
-    debug.style.fontSize = "14px";
-    debug.style.zIndex = "9999";
-
-    debug.textContent = ("bluetooth" in navigator) 
-        ? "BLE beschikbaar" 
-        : "BLE NIET beschikbaar";
-
-    document.body.appendChild(debug);
-});
-    
-let lastZipBlob = null;
 
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
@@ -466,28 +442,12 @@ document.getElementById('btnSave').onclick = () => {
         axis, 
         date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
-    tx.oncomplete = () => {
-        // Haal de laatst toegevoegde key op via een nieuwe read-only transactie
-        const tx2 = db.transaction("sessions", "readonly");
-        const store2 = tx2.objectStore("sessions");
-        const reqKeys = store2.getAllKeys();
-
-        reqKeys.onsuccess = () => {
-            const allKeys = reqKeys.result;
-            const newId = allKeys[allKeys.length - 1]; // laatste ID
-
-            loadArchiveList();
-
-            const displayNaam = datumString + " - " + inputNaam;
-            selectedDisplay.textContent = displayNaam;
-            selectedDisplay.dataset.value = newId;
-
-            document.getElementById("btnExport").disabled = false;
-
-            alert("Opgeslagen!");
-        };
+    tx.oncomplete = () => { 
+        loadArchiveList(); 
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
+        alert("Opgeslagen!"); 
     };
-
 };
 
 document.getElementById('btnReset').onclick = async () => {
@@ -601,8 +561,6 @@ function render(id, points, color, label, unit, progress) {
         center = h / 2; // Nul-lijn in het midden
     }
 
-document.getElementById('btnExport').onclick = exportSession;
-    
 // --- Y-AS TEKENEN ---
 ctx.strokeStyle = "#444";
 ctx.lineWidth = 1 * dpr;
@@ -717,74 +675,6 @@ window.onclick = (e) => {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-async function exportSession() {
-    const sessionId = selectedDisplay.dataset.value;
-    if (!sessionId) {
-        alert("Geen sessie geselecteerd!");
-        return;
-    }
-
-    // 1. Haal sessie op uit IndexedDB
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-    const req = store.get(Number(sessionId));
-
-    req.onsuccess = async () => {
-        const s = req.result;
-        if (!s) {
-            alert("Sessie niet gevonden!");
-            return;
-        }
-
-        // 2. Maak ZIP aan
-        const zip = new JSZip();
-
-        // 3. Voeg sensordata toe als JSON
-        zip.file("sensorData.json", JSON.stringify(s.sensorData, null, 2));
-
-        // 4. Voeg video toe
-        const videoBlob = s.videoBlob;
-        alert("VideoBlob grootte: " + videoBlob.size + " bytes");
-        const videoArrayBuffer = await videoBlob.arrayBuffer();
-        zip.file("video.mp4", videoArrayBuffer);
-
-        // 5. ZIP genereren en downloaden
-        zip.generateAsync({ type: "blob" }).then(zipBlob => {
-            lastZipBlob = zipBlob;
-
-            const downloadBtn = document.getElementById("btnDownloadZip");
-            downloadBtn.style.display = "inline-block";
-
-            alert("ZIP opgebouwd! Tik nu op 'Download ZIP'");
-        });
-    };
-}
-
-document.getElementById("btnDownloadZip").onclick = () => {
-    if (!lastZipBlob) {
-        alert("Geen ZIP-bestand beschikbaar om te downloaden.");
-        return;
-    }
-
-    const url = URL.createObjectURL(lastZipBlob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "export.zip"; // Zorg ervoor dat de naam correct is.
-    document.body.appendChild(a);
-    a.click(); // Dit zou de download moeten starten.
-    a.remove();
-
-    URL.revokeObjectURL(url); // Vergeet niet om de object URL te revoceren.
-};
-
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-}
-
-</script>
-
     
 </script>
 </body>
