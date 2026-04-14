@@ -727,8 +727,21 @@ async function exportSession() {
         const videoArrayBuffer = await videoBlob.arrayBuffer();
         zip.file("video.mp4", videoArrayBuffer);
 
-        console.log("ZIP opgebouwd — klaar voor download in volgende stap.");
-        alert("ZIP opgebouwd! (nog niet gedownload)");
+        // 5. ZIP genereren en downloaden
+        zip.generateAsync({ type: "blob" }).then(zipBlob => {
+            const url = URL.createObjectURL(zipBlob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = s.name.replace(/[^a-z0-9\-_ ]/gi, "_") + ".zip"; // veilige bestandsnaam
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            URL.revokeObjectURL(url);
+
+            alert("ZIP gedownload!");
+        });
     };
 }
     
