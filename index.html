@@ -744,6 +744,8 @@ async function exportSession() {
 }
 
 document.getElementById("btnDownloadZip").onclick = () => {
+    alert("Download-knop klik werkt");
+    
     if (!lastZipBlob) return;
 
     const url = URL.createObjectURL(lastZipBlob);
