@@ -744,20 +744,21 @@ async function exportSession() {
 }
 
 document.getElementById("btnDownloadZip").onclick = () => {
-    alert("Download-knop klik werkt");
-    
-    if (!lastZipBlob) return;
+    if (!lastZipBlob) {
+        alert("Geen ZIP-bestand beschikbaar om te downloaden.");
+        return;
+    }
 
     const url = URL.createObjectURL(lastZipBlob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "export.zip";
+    a.download = "export.zip"; // Zorg ervoor dat de naam correct is.
     document.body.appendChild(a);
-    a.click();
+    a.click(); // Dit zou de download moeten starten.
     a.remove();
 
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url); // Vergeet niet om de object URL te revoceren.
 };
     
 </script>
