@@ -732,18 +732,12 @@ async function exportSession() {
 
         // 5. ZIP genereren en downloaden
         zip.generateAsync({ type: "blob" }).then(zipBlob => {
-            const url = URL.createObjectURL(zipBlob);
+            lastZipBlob = zipBlob;
 
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = s.name.replace(/[^a-z0-9\-_ ]/gi, "_") + ".zip"; // veilige bestandsnaam
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+            const downloadBtn = document.getElementById("btnDownloadZip");
+            downloadBtn.style.display = "inline-block";
 
-            URL.revokeObjectURL(url);
-
-            alert("ZIP gedownload!");
+            alert("ZIP opgebouwd! Tik nu op 'Download ZIP'");
         });
     };
 }
