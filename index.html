@@ -727,6 +727,7 @@ async function exportSession() {
 
         // 4. Voeg video toe
         const videoBlob = s.videoBlob;
+        alert("VideoBlob grootte: " + videoBlob.size + " bytes");
         const videoArrayBuffer = await videoBlob.arrayBuffer();
         zip.file("video.mp4", videoArrayBuffer);
 
