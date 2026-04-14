@@ -267,7 +267,24 @@
 <script src="jszip.min.js"></script>
     
 <script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const debug = document.createElement("div");
+    debug.style.position = "fixed";
+    debug.style.bottom = "10px";
+    debug.style.left = "10px";
+    debug.style.background = "yellow";
+    debug.style.padding = "5px 10px";
+    debug.style.fontSize = "14px";
+    debug.style.zIndex = "9999";
 
+    debug.textContent = ("bluetooth" in navigator) 
+        ? "BLE beschikbaar" 
+        : "BLE NIET beschikbaar";
+
+    document.body.appendChild(debug);
+});
+    
 let lastZipBlob = null;
 
 let char, stream, recorder, db, data = [];
