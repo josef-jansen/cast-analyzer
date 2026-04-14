@@ -205,6 +205,7 @@
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         <button id="btnExport" style="background:#5856d6;">Export</button>
+        <button id="btnDownloadZip" style="background:#34c759; display:none;">Download ZIP</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -264,6 +265,8 @@
 <script src="jszip.min.js"></script>
     
 <script>
+
+let lastZipBlob = null;
 
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
