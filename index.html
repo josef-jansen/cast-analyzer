@@ -741,6 +741,21 @@ async function exportSession() {
         });
     };
 }
+
+document.getElementById("btnDownloadZip").onclick = () => {
+    if (!lastZipBlob) return;
+
+    const url = URL.createObjectURL(lastZipBlob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "export.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+};
     
 </script>
 </body>
