@@ -681,10 +681,40 @@ window.onclick = (e) => {
     }
 };
 
-function exportSession() {
-    alert("Export functie aangeroepen!");
-}
+async function exportSession() {
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId) {
+        alert("Geen sessie geselecteerd!");
+        return;
+    }
 
+    // 1. Haal sessie op uit IndexedDB
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+    const req = store.get(Number(sessionId));
+
+    req.onsuccess = async () => {
+        const s = req.result;
+        if (!s) {
+            alert("Sessie niet gevonden!");
+            return;
+        }
+
+        // 2. Maak ZIP aan
+        const zip = new JSZip();
+
+        // 3. Voeg sensordata toe als JSON
+        zip.file("sensorData.json", JSON.stringify(s.sensorData, null, 2));
+
+        // 4. Voeg video toe
+        const videoBlob = s.videoBlob;
+        const videoArrayBuffer = await videoBlob.arrayBuffer();
+        zip.file("video.mp4", videoArrayBuffer);
+
+        console.log("ZIP opgebouwd — klaar voor download in volgende stap.");
+        alert("ZIP opgebouwd! (nog niet gedownload)");
+    };
+}
     
 </script>
 </body>
