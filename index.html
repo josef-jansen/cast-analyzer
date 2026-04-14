@@ -267,7 +267,6 @@
 <script src="jszip.min.js"></script>
     
 <script>
-<script>
 document.addEventListener("DOMContentLoaded", () => {
     const debug = document.createElement("div");
     debug.style.position = "fixed";
@@ -780,7 +779,6 @@ document.getElementById("btnDownloadZip").onclick = () => {
     URL.revokeObjectURL(url); // Vergeet niet om de object URL te revoceren.
 };
 
-<script>
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js");
 }
