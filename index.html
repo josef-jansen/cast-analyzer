@@ -445,12 +445,28 @@ document.getElementById('btnSave').onclick = () => {
         axis, 
         date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
-    tx.oncomplete = () => { 
-        loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
+    tx.oncomplete = () => {
+        // Haal de laatst toegevoegde key op via een nieuwe read-only transactie
+        const tx2 = db.transaction("sessions", "readonly");
+        const store2 = tx2.objectStore("sessions");
+        const reqKeys = store2.getAllKeys();
+
+        reqKeys.onsuccess = () => {
+            const allKeys = reqKeys.result;
+            const newId = allKeys[allKeys.length - 1]; // laatste ID
+
+            loadArchiveList();
+
+            const displayNaam = datumString + " - " + inputNaam;
+            selectedDisplay.textContent = displayNaam;
+            selectedDisplay.dataset.value = newId;
+
+            document.getElementById("btnExport").disabled = false;
+
+            alert("Opgeslagen!");
+        };
     };
+
 };
 
 document.getElementById('btnReset').onclick = async () => {
