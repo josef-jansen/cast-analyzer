@@ -398,6 +398,9 @@ document.getElementById('btnConnect').onclick = async () => {
     } catch (e) { alert(e); }
 };
 
+// Kan weg na testen of Save knop wordt aangesproken
+alert("Save CLICK geregistreerd");
+    
 document.getElementById('btnStart').onclick = async () => {
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
     await char.startNotifications();
