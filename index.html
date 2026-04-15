@@ -398,9 +398,6 @@ document.getElementById('btnConnect').onclick = async () => {
     } catch (e) { alert(e); }
 };
 
-// Kan weg na testen of Save knop wordt aangesproken
-alert("Save CLICK geregistreerd");
-    
 document.getElementById('btnStart').onclick = async () => {
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
     await char.startNotifications();
@@ -428,38 +425,45 @@ document.getElementById('btnStop').onclick = async () => {
 };
 
 document.getElementById('btnSave').onclick = () => {
-// Kan weg na testen Save knop functie
-    alert("Start Save functie");
-    const nu = new Date();
-    const datumString = nu.getFullYear() + "-" + 
-        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
-        String(nu.getDate()).padStart(2, '0') + " " + 
-        String(nu.getHours()).padStart(2, '0') + ":" + 
-        String(nu.getMinutes()).padStart(2, '0');
     
-        // Eigen naam-popup voor WebBLE
-        const inputNaam = window.prompt("Naam van de worp (WebBLE):", "Worp") || "";
-        if (!inputNaam.trim()) {
+    // Toon popup
+    document.getElementById("namePopup").style.display = "flex";
+
+    // Wacht op OK
+    document.getElementById("nameOk").onclick = () => {
+        const inputNaam = document.getElementById("nameInput").value.trim();
+        if (!inputNaam) {
             alert("Geen naam ingevoerd");
             return;
         }
-    
-    const name = datumString + " - " + inputNaam;
 
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({ 
-        name, 
-        sensorData: data, 
-        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
-        axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
-    });
-    tx.oncomplete = () => { 
-        loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
-        alert("Opgeslagen!"); 
-    };
+        document.getElementById("namePopup").style.display = "none";
+    
+        const nu = new Date();
+        const datumString = nu.getFullYear() + "-" + 
+            String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
+            String(nu.getDate()).padStart(2, '0') + " " + 
+            String(nu.getHours()).padStart(2, '0') + ":" + 
+            String(nu.getMinutes()).padStart(2, '0');
+    
+        const name = datumString + " - " + inputNaam;
+
+        const tx = db.transaction("sessions", "readwrite");
+        tx.objectStore("sessions").add({ 
+            name, 
+            sensorData: data, 
+            videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+            axis, 
+            date: nu
+        });
+        
+        tx.oncomplete = () => { 
+            loadArchiveList(); 
+            const displayNaam = datumString + " - " + inputNaam;
+            document.getElementById("selectedDisplay").textContent = displayNaam;
+            alert("Opgeslagen!"); 
+        };
+    };        
 };
 
 document.getElementById('btnReset').onclick = async () => {
@@ -680,13 +684,25 @@ speedButtons.forEach(btn => {
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
-
     
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
     }
 };
+
+<div id="namePopup" 
+     style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; 
+            justify-content: center; align-items: center; z-index: 9999;">
+    
+    <div style="background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 300px; text-align: center;">
+        <h3 style="margin-top:0;">Naam van de worp</h3>
+        <input id="nameInput" type="text" 
+               style="width: 100%; padding: 10px; font-size: 16px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px;">
+        <button id="nameOk" style="background:#007aff; width:100%; height:44px; border-radius:8px;">OK</button>
+    </div>
+</div>
     
 </script>
 </body>
