@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <script src="jszip.min.js"></script>
+    
     <title>Cast-Analyzer</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -421,9 +424,37 @@ document.getElementById('btnStop').onclick = async () => {
     document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
 };
 
-document.getElementById('btnSave').onclick = () => {
-    alert("SAVE CLICK WERKT");
+document.getElementById('btnSave').onclick = async () => {
+
+    if (!data || data.length === 0 || !chunks || chunks.length === 0) {
+        alert("Geen data of video om op te slaan.");
+        return;
+    }
+
+    const nu = new Date();
+    const naam =
+        nu.getFullYear() + "_" +
+        String(nu.getMonth()+1).padStart(2,'0') + "_" +
+        String(nu.getDate()).padStart(2,'0') + "_" +
+        String(nu.getHours()).padStart(2,'0') + "_" +
+        String(nu.getMinutes()).padStart(2,'0');
+
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify(data, null, 2));
+    zip.file("video.mp4", new Blob(chunks, { type: "video/mp4" }));
+
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = naam + ".zip";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    alert("ZIP opgeslagen");
 };
+
 
 document.getElementById('btnReset').onclick = async () => {
 
