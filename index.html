@@ -437,8 +437,12 @@ document.getElementById('btnSave').onclick = () => {
         String(nu.getHours()).padStart(2, '0') + ":" + 
         String(nu.getMinutes()).padStart(2, '0');
     
-    const inputNaam = prompt("Naam van de worp:", "Worp");
-    if (!inputNaam) return; 
+        // Eigen naam-popup voor WebBLE
+        const inputNaam = window.prompt("Naam van de worp (WebBLE):", "Worp") || "";
+        if (!inputNaam.trim()) {
+            alert("Geen naam ingevoerd");
+            return;
+        }
     
     const name = datumString + " - " + inputNaam;
 
