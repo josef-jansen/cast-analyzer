@@ -425,7 +425,7 @@ document.getElementById('btnStop').onclick = async () => {
 };
 
 document.getElementById('btnSave').onclick = () => {
-    
+
     // Toon popup
     document.getElementById("namePopup").style.display = "flex";
 
@@ -438,33 +438,33 @@ document.getElementById('btnSave').onclick = () => {
         }
 
         document.getElementById("namePopup").style.display = "none";
-    
+
         const nu = new Date();
-        const datumString = nu.getFullYear() + "-" + 
-            String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
-            String(nu.getDate()).padStart(2, '0') + " " + 
-            String(nu.getHours()).padStart(2, '0') + ":" + 
+        const datumString = nu.getFullYear() + "_" +
+            String(nu.getMonth() + 1).padStart(2, '0') + "_" +
+            String(nu.getDate()).padStart(2, '0') + "_" +
+            String(nu.getHours()).padStart(2, '0') + "_" +
             String(nu.getMinutes()).padStart(2, '0');
-    
-        const name = datumString + " - " + inputNaam;
+
+        const name = datumString + "_" + inputNaam;
 
         const tx = db.transaction("sessions", "readwrite");
-        tx.objectStore("sessions").add({ 
-            name, 
-            sensorData: data, 
-            videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
-            axis, 
+        tx.objectStore("sessions").add({
+            name,
+            sensorData: data,
+            videoBlob: new Blob(chunks, { type: 'video/mp4' }),
+            axis,
             date: nu
         });
-        
-        tx.oncomplete = () => { 
-            loadArchiveList(); 
-            const displayNaam = datumString + " - " + inputNaam;
-            document.getElementById("selectedDisplay").textContent = displayNaam;
-            alert("Opgeslagen!"); 
+
+        tx.oncomplete = () => {
+            loadArchiveList();
+            document.getElementById("selectedDisplay").textContent = name;
+            alert("Opgeslagen!");
         };
-    };        
+    };
 };
+
 
 document.getElementById('btnReset').onclick = async () => {
 
