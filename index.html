@@ -685,12 +685,6 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
     
 // --- EINDE PLAY/SPEED CODE ---
     
-window.onclick = (e) => {
-    if (!e.target.closest('#customDropdown')) {
-        document.getElementById("optionsList").style.display = "none";
-    }
-};
-
 <div id="namePopup" 
      style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; 
@@ -703,7 +697,14 @@ window.onclick = (e) => {
         <button id="nameOk" style="background:#007aff; width:100%; height:44px; border-radius:8px;">OK</button>
     </div>
 </div>
-    
+
+<script>
+window.onclick = (e) => {
+    if (!e.target.closest('#customDropdown')) {
+        document.getElementById("optionsList").style.display = "none";
+    }
+};
 </script>
+
 </body>
 </html>
