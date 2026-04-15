@@ -421,36 +421,9 @@ document.getElementById('btnStop').onclick = async () => {
     document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
 };
 
-document.getElementById('btnSave').onclick = async () => {
-
-    // Automatische naam
-    const nu = new Date();
-    const naam =
-        nu.getFullYear() + "_" +
-        String(nu.getMonth()+1).padStart(2,'0') + "_" +
-        String(nu.getDate()).padStart(2,'0') + "_" +
-        String(nu.getHours()).padStart(2,'0') + "_" +
-        String(nu.getMinutes()).padStart(2,'0');
-
-    // ZIP maken
-    const zip = new JSZip();
-    zip.file("data.json", JSON.stringify(data, null, 2));
-    zip.file("video.mp4", new Blob(chunks, { type: "video/mp4" }));
-
-    // ZIP genereren
-    const blob = await zip.generateAsync({ type: "blob" });
-
-    // Download starten
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = naam + ".zip";
-    a.click();
-    URL.revokeObjectURL(url);
-
-    alert("ZIP opgeslagen");
+document.getElementById('btnSave').onclick = () => {
+    alert("SAVE CLICK WERKT");
 };
-
 
 document.getElementById('btnReset').onclick = async () => {
 
