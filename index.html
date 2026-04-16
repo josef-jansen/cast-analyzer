@@ -868,10 +868,27 @@ document.getElementById("btnExport").onclick = async () => {
     // --- ZIP GENEREREN ---
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // --- iPad-compatibele download ---
-    const url = URL.createObjectURL(zipBlob);
-    window.open(url, "_blank"); // iPad opent nu Bestanden-dialoog
+    // --- DELEN VIA IOS (WERKT IN BLUEFY!) ---
+    try {
+        const zipFile = new File([zipBlob], "cast-session.zip", {
+            type: "application/zip"
+        });
+
+        if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
+            await navigator.share({
+                files: [zipFile],
+                title: "Cast Analyzer Export",
+                text: "Cast Analyzer sessie"
+            });
+        } else {
+            alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+        }
+    } catch (err) {
+        console.error("Fout bij delen:", err);
+        alert("Er ging iets mis bij het delen van de ZIP.");
+    }
 };
+
     
 </script>
 </body>
