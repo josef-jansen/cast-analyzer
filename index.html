@@ -580,23 +580,118 @@ function draw() {
 
 function render(id, points, color, label, unit, progress) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
-    c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
-    const w = c.width, h = c.height, pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1, gW = w - pL - pR, gH = h - pT - pB;
+    c.width = c.clientWidth * dpr; 
+    c.height = c.clientHeight * dpr;
+
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
 
     // --- SCHAALBEPALING ---
     let scaleY, center;
     const maxAbs = Math.max(...points.map(Math.abs), 1);
-    const maxVal = maxAbs; // Nodig voor de XYZ loop
-    const steps = 4;       // Aantal horizontale verdelingen
+    const maxVal = maxAbs;
+    const steps = 4;
 
-    ctx.clearRect(0, 0, w, h); // Maakt het canvas leeg voor de nieuwe tekening
+    ctx.clearRect(0, 0, w, h);
 
     if (axis === 'xyz') {
         scaleY = gH / maxAbs;
-        center = h - pB; // Nul-lijn onderaan
+        center = h - pB; // nul-lijn onderaan
     } else {
         scaleY = (gH / 2) / maxAbs;
-        center = h / 2; // Nul-lijn in het midden
+        center = h / 2; // nul-lijn in het midden
+    }
+
+    // --- Y-AS TEKENEN ---
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    // --- Y-AS LABELS ---
+    ctx.fillStyle = "#ffffff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let i = 0; i <= steps; i++) {
+        const val = (axis === 'xyz') 
+            ? (maxVal / steps) * i 
+            : (-maxAbs + (i * (2 * maxAbs / steps)));
+
+        const y = center - (val * scaleY);
+        const rounded = unit === "m/s²" ? val.toFixed(1) : Math.round(val);
+        ctx.fillText(rounded, pL - 8 * dpr, y);
+    }
+
+    // --- HORIZONTALE GRIDLINES ---
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.lineWidth = 0.5 * dpr;
+
+    for (let i = 0; i <= steps; i++) {
+        const val = (axis === 'xyz') 
+            ? (maxVal / steps) * i 
+            : (-maxAbs + (i * (2 * maxAbs / steps)));
+
+        const y = center - (val * scaleY);
+        ctx.beginPath();
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
+        ctx.stroke();
+    }
+
+    // --- VERTICALE GRIDLINES (TIJD) ---
+    const timeSteps = 10;
+    for (let i = 0; i <= timeSteps; i++) {
+        const x = pL + (i / timeSteps) * gW;
+        ctx.beginPath();
+        ctx.moveTo(x, pT);
+        ctx.lineTo(x, h - pB);
+        ctx.stroke();
+    }
+
+    // --- MIDDELLIJN ---
+    if (axis !== 'xyz') {
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(pL, center);
+        ctx.lineTo(w - pR, center);
+        ctx.stroke();
+    }
+
+    // --- LIJN TEKENEN ---
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.lineJoin = "round";
+
+    points.forEach((p, i) => {
+        const x = pL + (i / (points.length - 1)) * gW;
+        const y = center - (p * scaleY);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // --- CURSOR ---
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
+    }
+
+    // --- TITEL ---
+    ctx.fillStyle = "#ffffff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
 function renderMulti(id, series, title, unit, progress) {
@@ -615,7 +710,7 @@ function renderMulti(id, series, title, unit, progress) {
     const scaleY = (gH / 2) / maxAbs;
     const center = h / 2;
 
-    // grid
+    // horizontale grid
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 0.5 * dpr;
 
@@ -628,6 +723,7 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
+    // verticale grid (tijd)
     for (let i = 0; i <= 10; i++) {
         const x = pL + (i / 10) * gW;
         ctx.beginPath();
@@ -689,105 +785,6 @@ function renderMulti(id, series, title, unit, progress) {
 
         ly += 18 * dpr;
     });
-}
-
-    // titel
-    ctx.fillStyle = "#ffffff";
-    ctx.font = (14 * dpr) + "px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
-
-    // legenda
-    let lx = w - pR - 80 * dpr;
-    let ly = pT + 10 * dpr;
-
-    series.forEach(s => {
-        ctx.fillStyle = s.color;
-        ctx.fillRect(lx, ly, 20 * dpr, 8 * dpr);
-
-        ctx.fillStyle = "#fff";
-        ctx.fillText(s.label, lx + 28 * dpr, ly + 8 * dpr);
-
-        ly += 18 * dpr;
-    });
-}
-
-// --- Y-AS TEKENEN ---
-ctx.strokeStyle = "#444";
-ctx.lineWidth = 1 * dpr;
-ctx.beginPath();
-ctx.moveTo(pL, pT);
-ctx.lineTo(pL, h - pB);
-ctx.stroke();
-
-// --- Y-AS LABELS ---
-ctx.fillStyle = "#ffffff";
-ctx.font = (14 * dpr) + "px Arial";
-ctx.textAlign = "right";
-ctx.textBaseline = "middle";
-
-for (let i = 0; i <= steps; i++) {
-    // Bereken waarde: bij XYZ van 0 naar Max, anders van -Max naar +Max
-    const val = (axis === 'xyz') 
-        ? (maxVal / steps) * i 
-        : (-maxAbs + (i * (2 * maxAbs / steps)));
-    
-    const y = center - (val * scaleY);
-    const rounded = unit === "m/s²" ? val.toFixed(1) : Math.round(val);
-    ctx.fillText(rounded, pL - 8 * dpr, y);
-}
-
-// --- GRIDLINES ---
-ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-ctx.lineWidth = 0.5 * dpr;
-
-for (let i = 0; i <= steps; i++) {
-    const val = (axis === 'xyz') 
-        ? (maxVal / steps) * i 
-        : (-maxAbs + (i * (2 * maxAbs / steps)));
-        
-    const y = center - (val * scaleY);
-    ctx.beginPath();
-    ctx.moveTo(pL, y);
-    ctx.lineTo(w - pR, y);
-    ctx.stroke();
-}
-
-// --- VERTICALE GRIDLINES (TIJD) ---
-ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-ctx.lineWidth = 0.5 * dpr;
-const timeSteps = 10; // Verdeel de grafiek in 10 tijdsblokken
-for (let i = 0; i <= timeSteps; i++) {
-    const x = pL + (i / timeSteps) * gW;
-    ctx.beginPath();
-    ctx.moveTo(x, pT);
-    ctx.lineTo(x, h - pB);
-    ctx.stroke();
-}
-
-// --- MIDDELLIJN ---
-if (axis !== 'xyz') {
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 1 * dpr;
-    ctx.beginPath();
-    ctx.moveTo(pL, center);
-    ctx.lineTo(w - pR, center);
-    ctx.stroke();
-}
-    
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = "round";
-    points.forEach((p, i) => {
-        const x = pL + (i / (points.length - 1)) * gW, y = center - (p * scaleY);
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-    if (progress > 0) {
-        const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = "#ff9500"; ctx.lineWidth = 1 * dpr;
-        ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
-    }
-    ctx.fillStyle = "#ffffff";
-    ctx.font = (14 * dpr) + "px Arial";ctx.textAlign = "left";ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
 // --- HIER KOMT DE PLAY/SPEED CODE ---
