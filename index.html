@@ -523,7 +523,6 @@ function setAxis(a) {
     });
 
     updateUI();
-    console.log("setAxis:", a, "axis=", axis);
 }
 
 function draw() {
@@ -531,7 +530,7 @@ function draw() {
 
     let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
 
-    // --- NIEUW: X-Y-Z mode (drie lijnen tegelijk) ---
+    // --- NIEUW: X-Y-Z mode ---
     if (axis === 'xyz3') {
         const accX = data.map(d => d.ax);
         const accY = data.map(d => d.ay);
@@ -562,7 +561,7 @@ function draw() {
         return;
     }
 
-    // --- jouw bestaande logica blijft intact ---
+    // --- JOUW ORIGINELE CODE ---
     let accPoints, gyroPoints, labelSuffix;
 
     if (axis === 'xyz') {
@@ -616,7 +615,7 @@ function renderMulti(id, series, title, unit, progress) {
     const scaleY = (gH / 2) / maxAbs;
     const center = h / 2;
 
-    // horizontale grid
+    // grid
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 0.5 * dpr;
 
@@ -629,7 +628,6 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
-    // verticale grid (tijd)
     for (let i = 0; i <= 10; i++) {
         const x = pL + (i / 10) * gW;
         ctx.beginPath();
@@ -646,7 +644,7 @@ function renderMulti(id, series, title, unit, progress) {
     ctx.lineTo(w - pR, center);
     ctx.stroke();
 
-    // lijnen tekenen
+    // lijnen
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -671,6 +669,27 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
+
+    // titel
+    ctx.fillStyle = "#ffffff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+
+    // legenda
+    let lx = w - pR - 80 * dpr;
+    let ly = pT + 10 * dpr;
+
+    series.forEach(s => {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(lx, ly, 20 * dpr, 8 * dpr);
+
+        ctx.fillStyle = "#fff";
+        ctx.fillText(s.label, lx + 28 * dpr, ly + 8 * dpr);
+
+        ly += 18 * dpr;
+    });
+}
 
     // titel
     ctx.fillStyle = "#ffffff";
