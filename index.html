@@ -226,6 +226,7 @@
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
             <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+            <button id="btnExport">Exporteren</button>
 
         </div>
     </div>
@@ -262,6 +263,8 @@
             <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
         </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
 <script>
 
 let char, stream, recorder, db, data = [];
@@ -822,6 +825,49 @@ window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
     }
+};
+
+document.getElementById("btnExport").onclick = async () => {
+    if (!data || data.length === 0) {
+        alert("Geen data om te exporteren.");
+        return;
+    }
+
+    const zip = new JSZip();
+
+    // --- SENSOR CSV ---
+    let sensorCSV = "t,ax,ay,az\n";
+    data.forEach((d, i) => {
+        sensorCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+    });
+    zip.file("sensor.csv", sensorCSV);
+
+    // --- GYRO CSV ---
+    let gyroCSV = "t,gx,gy,gz\n";
+    data.forEach((d, i) => {
+        gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+    });
+    zip.file("gyro.csv", gyroCSV);
+
+    // --- META ---
+    const meta = {
+        name: selectedDisplay.textContent || "Onbekend",
+        axis: axis,
+        samples: data.length,
+        date: new Date().toISOString()
+    };
+    zip.file("meta.json", JSON.stringify(meta, null, 2));
+
+    // --- VIDEO ---
+    const videoBlob = await fetch(elBack.src).then(r => r.blob());
+    zip.file("video.mp4", videoBlob);
+
+    // --- ZIP GENEREREN ---
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // --- iPad-compatibele download ---
+    const url = URL.createObjectURL(zipBlob);
+    window.open(url, "_blank"); // iPad opent nu Bestanden-dialoog
 };
     
 </script>
