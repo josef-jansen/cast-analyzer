@@ -269,6 +269,7 @@
 
 let char, stream, recorder, db, data = [];
 let axis = 'x', chunks = [];
+let currentVideoBlob = null;
 
 const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
 const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
@@ -338,7 +339,8 @@ function selectSession(id, name) {
         const s = e.target.result;
         if (!s) return; // Veiligheidscheck
         data = s.sensorData;
-        elBack.src = URL.createObjectURL(s.videoBlob);
+        currentVideoBlob = s.videoBlob;
+        elBack.src = URL.createObjectURL(currentVideoBlob);
         elBack.pause();
         axis = s.axis || 'x';
         elLive.style.display = "none"; 
@@ -407,7 +409,8 @@ document.getElementById('btnStart').onclick = async () => {
     recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
     recorder.onstop = () => {
         elLive.style.display = "none"; elBack.style.display = "block";
-        elBack.src = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
         document.getElementById('btnSave').disabled = false; slider.disabled = false;
 
         // Na opname automatisch Y-as tonen
@@ -859,7 +862,7 @@ document.getElementById("btnExport").onclick = async () => {
     zip.file("meta.json", JSON.stringify(meta, null, 2));
 
     // --- VIDEO ---
-    const videoBlob = await fetch(elBack.src).then(r => r.blob());
+    const videoBlob = currentVideoBlob;
     zip.file("video.mp4", videoBlob);
 
     // --- ZIP GENEREREN ---
