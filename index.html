@@ -225,7 +225,8 @@
             <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
-            <button id="bXYZ3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+            <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+
         </div>
     </div>
 
@@ -513,11 +514,11 @@ function deleteSession() {
 }
     
 function setAxis(a) {
-    axis = a;
+    axis = a.toLowerCase();
 
     document.querySelectorAll('.axisBtn').forEach(b => {
         const bid = b.id.toLowerCase();
-        const target = 'b' + a.toLowerCase();
+        const target = 'b' + axis;
         b.classList.toggle('active', bid === target);
     });
 
@@ -529,7 +530,7 @@ function draw() {
 
     let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
 
-    // --- X-Y-Z MODE ---
+    // --- NIEUW: X-Y-Z mode (drie lijnen tegelijk) ---
     if (axis === 'xyz3') {
         const accX = data.map(d => d.ax);
         const accY = data.map(d => d.ay);
@@ -560,7 +561,7 @@ function draw() {
         return;
     }
 
-    // --- BESTAANDE MODES ---
+    // --- jouw bestaande logica blijft intact ---
     let accPoints, gyroPoints, labelSuffix;
 
     if (axis === 'xyz') {
@@ -576,7 +577,6 @@ function draw() {
     render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress);
     render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress);
 }
-
 
 function render(id, points, color, label, unit, progress) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
@@ -610,13 +610,12 @@ function renderMulti(id, series, title, unit, progress) {
 
     ctx.clearRect(0, 0, w, h);
 
-    // --- schaal bepalen ---
     const allPoints = series.flatMap(s => s.points);
     const maxAbs = Math.max(...allPoints.map(Math.abs), 1);
     const scaleY = (gH / 2) / maxAbs;
     const center = h / 2;
 
-    // --- grid ---
+    // horizontale grid
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 0.5 * dpr;
 
@@ -629,7 +628,7 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
-    // --- tijd grid ---
+    // verticale grid (tijd)
     for (let i = 0; i <= 10; i++) {
         const x = pL + (i / 10) * gW;
         ctx.beginPath();
@@ -638,7 +637,7 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
-    // --- middenlijn ---
+    // middenlijn
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
@@ -646,7 +645,7 @@ function renderMulti(id, series, title, unit, progress) {
     ctx.lineTo(w - pR, center);
     ctx.stroke();
 
-    // --- lijnen tekenen ---
+    // lijnen tekenen
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -661,7 +660,7 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     });
 
-    // --- cursor ---
+    // cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -672,13 +671,13 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
-    // --- titel ---
+    // titel
     ctx.fillStyle = "#ffffff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-    // --- legenda ---
+    // legenda
     let lx = w - pR - 80 * dpr;
     let ly = pT + 10 * dpr;
 
@@ -692,7 +691,6 @@ function renderMulti(id, series, title, unit, progress) {
         ly += 18 * dpr;
     });
 }
-    
 
 // --- Y-AS TEKENEN ---
 ctx.strokeStyle = "#444";
