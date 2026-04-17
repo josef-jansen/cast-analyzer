@@ -204,14 +204,14 @@
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
-        <button id="btnExport">Exporteren</button>
+        <button id="btnExport">Export</button>
         <input 
             type="file" 
             id="fileImport" 
             accept=".zip" 
             style="display:none"
         />
-        <button id="btnImport">Importeer sessie</button>
+        <button id="btnImport">Import</button>
         
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
@@ -907,6 +907,28 @@ const btnImport = document.getElementById("btnImport");
 btnImport.onclick = () => {
     fileInput.click();
 };
+
+fileInput.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+
+    if (!file.name.endsWith(".zip")) {
+        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
+        return;
+    }
+
+    // Voor nu alleen een testmelding:
+    alert("ZIP-bestand geselecteerd: " + file.name);
+
+    // Later vervangen we dit door:
+    // await importSessionFromZip(file);
+
+    // Reset zodat je hetzelfde bestand opnieuw kunt kiezen
+    fileInput.value = "";
+};
+
     
 </script>
 </body>
