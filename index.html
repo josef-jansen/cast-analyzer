@@ -962,7 +962,7 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    // --- Data samenvoegen (zoals jouw app verwacht) ---
+    // --- Data samenvoegen ---
     data = accData.map((d, i) => ({
         ax: d.ax,
         ay: d.ay,
@@ -972,24 +972,23 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    // --- Video opslaan in jouw eigen variabele ---
+    // --- Video opslaan ---
     currentVideoBlob = videoBlob;
 
-    // --- Video in vBack zetten (EXACT zoals selectSession) ---
-    const vBack = document.getElementById("vBack");
-    vBack.src = URL.createObjectURL(currentVideoBlob);
-    vBack.pause();     // <<< BELANGRIJK: jouw selectSession doet dit ook
-    vBack.load();
+    // --- VIDEO IN JOUW ECHTE ELEMENT (elBack) ---
+    elBack.src = URL.createObjectURL(currentVideoBlob);
+    elBack.pause();
+    elBack.load();
 
-    // --- UI naar playback-modus (EXACT zoals selectSession) ---
+    // --- UI naar playback-modus ---
     elLive.style.display = "none";
     elBack.style.display = "block";
     slider.disabled = false;
 
     // --- UI naam ---
-    document.getElementById("selectedDisplay").innerText = meta.name || "Imported Session";
+    selectedDisplay.innerText = meta.name || "Imported Session";
 
-    // --- UI sync (EXACT zoals selectSession) ---
+    // --- UI sync ---
     setTimeout(updateUI, 500);
 
     alert("Sessie geïmporteerd!");
