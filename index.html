@@ -977,14 +977,15 @@ async function importSessionFromZip(file) {
     const addReq = store.add(session);
 
     addReq.onsuccess = () => {
-        const newId = addReq.result;
+    const newId = addReq.result;
 
-        loadSessionList();
+    // JUISTE FUNCTIE NAAM:
+    loadArchiveList();
 
-        selectSession(newId, session.name);
+    // Direct de nieuwe sessie selecteren:
+    selectSession(newId, session.name);
+};
 
-        alert("Sessie geïmporteerd!");
-    };
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
