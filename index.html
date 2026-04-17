@@ -976,47 +976,14 @@ async function importSessionFromZip(file) {
     window.gyro = gyroData;
 
     // --- UI updaten ---
-    document.getElementById("selected").innerText = meta.name || "Imported Session";
+    document.getElementById("selectedDisplay").innerText = meta.name || "Imported Session";
 
     // --- Grafieken opnieuw tekenen ---
     draw();
 
     alert("Sessie geïmporteerd!");
 }
-
-const accData = parseCSV(accText);
-const gyroData = parseCSV(gyroText);
-
-// --- Video laden ---
-const videoBlob = await zip.file("video.mp4").async("blob");
-const videoURL = URL.createObjectURL(videoBlob);
-
-// --- UI vullen ---
-document.getElementById("video").src = videoURL;
-document.getElementById("sessionName").innerText = meta.name || "Imported Session";
-document.getElementById("sessionTime").innerText = meta.time || "";
-
-// --- Data in jouw app zetten ---
-window.acc = accData;
-window.gyro = gyroData;
-
-// --- Grafieken opnieuw tekenen ---
-draw();
-
-// ----------
-    
-    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
-    for (const f of required) {
-        if (!zip.file(f)) {
-            alert("ZIP mist bestand: " + f);
-            return;
-        }
-    }
-
-    alert("ZIP geopend en alle bestanden gevonden.");
-}
-
-    
+  
 </script>
 </body>
 </html>
