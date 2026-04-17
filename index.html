@@ -926,6 +926,7 @@ fileInput.onchange = async (event) => {
 };
 
 async function importSessionFromZip(file) {
+    alert("JSZip test: " + JSZip);
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
 
