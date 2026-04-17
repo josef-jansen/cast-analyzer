@@ -955,7 +955,6 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    // --- Data samenvoegen ---
     const combined = accData.map((d, i) => ({
         ax: d.ax,
         ay: d.ay,
@@ -965,7 +964,6 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    // --- Sessie-object maken ---
     const session = {
         name: meta.name || "Imported Session",
         sensorData: combined,
@@ -974,7 +972,6 @@ async function importSessionFromZip(file) {
         date: meta.date || new Date().toISOString()
     };
 
-    // --- Opslaan in IndexedDB ---
     const tx = db.transaction("sessions", "readwrite");
     const store = tx.objectStore("sessions");
     const addReq = store.add(session);
@@ -982,10 +979,8 @@ async function importSessionFromZip(file) {
     addReq.onsuccess = () => {
         const newId = addReq.result;
 
-        // --- UI lijst verversen ---
         loadSessionList();
 
-        // --- De sessie selecteren (EXACT zoals jouw app werkt) ---
         selectSession(newId, session.name);
 
         alert("Sessie geïmporteerd!");
@@ -995,6 +990,7 @@ async function importSessionFromZip(file) {
         alert("Kon sessie niet opslaan in IndexedDB.");
     };
 }
+
   
 </script>
 </body>
