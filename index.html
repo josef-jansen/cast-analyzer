@@ -962,7 +962,7 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    // --- Data samenvoegen in jouw eigen structuur ---
+    // --- Data samenvoegen (zoals jouw app verwacht) ---
     data = accData.map((d, i) => ({
         ax: d.ax,
         ay: d.ay,
@@ -972,35 +972,25 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    // --- Video opslaan ---
+    // --- Video opslaan in jouw eigen variabele ---
     currentVideoBlob = videoBlob;
 
-    // --- Video in vBack zetten ---
+    // --- Video in vBack zetten (EXACT zoals selectSession) ---
     const vBack = document.getElementById("vBack");
-    const videoURL = URL.createObjectURL(videoBlob);
-    vBack.src = videoURL;
+    vBack.src = URL.createObjectURL(currentVideoBlob);
+    vBack.pause();     // <<< BELANGRIJK: jouw selectSession doet dit ook
     vBack.load();
 
-    // --- iOS/Bluefy FIX: forceer videobuffer ---
-    vBack.muted = true;
-    try { await vBack.play(); } catch(e) {}
-    vBack.pause();
-
-    // --- Video zichtbaar maken ---
+    // --- UI naar playback-modus (EXACT zoals selectSession) ---
     elLive.style.display = "none";
     elBack.style.display = "block";
+    slider.disabled = false;
 
-    // --- Cruciaal: video starten op tijd 0 ---
-    vBack.currentTime = 0;
-
-    // --- UI laten syncen ---
-    setTimeout(updateUI, 300);
-
-    // --- UI updaten ---
+    // --- UI naam ---
     document.getElementById("selectedDisplay").innerText = meta.name || "Imported Session";
 
-    // --- Grafieken opnieuw tekenen ---
-    draw();
+    // --- UI sync (EXACT zoals selectSession) ---
+    setTimeout(updateUI, 500);
 
     alert("Sessie geïmporteerd!");
 }
