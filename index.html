@@ -924,11 +924,9 @@ fileInput.onchange = async (event) => {
 
 async function importSessionFromZip(file) {
 
-    // --- ZIP laden ---
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
 
-    // --- Bestanden checken ---
     const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
     for (const f of required) {
         if (!zip.file(f)) {
@@ -937,26 +935,22 @@ async function importSessionFromZip(file) {
         }
     }
 
-    // --- Bestanden uitlezen ---
     const accText = await zip.file("acc.csv").async("string");
     const gyroText = await zip.file("gyro.csv").async("string");
     const metaText = await zip.file("meta.json").async("string");
     const videoBlob = await zip.file("video.mp4").async("blob");
 
-    // --- JSON parsen ---
     const meta = JSON.parse(metaText);
 
-    // --- CSV parser ---
     function parseCSV(text) {
         const lines = text.trim().split("\n");
         const headers = lines[0].split(",");
-        const rows = lines.slice(1).map(line => {
+        return lines.slice(1).map(line => {
             const values = line.split(",");
             const obj = {};
             headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
             return obj;
         });
-        return rows;
     }
 
     const accData = parseCSV(accText);
@@ -975,21 +969,27 @@ async function importSessionFromZip(file) {
     // --- Video opslaan ---
     currentVideoBlob = videoBlob;
 
-    // --- VIDEO IN JOUW ECHTE ELEMENT (elBack) ---
+    // --- Video instellen ---
     elBack.src = URL.createObjectURL(currentVideoBlob);
-    elBack.pause();
     elBack.load();
+    elBack.pause();
 
-    // --- UI naar playback-modus ---
+    // --- UI naar playback ---
     elLive.style.display = "none";
     elBack.style.display = "block";
-    slider.disabled = false;
+
+    // --- BELANGRIJK: globale variabelen zetten ---
+    duration = data.length;      // jouw selectSession doet dit ook
+    progress = 0;
+    slider.max = duration;
+    slider.value = 0;
+    isPlaying = false;
 
     // --- UI naam ---
     selectedDisplay.innerText = meta.name || "Imported Session";
 
     // --- UI sync ---
-    setTimeout(updateUI, 500);
+    setTimeout(updateUI, 300);
 
     alert("Sessie geïmporteerd!");
 }
