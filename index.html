@@ -205,7 +205,14 @@
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         <button id="btnExport">Exporteren</button>
-                
+        <input 
+            type="file" 
+            id="fileImport" 
+            accept=".zip" 
+            style="display:none"
+        />
+        <button id="btnImport">Importeer sessie</button>
+        
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
