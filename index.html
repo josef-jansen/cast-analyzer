@@ -889,7 +889,7 @@ document.getElementById("btnExport").onclick = async () => {
         if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
             await navigator.share({
                 files: [zipFile],
-                title: "Cast Analyzer Export"
+                title: "Cast Analyzer Export V2"
             });
         } else {
             alert("Delen van bestanden wordt niet ondersteund in deze browser.");
