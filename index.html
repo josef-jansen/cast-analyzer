@@ -956,7 +956,7 @@ async function importSessionFromZip(file) {
     const gyroData = parseCSV(gyroText);
 
     // --- Data samenvoegen ---
-    data = accData.map((d, i) => ({
+    const combined = accData.map((d, i) => ({
         ax: d.ax,
         ay: d.ay,
         az: d.az,
@@ -965,32 +965,35 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    // --- Video opslaan ---
-    currentVideoBlob = videoBlob;
+    // --- Sessie-object maken ---
+    const session = {
+        name: meta.name || "Imported Session",
+        sensorData: combined,
+        videoBlob: videoBlob,
+        axis: meta.axis || "x",
+        date: meta.date || new Date().toISOString()
+    };
 
-    // --- Video instellen ---
-    elBack.src = URL.createObjectURL(currentVideoBlob);
-    elBack.load();
-    elBack.pause();
+    // --- Opslaan in IndexedDB ---
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add(session);
 
-    // --- UI naar playback ---
-    elLive.style.display = "none";
-    elBack.style.display = "block";
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
 
-    // --- BELANGRIJK: globale variabelen zetten ---
-    duration = data.length;      // jouw selectSession doet dit ook
-    progress = 0;
-    slider.max = duration;
-    slider.value = 0;
-    isPlaying = false;
+        // --- UI lijst verversen ---
+        loadSessionList();
 
-    // --- UI naam ---
-    selectedDisplay.innerText = meta.name || "Imported Session";
+        // --- De sessie selecteren (EXACT zoals jouw app werkt) ---
+        selectSession(newId, session.name);
 
-    // --- UI sync ---
-    setTimeout(updateUI, 300);
+        alert("Sessie geïmporteerd!");
+    };
 
-    alert("Sessie geïmporteerd!");
+    addReq.onerror = () => {
+        alert("Kon sessie niet opslaan in IndexedDB.");
+    };
 }
   
 </script>
