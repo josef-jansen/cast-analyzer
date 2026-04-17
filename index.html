@@ -838,12 +838,17 @@ document.getElementById("btnExport").onclick = async () => {
 
     const zip = new JSZip();
 
-    // --- SENSOR CSV ---
-    let sensorCSV = "t,ax,ay,az\n";
+    // --- BESTANDSNAAM OP BASIS VAN SESSIENAAM ---
+    let rawName = selectedDisplay.textContent || "Onbekend";
+    rawName = rawName.replace(/:/g, "-").replace(/\s+/g, "_"); 
+    const zipFileName = `${rawName}.zip`;
+
+    // --- ACC CSV ---
+    let accCSV = "t,ax,ay,az\n";
     data.forEach((d, i) => {
-        sensorCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+        accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
     });
-    zip.file("sensor.csv", sensorCSV);
+    zip.file("acc.csv", accCSV);
 
     // --- GYRO CSV ---
     let gyroCSV = "t,gx,gy,gz\n";
@@ -870,7 +875,7 @@ document.getElementById("btnExport").onclick = async () => {
 
     // --- DELEN VIA IOS (WERKT IN BLUEFY!) ---
     try {
-        const zipFile = new File([zipBlob], "cast-session.zip", {
+        const zipFile = new File([zipBlob], zipFileName, {
             type: "application/zip"
         });
 
@@ -878,7 +883,7 @@ document.getElementById("btnExport").onclick = async () => {
             await navigator.share({
                 files: [zipFile],
                 title: "Cast Analyzer Export",
-                text: "Cast Analyzer sessie"
+                text: `Sessie: ${selectedDisplay.textContent}`
             });
         } else {
             alert("Delen van bestanden wordt niet ondersteund in deze browser.");
@@ -888,6 +893,7 @@ document.getElementById("btnExport").onclick = async () => {
         alert("Er ging iets mis bij het delen van de ZIP.");
     }
 };
+
 
     
 </script>
