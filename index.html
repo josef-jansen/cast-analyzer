@@ -962,6 +962,19 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
+    // --- Data samenvoegen ---
+    data = accData.map((d, i) => ({
+        ax: d.ax,
+        ay: d.ay,
+        az: d.az,
+        gx: gyroData[i].gx,
+        gy: gyroData[i].gy,
+        gz: gyroData[i].gz
+    }));
+
+    // --- Video opslaan ---
+    currentVideoBlob = videoBlob;
+
     // --- Video in vBack zetten ---
     const videoURL = URL.createObjectURL(videoBlob);
     const vBack = document.getElementById("vBack");
@@ -971,10 +984,6 @@ async function importSessionFromZip(file) {
     // --- Video zichtbaar maken ---
     elLive.style.display = "none";
     elBack.style.display = "block";
-    
-    // --- Data in jouw app zetten ---
-    window.acc = accData;
-    window.gyro = gyroData;
 
     // --- UI updaten ---
     document.getElementById("selectedDisplay").innerText = meta.name || "Imported Session";
