@@ -967,7 +967,7 @@ async function importSessionFromZip(file) {
     const session = {
         name: meta.name || "Imported Session",
         sensorData: combined,
-        videoBlob: videoBlob,
+        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
         axis: meta.axis || "x",
         date: meta.date || new Date().toISOString()
     };
