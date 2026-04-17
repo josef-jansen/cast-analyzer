@@ -910,23 +910,18 @@ btnImport.onclick = () => {
 };
 
 fileInput.onchange = async (event) => {
+    alert("onchange gestart");
+
     const file = event.target.files[0];
-    if (!file) {
-        return;
-    }
+    if (!file) return;
 
     if (!file.name.endsWith(".zip")) {
         alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
         return;
     }
 
-    // Voor nu alleen een testmelding:
     await importSessionFromZip(file);
 
-    // Later vervangen we dit door:
-    // await importSessionFromZip(file);
-
-    // Reset zodat je hetzelfde bestand opnieuw kunt kiezen
     fileInput.value = "";
 };
 
