@@ -976,10 +976,15 @@ async function importSessionFromZip(file) {
     currentVideoBlob = videoBlob;
 
     // --- Video in vBack zetten ---
-    const videoURL = URL.createObjectURL(videoBlob);
     const vBack = document.getElementById("vBack");
+    const videoURL = URL.createObjectURL(videoBlob);
     vBack.src = videoURL;
     vBack.load();
+
+    // --- iOS/Bluefy FIX: forceer videobuffer ---
+    vBack.muted = true;
+    try { await vBack.play(); } catch(e) {}
+    vBack.pause();
 
     // --- Video zichtbaar maken ---
     elLive.style.display = "none";
@@ -999,7 +1004,6 @@ async function importSessionFromZip(file) {
 
     alert("Sessie geïmporteerd!");
 }
-
   
 </script>
 </body>
