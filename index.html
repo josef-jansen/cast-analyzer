@@ -962,7 +962,7 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    // --- Data samenvoegen ---
+    // --- Data samenvoegen in jouw eigen structuur ---
     data = accData.map((d, i) => ({
         ax: d.ax,
         ay: d.ay,
@@ -985,6 +985,12 @@ async function importSessionFromZip(file) {
     elLive.style.display = "none";
     elBack.style.display = "block";
 
+    // --- Cruciaal: video starten op tijd 0 ---
+    vBack.currentTime = 0;
+
+    // --- UI laten syncen ---
+    setTimeout(updateUI, 300);
+
     // --- UI updaten ---
     document.getElementById("selectedDisplay").innerText = meta.name || "Imported Session";
 
@@ -993,6 +999,7 @@ async function importSessionFromZip(file) {
 
     alert("Sessie geïmporteerd!");
 }
+
   
 </script>
 </body>
