@@ -926,13 +926,85 @@ fileInput.onchange = async (event) => {
 };
 
 async function importSessionFromZip(file) {
-    alert("JSZip test: " + JSZip);
 
-    alert("Start loadAsync");
+    // --- ZIP laden ---
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
-    alert("Na loadAsync");
 
+    // --- Bestanden checken ---
+    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    for (const f of required) {
+        if (!zip.file(f)) {
+            alert("ZIP mist bestand: " + f);
+            return;
+        }
+    }
+
+    // --- Bestanden uitlezen ---
+    const accText = await zip.file("acc.csv").async("string");
+    const gyroText = await zip.file("gyro.csv").async("string");
+    const metaText = await zip.file("meta.json").async("string");
+    const videoBlob = await zip.file("video.mp4").async("blob");
+
+    // --- JSON parsen ---
+    const meta = JSON.parse(metaText);
+
+    // --- CSV parser ---
+    function parseCSV(text) {
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",");
+        const rows = lines.slice(1).map(line => {
+            const values = line.split(",");
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
+            return obj;
+        });
+        return rows;
+    }
+
+    const accData = parseCSV(accText);
+    const gyroData = parseCSV(gyroText);
+
+    // --- Video in vBack zetten ---
+    const videoURL = URL.createObjectURL(videoBlob);
+    const vBack = document.getElementById("vBack");
+    vBack.src = videoURL;
+    vBack.load();
+
+    // --- Data in jouw app zetten ---
+    window.acc = accData;
+    window.gyro = gyroData;
+
+    // --- UI updaten ---
+    document.getElementById("selected").innerText = meta.name || "Imported Session";
+
+    // --- Grafieken opnieuw tekenen ---
+    draw();
+
+    alert("Sessie geïmporteerd!");
+}
+
+const accData = parseCSV(accText);
+const gyroData = parseCSV(gyroText);
+
+// --- Video laden ---
+const videoBlob = await zip.file("video.mp4").async("blob");
+const videoURL = URL.createObjectURL(videoBlob);
+
+// --- UI vullen ---
+document.getElementById("video").src = videoURL;
+document.getElementById("sessionName").innerText = meta.name || "Imported Session";
+document.getElementById("sessionTime").innerText = meta.time || "";
+
+// --- Data in jouw app zetten ---
+window.acc = accData;
+window.gyro = gyroData;
+
+// --- Grafieken opnieuw tekenen ---
+draw();
+
+// ----------
+    
     const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
     for (const f of required) {
         if (!zip.file(f)) {
