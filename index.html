@@ -920,7 +920,7 @@ fileInput.onchange = async (event) => {
     }
 
     // Voor nu alleen een testmelding:
-    alert("ZIP-bestand geselecteerd: " + file.name);
+    await importSessionFromZip(file);
 
     // Later vervangen we dit door:
     // await importSessionFromZip(file);
@@ -929,6 +929,21 @@ fileInput.onchange = async (event) => {
     fileInput.value = "";
 };
 
+async function importSessionFromZip(file) {
+    const jszip = new JSZip();
+    const zip = await jszip.loadAsync(file);
+
+    // Check of alle bestanden aanwezig zijn
+    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    for (const f of required) {
+        if (!zip.file(f)) {
+            alert("ZIP mist bestand: " + f);
+            return;
+        }
+    }
+
+    alert("ZIP geopend en alle bestanden gevonden.");
+}
     
 </script>
 </body>
