@@ -905,13 +905,10 @@ const fileInput = document.getElementById("fileImport");
 const btnImport = document.getElementById("btnImport");
 
 btnImport.onclick = () => {
-    alert("Import knop gekoppeld");
     fileInput.click();
 };
 
 fileInput.onchange = async (event) => {
-    alert("onchange gestart");
-
     const file = event.target.files[0];
     if (!file) return;
 
@@ -971,6 +968,10 @@ async function importSessionFromZip(file) {
     vBack.src = videoURL;
     vBack.load();
 
+    // --- Video zichtbaar maken ---
+    elLive.style.display = "none";
+    elBack.style.display = "block";
+    
     // --- Data in jouw app zetten ---
     window.acc = accData;
     window.gyro = gyroData;
