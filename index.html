@@ -927,10 +927,12 @@ fileInput.onchange = async (event) => {
 
 async function importSessionFromZip(file) {
     alert("JSZip test: " + JSZip);
+
+    alert("Start loadAsync");
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
+    alert("Na loadAsync");
 
-    // Check of alle bestanden aanwezig zijn
     const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
     for (const f of required) {
         if (!zip.file(f)) {
@@ -941,6 +943,7 @@ async function importSessionFromZip(file) {
 
     alert("ZIP geopend en alle bestanden gevonden.");
 }
+
     
 </script>
 </body>
