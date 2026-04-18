@@ -364,18 +364,20 @@ function selectSession(id, name) {
     db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
         if (!s) return; // Veiligheidscheck
+
         data = s.sensorData;
         currentVideoBlob = s.videoBlob;
         elBack.src = URL.createObjectURL(currentVideoBlob);
         elBack.pause();
-        axis = s.axis || 'x';
+
+        // ✔️ Belangrijk: axis + UI correct zetten
+        setAxis(s.axis || 'x');
+
         elLive.style.display = "none"; 
         elBack.style.display = "block";
         slider.disabled = false;
-        setTimeout(updateUI, 500);
     };
 }
-
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
