@@ -283,6 +283,26 @@ const slider = document.getElementById('syncSlider'), timeLabel = document.getEl
 const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
 // ---------------------------------------------------------
+// Hulpfunctie: niceScale helper
+// ---------------------------------------------------------
+
+function niceScale(maxAbs) {
+    if (maxAbs <= 0) return 1;
+
+    const exp = Math.floor(Math.log10(maxAbs));
+    const base = Math.pow(10, exp);
+    const n = maxAbs / base;
+
+    let nice;
+    if (n <= 1) nice = 1;
+    else if (n <= 2) nice = 2;
+    else if (n <= 5) nice = 5;
+    else nice = 10;
+
+    return nice * base;
+}
+    
+// ---------------------------------------------------------
 // Hulpfunctie: maakt beide grafieken volledig leeg
 // ---------------------------------------------------------
 function clearGraphs() {
@@ -293,7 +313,6 @@ function clearGraphs() {
         ctx.clearRect(0, 0, c.width, c.height);
     });
 }
-
     
 // --- DATABASE ---
 const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
@@ -541,9 +560,8 @@ function setAxis(a) {
 function draw() {
     if (data.length < 2) return;
 
-    let progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
+    const progress = (elBack.duration > 0) ? elBack.currentTime / elBack.duration : 0;
 
-    // --- NIEUW: X-Y-Z mode ---
     if (axis === 'xyz3') {
         const accX = data.map(d => d.ax);
         const accY = data.map(d => d.ay);
@@ -574,7 +592,6 @@ function draw() {
         return;
     }
 
-    // --- JOUW ORIGINELE CODE ---
     let accPoints, gyroPoints, labelSuffix;
 
     if (axis === 'xyz') {
@@ -600,23 +617,19 @@ function render(id, points, color, label, unit, progress) {
     const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
     const gW = w - pL - pR, gH = h - pT - pB;
 
-    // --- SCHAALBEPALING ---
-    let scaleY, center;
-    const maxAbs = Math.max(...points.map(Math.abs), 1);
-    const maxVal = maxAbs;
-    const steps = 4;
-
     ctx.clearRect(0, 0, w, h);
 
-    if (axis === 'xyz') {
-        scaleY = gH / maxAbs;
-        center = h - pB; // nul-lijn onderaan
-    } else {
-        scaleY = (gH / 2) / maxAbs;
-        center = h / 2; // nul-lijn in het midden
-    }
+    const rawMaxAbs = Math.max(...points.map(Math.abs), 1);
+    const maxAbs = niceScale(rawMaxAbs);
 
-    // --- Y-AS TEKENEN ---
+    const scaleY = (axis === 'xyz')
+        ? gH / maxAbs
+        : (gH / 2) / maxAbs;
+
+    const center = (axis === 'xyz')
+        ? h - pB
+        : h / 2;
+
     ctx.strokeStyle = "#444";
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
@@ -624,49 +637,44 @@ function render(id, points, color, label, unit, progress) {
     ctx.lineTo(pL, h - pB);
     ctx.stroke();
 
-    // --- Y-AS LABELS ---
+    const labels = [-maxAbs, -maxAbs/2, 0, maxAbs/2, maxAbs];
+
     ctx.fillStyle = "#ffffff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
-    for (let i = 0; i <= steps; i++) {
-        const val = (axis === 'xyz') 
-            ? (maxVal / steps) * i 
-            : (-maxAbs + (i * (2 * maxAbs / steps)));
-
+    labels.forEach(val => {
         const y = center - (val * scaleY);
         const rounded = unit === "m/s²" ? val.toFixed(1) : Math.round(val);
         ctx.fillText(rounded, pL - 8 * dpr, y);
-    }
+    });
 
-    // --- HORIZONTALE GRIDLINES ---
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.lineWidth = 0.5 * dpr;
+    for (let i = 0; i <= 8; i++) {
+        const frac = i / 8;
+        const y = pT + frac * gH;
 
-    for (let i = 0; i <= steps; i++) {
-        const val = (axis === 'xyz') 
-            ? (maxVal / steps) * i 
-            : (-maxAbs + (i * (2 * maxAbs / steps)));
+        ctx.strokeStyle = (i % 2 === 0)
+            ? "rgba(255,255,255,0.25)"
+            : "rgba(255,255,255,0.10)";
 
-        const y = center - (val * scaleY);
+        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     }
 
-    // --- VERTICALE GRIDLINES (TIJD) ---
-    const timeSteps = 10;
-    for (let i = 0; i <= timeSteps; i++) {
-        const x = pL + (i / timeSteps) * gW;
+    for (let i = 0; i <= 10; i++) {
+        const x = pL + (i / 10) * gW;
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 0.5 * dpr;
         ctx.beginPath();
         ctx.moveTo(x, pT);
         ctx.lineTo(x, h - pB);
         ctx.stroke();
     }
 
-    // --- MIDDELLIJN ---
     if (axis !== 'xyz') {
         ctx.strokeStyle = "rgba(255,255,255,0.3)";
         ctx.lineWidth = 1 * dpr;
@@ -676,7 +684,6 @@ function render(id, points, color, label, unit, progress) {
         ctx.stroke();
     }
 
-    // --- LIJN TEKENEN ---
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
@@ -689,7 +696,6 @@ function render(id, points, color, label, unit, progress) {
     });
     ctx.stroke();
 
-    // --- CURSOR ---
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -700,7 +706,6 @@ function render(id, points, color, label, unit, progress) {
         ctx.stroke();
     }
 
-    // --- TITEL ---
     ctx.fillStyle = "#ffffff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "left";
@@ -718,34 +723,51 @@ function renderMulti(id, series, title, unit, progress) {
 
     ctx.clearRect(0, 0, w, h);
 
-    const allPoints = series.flatMap(s => s.points);
-    const maxAbs = Math.max(...allPoints.map(Math.abs), 1);
+    const all = series.flatMap(s => s.points);
+    const rawMaxAbs = Math.max(...all.map(Math.abs), 1);
+    const maxAbs = niceScale(rawMaxAbs);
+
     const scaleY = (gH / 2) / maxAbs;
     const center = h / 2;
 
-    // horizontale grid
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    ctx.lineWidth = 0.5 * dpr;
+    const labels = [-maxAbs, -maxAbs/2, 0, maxAbs/2, maxAbs];
 
-    for (let i = 0; i <= 4; i++) {
-        const val = -maxAbs + (i * (2 * maxAbs / 4));
+    ctx.fillStyle = "#ffffff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    labels.forEach(val => {
         const y = center - (val * scaleY);
+        const rounded = unit === "m/s²" ? val.toFixed(1) : Math.round(val);
+        ctx.fillText(rounded, pL - 8 * dpr, y);
+    });
+
+    for (let i = 0; i <= 8; i++) {
+        const frac = i / 8;
+        const y = pT + frac * gH;
+
+        ctx.strokeStyle = (i % 2 === 0)
+            ? "rgba(255,255,255,0.25)"
+            : "rgba(255,255,255,0.10)";
+
+        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     }
 
-    // verticale grid (tijd)
     for (let i = 0; i <= 10; i++) {
         const x = pL + (i / 10) * gW;
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 0.5 * dpr;
         ctx.beginPath();
         ctx.moveTo(x, pT);
         ctx.lineTo(x, h - pB);
         ctx.stroke();
     }
 
-    // middenlijn
     ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
@@ -753,7 +775,6 @@ function renderMulti(id, series, title, unit, progress) {
     ctx.lineTo(w - pR, center);
     ctx.stroke();
 
-    // lijnen
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -768,7 +789,6 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     });
 
-    // cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -779,13 +799,11 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.stroke();
     }
 
-    // titel
     ctx.fillStyle = "#ffffff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-    // legenda
     let lx = w - pR - 80 * dpr;
     let ly = pT + 10 * dpr;
 
