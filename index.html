@@ -335,7 +335,6 @@ function loadArchiveList() {
     };
 }
 
-
 function selectSession(id, name) {
     const display = document.getElementById("selectedDisplay");
     display.textContent = name;
@@ -350,6 +349,21 @@ function selectSession(id, name) {
         elBack.src = URL.createObjectURL(currentVideoBlob);
         elBack.pause();
 
+        // ✔️ UI RESET — DIT WAS JE KWIJT
+        isPlaying = false;
+        btnPlayPause.innerHTML = "▶️";   // play icoon
+
+        elBack.playbackRate = 1.0;
+        btnSpeed025.classList.remove("active");
+        btnSpeed05.classList.remove("active");
+        btnSpeed1.classList.add("active");
+
+        // slider terug naar begin
+        slider.value = 0;
+
+        // tijd terug naar 0.00
+        elTime.textContent = "0.00s";
+
         // ✔️ Belangrijk: axis + UI correct zetten
         setAxis(s.axis || 'x');
 
@@ -358,6 +372,7 @@ function selectSession(id, name) {
         slider.disabled = false;
     };
 }
+
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
