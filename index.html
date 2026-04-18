@@ -348,10 +348,10 @@ function selectSession(id, name) {
         currentVideoBlob = s.videoBlob;
         elBack.src = URL.createObjectURL(currentVideoBlob);
 
-        // Video pas starten zodra metadata geladen is
+        // Video klaarzetten maar NIET automatisch starten
         elBack.onloadedmetadata = () => {
             elBack.currentTime = 0;
-            elBack.play();
+            elBack.pause();   // belangrijk: NIET spelen
         };
 
         // UI RESET
@@ -374,8 +374,6 @@ function selectSession(id, name) {
         slider.disabled = false;
     };
 }
-
-
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
