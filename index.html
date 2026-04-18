@@ -346,35 +346,11 @@ function selectSession(id, name) {
 
         data = s.sensorData;
         currentVideoBlob = s.videoBlob;
+
         elBack.src = URL.createObjectURL(currentVideoBlob);
+        elBack.currentTime = 0;
+        elBack.pause();
 
-        // iOS FIX: eerste frame zichtbaar maken zonder autoplay
-        elBack.onloadedmetadata = () => {
-            elBack.currentTime = 0;
-
-            const p = elBack.play();
-            if (p !== undefined) {
-                p.then(() => {
-                    elBack.pause();   // direct pauzeren → eerste frame zichtbaar
-                }).catch(() => {
-                    elBack.pause();
-                });
-            }
-        };
-
-        // UI RESET
-        isPlaying = false;
-        btnPlayPause.innerHTML = "▶️";
-
-        elBack.playbackRate = 1.0;
-        btnSpeed025.classList.remove("active");
-        btnSpeed05.classList.remove("active");
-        btnSpeed1.classList.add("active");
-
-        slider.value = 0;
-        elTime.textContent = "0.00s";
-
-        // Axis herstellen
         setAxis(s.axis || 'x');
 
         elLive.style.display = "none";
@@ -382,6 +358,7 @@ function selectSession(id, name) {
         slider.disabled = false;
     };
 }
+
 
 // Zorg dat de lijst opent als je op de display klikt
 selectedDisplay.onclick = () => {
