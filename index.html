@@ -1073,6 +1073,15 @@ async function importSessionFromZip(file) {
     };
 }
 
+// UI reset bij opstarten
+    isPlaying = false;
+    btnPlayPause.innerHTML = "▶️";
+
+    elBack.playbackRate = 1.0;
+    btnSpeed025.classList.remove("active");
+    btnSpeed05.classList.remove("active");
+    btnSpeed1.classList.add("active");
+    
   
 </script>
 </body>
