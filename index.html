@@ -342,36 +342,39 @@ function selectSession(id, name) {
 
     db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
-        if (!s) return; // Veiligheidscheck
+        if (!s) return;
 
         data = s.sensorData;
         currentVideoBlob = s.videoBlob;
         elBack.src = URL.createObjectURL(currentVideoBlob);
-        elBack.pause();
 
-        // ✔️ UI RESET — DIT WAS JE KWIJT
+        // Video pas starten zodra metadata geladen is
+        elBack.onloadedmetadata = () => {
+            elBack.currentTime = 0;
+            elBack.play();
+        };
+
+        // UI RESET
         isPlaying = false;
-        btnPlayPause.innerHTML = "▶️";   // play icoon
+        btnPlayPause.innerHTML = "▶️";
 
         elBack.playbackRate = 1.0;
         btnSpeed025.classList.remove("active");
         btnSpeed05.classList.remove("active");
         btnSpeed1.classList.add("active");
 
-        // slider terug naar begin
         slider.value = 0;
-
-        // tijd terug naar 0.00
         elTime.textContent = "0.00s";
 
-        // ✔️ Belangrijk: axis + UI correct zetten
+        // Axis herstellen
         setAxis(s.axis || 'x');
 
-        elLive.style.display = "none"; 
+        elLive.style.display = "none";
         elBack.style.display = "block";
         slider.disabled = false;
     };
 }
+
 
 
 // Zorg dat de lijst opent als je op de display klikt
