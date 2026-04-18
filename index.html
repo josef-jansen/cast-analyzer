@@ -543,7 +543,9 @@ function computeScale(points, type) {
     const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
     const maxPos = Math.max(...points, 0.0001);
 
-    // --- XYZ (altijd positief) ---
+    // -----------------------------
+    // 1. XYZ (kwadratisch gemiddelde)
+    // -----------------------------
     if (type === "xyz") {
         let max;
         if (maxPos <= 1) max = 1;
@@ -559,7 +561,9 @@ function computeScale(points, type) {
         return { min: 0, max, labels };
     }
 
-    // --- Versnelling & Multi (symmetrisch) ---
+    // -------------------------------------
+    // 2. Versnelling (X/Y/Z) + Multi (XYZ3)
+    // -------------------------------------
     if (type === "single" || type === "multi") {
         let max;
         if (maxAbs <= 1) max = 1;
@@ -578,7 +582,9 @@ function computeScale(points, type) {
         return { min: -max, max, labels };
     }
 
-    // --- Gyro ---
+    // -----------------------------
+    // 3. Gyro (rotatie)
+    // -----------------------------
     const nice = [1,2,5,10,20,50,100,200,500,1000];
     let max = nice.find(n => n >= maxAbs) || nice[nice.length - 1];
     let labels = [-max, -max/2, 0, max/2, max];
