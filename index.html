@@ -652,6 +652,18 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     });
 
+    // Verticale gridlijnen links en rechts
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
@@ -720,6 +732,18 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // Verticale gridlijnen links en rechts
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+    
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -749,6 +773,26 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+
+    // ▼▼▼ LEGEND ▼▼▼
+        let lx = pL + 10 * dpr;
+        let ly = h - pB + 20 * dpr;
+
+        series.forEach(s => {
+            // kleurblokje
+            ctx.fillStyle = s.color;
+            ctx.fillRect(lx, ly - 10 * dpr, 20 * dpr, 10 * dpr);
+
+            // tekst
+            ctx.fillStyle = "#fff";
+            ctx.font = (14 * dpr) + "px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(s.label, lx + 25 * dpr, ly);
+
+            // volgende item
+            lx += 80 * dpr;
+        });
+// ▲▲▲ EINDE LEGEND ▲▲▲
 }
 
 function draw() {
