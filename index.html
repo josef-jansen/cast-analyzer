@@ -742,7 +742,7 @@ function renderMulti(id, series, title, unit, progress) {
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
-0
+
     // ✔️ Titel
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
@@ -839,7 +839,7 @@ function draw() {
 const playPauseBtn = document.getElementById("playPauseBtn");
 const speedButtons = document.querySelectorAll(".speedBtn");
 
-p0layPauseBtn.addEventListener("click", () => {
+playPauseBtn.addEventListener("click", () => {
     if (elBack.paused) {
         elBack.play();
         playPauseBtn.textContent = "⏸";
