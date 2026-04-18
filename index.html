@@ -543,55 +543,47 @@ function computeScale(points, type) {
     const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
     const maxPos = Math.max(...points, 0.0001);
 
-    // ✔️ Mooie schaalwaarden
-    const niceValues = [1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000];
-
-    function pickNice(v) {
-        for (let n of niceValues) {
-            if (n >= v) return n;
-        }
-        return niceValues[niceValues.length - 1];
-    }
-
-    let min, max, labels = [];
-
-    // ✔️ XYZ magnitude (altijd positief)
+    // --- XYZ (altijd positief) ---
     if (type === "xyz") {
-        max = pickNice(maxPos);
-        min = 0;
+        let max;
+        if (maxPos <= 1) max = 1;
+        else if (maxPos <= 2) max = 2;
+        else if (maxPos <= 3) max = 3;
+        else if (maxPos <= 4) max = 4;
+        else max = 5;
 
-        const step = max / 3;
-        labels = [0, step, step * 2, max];
+        let labels;
+        if (max === 1) labels = [0, 0.5, 1];
+        else labels = Array.from({length: max + 1}, (_, i) => i);
+
+        return { min: 0, max, labels };
     }
 
-    // ✔️ X‑Y‑Z multi (symmetrisch)
-    else if (type === "multi") {
-        max = pickNice(maxAbs);
-        min = -max;
+    // --- Versnelling & Multi (symmetrisch) ---
+    if (type === "single" || type === "multi") {
+        let max;
+        if (maxAbs <= 1) max = 1;
+        else if (maxAbs <= 2) max = 2;
+        else if (maxAbs <= 3) max = 3;
+        else if (maxAbs <= 4) max = 4;
+        else max = 5;
 
-        const step = max / 3;
-        labels = [-max, -step * 2, -step, 0, step, step * 2, max];
+        let labels;
+        if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
+        else if (max === 2) labels = [-2, -1, 0, 1, 2];
+        else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
+        else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+        else labels = [-5, -2.5, 0, 2.5, 5];
+
+        return { min: -max, max, labels };
     }
 
-    // ✔️ Gyro (5 labels)
-    else if (type === "gyro") {
-        max = pickNice(maxAbs);
-        min = -max;
+    // --- Gyro ---
+    const nice = [1,2,5,10,20,50,100,200,500,1000];
+    let max = nice.find(n => n >= maxAbs) || nice[nice.length - 1];
+    let labels = [-max, -max/2, 0, max/2, max];
 
-        const step = max / 2;
-        labels = [-max, -step, 0, step, max];
-    }
-
-    // ✔️ Single axis versnelling (X, Y, Z)
-    else {
-        max = pickNice(maxAbs);
-        min = -max;
-
-        const step = max / 3;
-        labels = [-max, -step * 2, -step, 0, step, step * 2, max];
-    }
-
-    return { min, max, labels };
+    return { min: -max, max, labels };
 }
 
 function render(id, points, color, label, unit, progress, type) {
