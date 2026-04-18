@@ -770,35 +770,39 @@ function draw() {
 
     // ✔️ X‑Y‑Z (drie lijnen)
     if (axis === 'xyz3') {
+        // Versnelling multi
         renderMulti("cAcc",
             [
                 { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
                 { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            "Versnelling X‑Y‑Z", "m/s²", progress
+            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
         );
 
+        // Rotatie multi → GYRO schaal
         renderMulti("cGyro",
             [
                 { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
                 { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            "Rotatie X‑Y‑Z", "°/s", progress
+            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
         );
 
         return;
     }
 
-    let accPoints, gyroPoints, labelSuffix, accType;
+    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
     // ✔️ XYZ magnitude
     if (axis === 'xyz') {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
-        accType = "xyz";   // ✔️ belangrijk
+
+        accType = "xyz";   // versnelling XYZ
+        gyroType = "xyz";  // rotatie XYZ → ook positief!
     }
 
     // ✔️ Single axis (X, Y, Z)
@@ -806,7 +810,9 @@ function draw() {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
-        accType = "single";   // ✔️ belangrijk
+
+        accType = "single"; // versnelling single
+        gyroType = "gyro";  // rotatie single → gyro schaal
     }
 
     // ✔️ Versnelling
@@ -820,7 +826,7 @@ function draw() {
         accType
     );
 
-    // ✔️ Rotatie (altijd eigen schaal)
+    // ✔️ Rotatie
     render(
         "cGyro",
         gyroPoints,
@@ -828,7 +834,7 @@ function draw() {
         "Rotatie " + labelSuffix,
         "°/s",
         progress,
-        accType   // ✔️ belangrijk
+        gyroType
     );
 }
     
