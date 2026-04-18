@@ -299,19 +299,21 @@ function niceScale(maxAbs) {
     else if (n <= 5) nice = 5;
     else nice = 10;
 
-    let scaled = nice * base;
+    const original = nice * base;
+    let scaled = original;
 
-    // ✔️ 1.5× regel: als nice-scale te groot is → kleinere nice-scale
+    // 1.5× regel
     if (scaled / maxAbs > 1.5) {
         if (nice === 10) scaled = 5 * base;
         else if (nice === 5) scaled = 2 * base;
         else if (nice === 2) scaled = 1 * base;
-        // nice === 1 → kan niet kleiner
     }
+
+    // ✔️ Safety check: schaal mag nooit kleiner zijn dan echte maxAbs
+    if (scaled < maxAbs) scaled = original;
 
     return scaled;
 }
-
     
 // ---------------------------------------------------------
 // Hulpfunctie: maakt beide grafieken volledig leeg
