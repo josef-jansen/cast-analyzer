@@ -348,10 +348,18 @@ function selectSession(id, name) {
         currentVideoBlob = s.videoBlob;
         elBack.src = URL.createObjectURL(currentVideoBlob);
 
-        // Video klaarzetten maar NIET automatisch starten
+        // iOS FIX: eerste frame zichtbaar maken zonder autoplay
         elBack.onloadedmetadata = () => {
             elBack.currentTime = 0;
-            elBack.pause();   // belangrijk: NIET spelen
+
+            const p = elBack.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    elBack.pause();   // direct pauzeren → eerste frame zichtbaar
+                }).catch(() => {
+                    elBack.pause();
+                });
+            }
         };
 
         // UI RESET
