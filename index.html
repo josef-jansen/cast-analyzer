@@ -544,7 +544,39 @@ function computeScale(points, type) {
     const maxPos = Math.max(...points, 0.0001);
 
     // -----------------------------
-    // 1. XYZ (kwadratisch gemiddelde)
+    // ROTATIE (gyro) – auto-detect
+    // -----------------------------
+    const isGyro = maxAbs > 20; // versnelling komt nooit boven 20
+
+    // -----------------------------
+    // ROTATIE XYZ (kwadratisch gemiddelde)
+    // -----------------------------
+    if (type === "xyz" && isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxPos) || 1000;
+
+        let labels = [];
+        for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
+
+        return { min: 0, max, labels };
+    }
+
+    // -----------------------------
+    // ROTATIE X-Y-Z (drie lijnen)
+    // -----------------------------
+    if (isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxAbs) || 1000;
+
+        return { 
+            min: -max, 
+            max, 
+            labels: [-max, -max/2, 0, max/2, max] 
+        };
+    }
+
+    // -----------------------------
+    // VERSNELLING XYZ (kwadratisch gemiddelde)
     // -----------------------------
     if (type === "xyz") {
         let max;
@@ -561,36 +593,26 @@ function computeScale(points, type) {
         return { min: 0, max, labels };
     }
 
-    // -------------------------------------
-    // 2. Versnelling (X/Y/Z) + Multi (XYZ3)
-    // -------------------------------------
-    if (type === "single" || type === "multi") {
-        let max;
-        if (maxAbs <= 1) max = 1;
-        else if (maxAbs <= 2) max = 2;
-        else if (maxAbs <= 3) max = 3;
-        else if (maxAbs <= 4) max = 4;
-        else max = 5;
-
-        let labels;
-        if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
-        else if (max === 2) labels = [-2, -1, 0, 1, 2];
-        else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
-        else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-        else labels = [-5, -2.5, 0, 2.5, 5];
-
-        return { min: -max, max, labels };
-    }
-
     // -----------------------------
-    // 3. Gyro (rotatie)
+    // VERSNELLING X/Y/Z + MULTI
     // -----------------------------
-    const nice = [1,2,5,10,20,50,100,200,500,1000];
-    let max = nice.find(n => n >= maxAbs) || nice[nice.length - 1];
-    let labels = [-max, -max/2, 0, max/2, max];
+    let max;
+    if (maxAbs <= 1) max = 1;
+    else if (maxAbs <= 2) max = 2;
+    else if (maxAbs <= 3) max = 3;
+    else if (maxAbs <= 4) max = 4;
+    else max = 5;
+
+    let labels;
+    if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
+    else if (max === 2) labels = [-2, -1, 0, 1, 2];
+    else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
+    else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    else labels = [-5, -2.5, 0, 2.5, 5];
 
     return { min: -max, max, labels };
 }
+
 
 function render(id, points, color, label, unit, progress, type) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
@@ -603,7 +625,6 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.clearRect(0, 0, w, h);
 
-    // ✔️ Nieuwe schaal-engine
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
 
@@ -612,7 +633,6 @@ function render(id, points, color, label, unit, progress, type) {
         ? gH / max
         : (gH / 2) / max;
 
-    // ✔️ Y-as labels
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -623,25 +643,15 @@ function render(id, points, color, label, unit, progress, type) {
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
-        const rounded = (unit === "m/s²") ? val.toFixed(1) : Math.round(val);
-        ctx.fillText(rounded, pL - 8 * dpr, y);
-    });
-
-    // ✔️ Gridlijnen op basis van labels
-    labels.forEach(val => {
-        const y = (type === "xyz")
-            ? (h - pB) - (val * scaleY)
-            : (h / 2) - (val * scaleY);
+        ctx.fillText(val, pL - 8 * dpr, y);
 
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    // ✔️ Lijn tekenen
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
@@ -657,24 +667,21 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.stroke();
 
-    // ✔️ Cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
-        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    // ✔️ Titel
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-function renderMulti(id, series, title, unit, progress) {
+function renderMulti(id, series, title, unit, progress, type = "multi") {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -685,37 +692,34 @@ function renderMulti(id, series, title, unit, progress) {
 
     ctx.clearRect(0, 0, w, h);
 
-    // ✔️ Nieuwe schaal-engine
     const all = series.flatMap(s => s.points);
-    const scale = computeScale(all, "multi");
+    const scale = computeScale(all, type);
     const { min, max, labels } = scale;
 
-    const center = h / 2;
-    const scaleY = (gH / 2) / max;
+    const center = (type === "xyz") ? (h - pB) : (h / 2);
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
 
-    // ✔️ Y-as labels
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = center - (val * scaleY);
-        ctx.fillText(Math.round(val), pL - 8 * dpr, y);
-    });
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
 
-    // ✔️ Gridlijnen op basis van labels
-    labels.forEach(val => {
-        const y = center - (val * scaleY);
+        ctx.fillText(val, pL - 8 * dpr, y);
+
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    // ✔️ Lijnen tekenen
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -723,42 +727,28 @@ function renderMulti(id, series, title, unit, progress) {
 
         s.points.forEach((p, i) => {
             const x = pL + (i / (s.points.length - 1)) * gW;
-            const y = center - (p * scaleY);
+            const y = (type === "xyz")
+                ? (h - pB) - (p * scaleY)
+                : (h / 2) - (p * scaleY);
+
             i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         });
 
         ctx.stroke();
     });
 
-    // ✔️ Cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
-        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    // ✔️ Titel
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
-
-    // ✔️ Legenda
-    let lx = w - pR - 10 * dpr;
-    let ly = pT + 10 * dpr;
-
-    series.forEach(s => {
-        ctx.fillStyle = s.color;
-        ctx.fillRect(lx, ly, 20 * dpr, 8 * dpr);
-
-        ctx.fillStyle = "#fff";
-        ctx.fillText(s.label, lx + 28 * dpr, ly + 8 * dpr);
-
-        ly += 18 * dpr;
-    });
 }
 
 function draw() {
@@ -770,7 +760,6 @@ function draw() {
 
     // ✔️ X‑Y‑Z (drie lijnen)
     if (axis === 'xyz3') {
-        // Versnelling multi
         renderMulti("cAcc",
             [
                 { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
@@ -780,7 +769,6 @@ function draw() {
             "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
         );
 
-        // Rotatie multi → GYRO schaal
         renderMulti("cGyro",
             [
                 { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
@@ -801,8 +789,8 @@ function draw() {
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
 
-        accType = "xyz";   // versnelling XYZ
-        gyroType = "xyz";  // rotatie XYZ → ook positief!
+        accType = "xyz";
+        gyroType = "xyz"; // rotatie XYZ → positief
     }
 
     // ✔️ Single axis (X, Y, Z)
@@ -811,8 +799,8 @@ function draw() {
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
 
-        accType = "single"; // versnelling single
-        gyroType = "gyro";  // rotatie single → gyro schaal
+        accType = "single";
+        gyroType = "gyro"; // rotatie single → gyro schaal
     }
 
     // ✔️ Versnelling
