@@ -774,23 +774,32 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-// ▼▼▼ LEGEND RECHTSBOVEN ▼▼▼
+// ▼▼▼ LEGEND RECHTSBOVEN (perfect uitgelijnd) ▼▼▼
 let legendX = w - pR - 150 * dpr;   // afstand van rechterrand
-let legendY = pT + 5 * dpr;         // zelfde hoogte als titel
+let legendY = pT + 18 * dpr;        // zelfde hoogte als titel
 
 series.forEach(s => {
-    // kleurblokje
-    ctx.fillStyle = s.color;
-    ctx.fillRect(legendX, legendY, 20 * dpr, 10 * dpr);
+    const boxW = 20 * dpr;
+    const boxH = 10 * dpr;
 
-    // tekst
+    // kleurblokje (verticaal gecentreerd)
+    ctx.fillStyle = s.color;
+    ctx.fillRect(
+        legendX,
+        legendY - boxH / 2,
+        boxW,
+        boxH
+    );
+
+    // tekst (perfect gecentreerd naast blokje)
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "left";
-    ctx.fillText(s.label, legendX + 25 * dpr, legendY + 10 * dpr);
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
-    // volgende item rechts ernaast
-    legendX += 60 * dpr;
+    // volgende item
+    legendX += 70 * dpr;
 });
 // ▲▲▲ EINDE LEGEND ▲▲▲
 
