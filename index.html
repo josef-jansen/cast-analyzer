@@ -2,64 +2,8 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: #000;
-            touch-action: none;
-        }
-
-        body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-        }
-
-        /* iPad fullscreen fix */
-        @supports (-webkit-touch-callout: none) {
-            body {
-                position: fixed;
-                inset: 0;
-            }
-        }
-
-        /* Landscape blokkeren met overlay */
-        #rotateOverlay {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            color: #fff;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            z-index: 9999;
-            text-align: center;
-            padding: 20px;
-        }
-
-        @media (orientation: landscape) {
-            #rotateOverlay {
-                display: flex;
-            }
-        }
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cast-Analyzer</title>
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Cast Analyzer">
-
-    <link rel="manifest" href="manifest.json">
-
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
@@ -114,6 +58,7 @@
             overflow: hidden;
         }
 
+
         video {
             width: 100%;
             height: auto;
@@ -123,9 +68,9 @@
 
         /* Buttons & UI */
         button {
-            padding: 0 16px;
-            height: 44px;
-            line-height: 44px;
+            padding: 0 16px;       /* Padding boven/onder weg, we gebruiken height */
+            height: 44px;          /* Exact gelijk aan de Del knop en balk */
+            line-height: 44px;     /* Tekst verticaal centreren */
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -133,15 +78,17 @@
             background: #666;
             min-width: 90px; 
             margin: 4px;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Zorgt dat borders de knop niet groter maken */
         }
         
-        #btnConnect { background: #007aff; }
-        #btnStart   { background: #34c759; }
-        #btnStop    { background: #ff3b30; }
-        #btnSave    { background: #5856d6; }
-        #btnReset   { background: #8e8e93; }
+        /* Kleuren per knop */
+        #btnConnect { background: #007aff; }  /* blauw */
+        #btnStart   { background: #34c759; }  /* groen */
+        #btnStop    { background: #ff3b30; }  /* rood */
+        #btnSave    { background: #5856d6; }  /* paars */
+        #btnReset   { background: #8e8e93; }  /* grijs */
 
+        /* X/Y/Z segmented control */
         .axisBtn {
             padding: 0 14px;
             height: 32px;
@@ -169,6 +116,7 @@
             padding: 0 14px;
         }
 
+        
         .speedBtn {
             padding: 0 14px;
             height: 32px;
@@ -188,6 +136,7 @@
             color: #fff;
         }
         
+        /* DEL knop in dezelfde stijl als Reset */
         #btnDel {
             background: #8e8e93;
             height: 36px;
@@ -200,11 +149,11 @@
         }
         
         #archiveSelect {
-            appearance: select;
+            appearance: select; /* Terug naar de basis */
             -webkit-appearance: select;
             width: 80%;
             height: 44px;
-            font-size: 18px;
+            font-size: 18px; /* Iets groter om iPad te dwingen */
             border-radius: 8px;
             border: 1px solid #ccc;
             background: #fff;
@@ -212,6 +161,7 @@
             padding: 0 10px;
         }
 
+        /* Dit zorgt dat de regels in het uitklapmenu ook groot zijn */
         #archiveSelect option {
             font-size: 18px;
         }
@@ -220,7 +170,7 @@
         #vBack { display: none; }
         
         .graph-container {
-            background: #1c1c1e;
+            background: #1c1c1e; /* Donkergrijs/zwart */
             border-radius: 8px;
             padding: 5px;
             margin: 8px;
@@ -231,25 +181,23 @@
             justify-content: center;
         }
 
+        /* Professionele videokaart */
         .video-card {
             background: #000;
             border-radius: 12px;
             margin: 10px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             height: calc(var(--content-h) - 20px);
-            overflow: hidden;
+            overflow: hidden; /* voorkomt dat video buiten de randen komt */
             display: flex;
             align-items: center;
             justify-content: center;
         }
+       
     </style>
 </head>
-
 <body>
-    <div id="rotateOverlay">
-        Draai je iPad naar portretmodus om Cast Analyzer te gebruiken.
-    </div>
-    
+
     <div class="controls">
         <button id="btnConnect">Connect</button>
         <button id="btnStart" disabled>Start</button>
@@ -257,23 +205,28 @@
         <button id="btnSave" disabled>Save</button>
         <button id="btnReset" style="background:#8e8e93;">Reset</button>
         <button id="btnExport">Export</button>
-        <input type="file" id="fileImport" accept=".zip" style="display:none" />
+        <input 
+            type="file" 
+            id="fileImport" 
+            accept=".zip" 
+            style="display:none"
+        />
         <button id="btnImport">Import</button>
         
-        <div class="status-text">
-            Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span>
-        </div>
+        <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
-            <div id="customDropdown" style="width: 80%; position: relative;">
-                <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                    -- Worp Selecteren --
-                </div>
-                <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                </div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        <!-- HIER MOET DE ID STAAN: -->
+        <div id="customDropdown" style="width: 80%; position: relative;">
+            <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                -- Worp Selecteren --
             </div>
-            <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
+            <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                <!-- Hier komen de sessies -->
+            </div>
         </div>
+        <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
+    </div>
 
         <div style="margin-top:10px; line-height: 1;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
@@ -281,29 +234,31 @@
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
             <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+
         </div>
     </div>
 
-    <div class="section">
-        <div class="graph-container">
-            <canvas id="cAcc"></canvas>
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cAcc"></canvas>
+            </div>
         </div>
-    </div>
 
-    <div class="section">
-        <div class="graph-container">
-            <canvas id="cGyro"></canvas>
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cGyro"></canvas>
+            </div>
         </div>
-    </div>
     
-    <div class="section">
-        <div class="video-card">
-            <video id="vLive" playsinline muted autoplay></video>
-            <video id="vBack" playsinline></video>
+        <div class="section">
+            <div class="video-card">
+                <video id="vLive" playsinline muted autoplay></video>
+                <video id="vBack" playsinline></video>
+            </div>
         </div>
-    </div>
 
-    <div class="bottom-area">
+
+        <div class="bottom-area">
         <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
             <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
             <button id="playPauseBtn">▶︎</button>
@@ -312,403 +267,500 @@
             <button class="speedBtn" data-speed="1">1x</button>
         </div>
 
-        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
-    </div>
+            <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
+        </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
-    <script>
-    let char, stream, recorder, db, data = [];
-    let axis = 'x', chunks = [];
-    let currentVideoBlob = null;
+<script>
 
-    const elLive = document.getElementById('vLive');
-    const elBack = document.getElementById('vBack');
-    const elCount = document.getElementById('dataCount');
-    const slider = document.getElementById('syncSlider');
-    const timeLabel = document.getElementById('timeLabel');
-    const optionsList = document.getElementById('optionsList');
-    const selectedDisplay = document.getElementById('selectedDisplay');
+let char, stream, recorder, db, data = [];
+let axis = 'x', chunks = [];
+let currentVideoBlob = null;
 
-    function clearGraphs() {
-        const ids = ["cAcc", "cGyro"];
-        ids.forEach(id => {
-            const c = document.getElementById(id);
-            const ctx = c.getContext("2d");
-            ctx.clearRect(0, 0, c.width, c.height);
-        });
-    }
+const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
+const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
+const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
+
+// ---------------------------------------------------------
+// Hulpfunctie: maakt beide grafieken volledig leeg
+// ---------------------------------------------------------
+function clearGraphs() {
+    const ids = ["cAcc", "cGyro"];
+    ids.forEach(id => {
+        const c = document.getElementById(id);
+        const ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, c.width, c.height);
+    });
+}
     
-    const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
-    dbRequest.onupgradeneeded = (e) => {
-        e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
-    };
-    dbRequest.onsuccess = (e) => {
-        db = e.target.result;
-        loadArchiveList();
-    };
+// --- DATABASE ---
+const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
+dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true }); };
+dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 
-    function loadArchiveList() {
-        const list = document.getElementById("optionsList");
-        list.innerHTML = ""; 
+function loadArchiveList() {
+    const list = document.getElementById("optionsList");
+    list.innerHTML = ""; 
 
-        const store = db.transaction("sessions", "readonly").objectStore("sessions");
-        store.openCursor(null, "prev").onsuccess = (e) => {
-            const cursor = e.target.result;
-            if (cursor) {
-                const s = cursor.value;
+    const store = db.transaction("sessions", "readonly").objectStore("sessions");
+    store.openCursor(null, "prev").onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+            const s = cursor.value;
 
-                const item = document.createElement("div");
-                item.style.padding = "12px 10px";
-                item.style.borderBottom = "1px solid #eee";
-                item.style.fontSize = "16px";
-                item.style.whiteSpace = "nowrap";
-                item.style.overflow = "hidden";
-                item.style.textOverflow = "ellipsis";
-                item.style.textAlign = "left";
+            const item = document.createElement("div");
+            item.style.padding = "12px 10px";
+            item.style.borderBottom = "1px solid #eee";
+            item.style.fontSize = "16px";
+            item.style.whiteSpace = "nowrap";
+            item.style.overflow = "hidden";
+            item.style.textOverflow = "ellipsis";
+            item.style.textAlign = "left";
 
-                item.textContent = s.name;
+            item.textContent = s.name;
 
-                item.onclick = function() {
-                    selectSession(s.id, s.name);
-                    list.style.display = "none";
-                };
-                
-                list.appendChild(item);
-                cursor.continue();
-            }
-        };
-    }
-
-    function selectSession(id, name) {
-        const display = document.getElementById("selectedDisplay");
-        display.textContent = name;
-        display.dataset.value = id;
-
-        db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
-            const s = e.target.result;
-            if (!s) return;
-
-            data = s.sensorData;
-            currentVideoBlob = s.videoBlob;
-
-            elBack.src = URL.createObjectURL(currentVideoBlob);
-            elBack.currentTime = 0;
-            elBack.pause();
-
-            setAxis(s.axis || 'x');
-
-            elLive.style.display = "none";
-            elBack.style.display = "block";
-            slider.disabled = false;
-        };
-    }
-
-    selectedDisplay.onclick = () => {
-        optionsList.style.display = optionsList.style.display === "none" ? "block" : "none";
-    };
-
-    slider.oninput = () => {
-        if (elBack.duration > 0) {
-            elBack.currentTime = (slider.value / 1000) * elBack.duration;
-            updateUI();
+            item.onclick = function() {
+                selectSession(s.id, s.name);
+                list.style.display = "none";
+            };
+            
+            list.appendChild(item);
+            cursor.continue();
         }
     };
+}
 
-    function updateUI() {
-        if (elBack.duration > 0) {
-            timeLabel.innerText = elBack.currentTime.toFixed(2) + "s / " + elBack.duration.toFixed(2) + "s";
-        }
-        draw();
-        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
-    }
+function selectSession(id, name) {
+    const display = document.getElementById("selectedDisplay");
+    display.textContent = name;
+    display.dataset.value = id;
 
-    elBack.ontimeupdate = () => {
-        if (!recorder || recorder.state !== "recording") {
-            slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
-            updateUI();
-        }
-    };
+    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+        const s = e.target.result;
+        if (!s) return;
 
-    elBack.onended = () => {
-        playPauseBtn.textContent = "▶︎";
-    };
+        data = s.sensorData;
+        currentVideoBlob = s.videoBlob;
 
-    document.getElementById('btnConnect').onclick = async () => {
-        try {
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: "Cast-Analyzer" }],
-                optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-            });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-            char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-            elLive.srcObject = stream;
-            char.addEventListener('characteristicvaluechanged', (e) => {
-                const v = e.target.value;
-                data.push({
-                    ax: v.getInt16(0, true)/100,
-                    ay: v.getInt16(2, true)/100,
-                    az: v.getInt16(4, true)/100,
-                    gx: v.getInt16(6, true),
-                    gy: v.getInt16(8, true),
-                    gz: v.getInt16(10, true)
-                });
-                elCount.innerText = data.length;
-            });
-            document.getElementById('btnConnect').disabled = true;
-            document.getElementById('btnStart').disabled = false;
-        } catch (e) {
-            alert(e);
-        }
-    };
-
-    document.getElementById('btnStart').onclick = async () => {
-        data = [];
-        chunks = [];
-        elCount.innerText = "0";
-        slider.disabled = true;
-
-        await char.startNotifications();
-        recorder = new MediaRecorder(stream);
-        recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = () => {
-            elLive.style.display = "none";
-            elBack.style.display = "block";
-            currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
-            elBack.src = URL.createObjectURL(currentVideoBlob);
-            document.getElementById('btnSave').disabled = false;
-            slider.disabled = false;
-
-            setAxis('y');
-            setTimeout(updateUI, 1000);
-        };
-        recorder.start();
-        elBack.style.display = "none";
-        elLive.style.display = "block";
-        document.getElementById('btnStart').disabled = true;
-        document.getElementById('btnStop').disabled = false;
-    };
-
-    document.getElementById('btnStop').onclick = async () => {
-        try { await char.stopNotifications(); } catch(e) {}
-        recorder.stop();
-        document.getElementById('btnStop').disabled = true;
-        document.getElementById('btnStart').disabled = false;
-    };
-
-    document.getElementById('btnSave').onclick = () => {
-        const nu = new Date();
-        const datumString = nu.getFullYear() + "-" + 
-            String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
-            String(nu.getDate()).padStart(2, '0') + " " + 
-            String(nu.getHours()).padStart(2, '0') + ":" + 
-            String(nu.getMinutes()).padStart(2, '0');
-        
-        const inputNaam = prompt("Naam van de worp:", "Worp");
-        if (!inputNaam) return; 
-        
-        const baseName = datumString + " - " + inputNaam;
-        const status = "s";
-        const name = `${baseName} (${status})`;
-
-        const tx = db.transaction("sessions", "readwrite");
-        const store = tx.objectStore("sessions");
-        const addReq = store.add({ 
-            name,
-            baseName,
-            status,
-            sensorData: data, 
-            videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
-            axis, 
-            date: nu
-        });
-
-        addReq.onsuccess = () => {
-            const newId = addReq.result;
-            loadArchiveList();
-            selectSession(newId, name);
-            alert("Opgeslagen!");
-        };
-    };
-
-    document.getElementById('btnReset').onclick = async () => {
-        try { 
-            if (char) await char.stopNotifications(); 
-        } catch(e) {}
-
-        try { 
-            if (recorder && recorder.state !== "inactive") recorder.stop(); 
-        } catch(e) {}
-
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        elBack.currentTime = 0;
         elBack.pause();
+
+        setAxis(s.axis || 'x');
+
+        elLive.style.display = "none";
+        elBack.style.display = "block";
+        slider.disabled = false;
+    };
+}
+
+
+
+// Zorg dat de lijst opent als je op de display klikt
+selectedDisplay.onclick = () => {
+    optionsList.style.display = optionsList.style.display === "none" ? "block" : "none";
+};
+
+
+// --- SLIDER & UI ---
+slider.oninput = () => {
+    if (elBack.duration > 0) {
+        elBack.currentTime = (slider.value / 1000) * elBack.duration;
+        updateUI();
+    }
+};
+
+function updateUI() {
+    if (elBack.duration > 0) {
+        timeLabel.innerText = elBack.currentTime.toFixed(2) + "s / " + elBack.duration.toFixed(2) + "s";
+    }
+    draw();
+    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+}
+
+elBack.ontimeupdate = () => {
+    if (!recorder || recorder.state !== "recording") {
+        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        updateUI();
+    }
+};
+
+elBack.onended = () => {
+    playPauseBtn.textContent = "▶︎";
+};
+
+// --- CORE ---
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast-Analyzer" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        elLive.srcObject = stream;
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            const v = e.target.value;
+            data.push({ ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100, gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true) });
+            elCount.innerText = data.length;
+        });
+        document.getElementById('btnConnect').disabled = true; document.getElementById('btnStart').disabled = false;
+    } catch (e) { alert(e); }
+};
+
+document.getElementById('btnStart').onclick = async () => {
+    data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
+    await char.startNotifications();
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+        elLive.style.display = "none"; elBack.style.display = "block";
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        document.getElementById('btnSave').disabled = false; slider.disabled = false;
+
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
+        
+        setTimeout(updateUI, 1000);
+    };
+    recorder.start();
+    elBack.style.display = "none"; elLive.style.display = "block";
+    document.getElementById('btnStart').disabled = true; document.getElementById('btnStop').disabled = false;
+};
+
+document.getElementById('btnStop').onclick = async () => {
+    try { await char.stopNotifications(); } catch(e) {}
+    recorder.stop();
+    document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
+};
+
+document.getElementById('btnSave').onclick = () => {
+    const nu = new Date();
+    const datumString = nu.getFullYear() + "-" + 
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
+        String(nu.getDate()).padStart(2, '0') + " " + 
+        String(nu.getHours()).padStart(2, '0') + ":" + 
+        String(nu.getMinutes()).padStart(2, '0');
+    
+    const inputNaam = prompt("Naam van de worp:", "Worp");
+    if (!inputNaam) return; 
+    
+    const baseName = datumString + " - " + inputNaam;
+    const status = "s";
+    const name = `${baseName} (${status})`;
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add({ 
+        name,
+        baseName,
+        status,
+        sensorData: data, 
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+        axis, 
+        date: nu
+    });
+
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+
+        loadArchiveList();
+
+        // ▼▼▼ BELANGRIJK: DIRECT SELECTEREN ▼▼▼
+        selectSession(newId, name);
+        // ▲▲▲ EINDE FIX ▲▲▲
+
+        alert("Opgeslagen!");
+    };
+};
+
+
+document.getElementById('btnReset').onclick = async () => {
+
+    // 1. Stop BLE notificaties (als actief)
+    try { 
+        if (char) await char.stopNotifications(); 
+    } catch(e) {}
+
+    // 2. Stop recorder (als actief)
+    try { 
+        if (recorder && recorder.state !== "inactive") recorder.stop(); 
+    } catch(e) {}
+
+    // 3. Video terug naar live
+    elBack.pause();
+    elBack.src = "";
+    elBack.style.display = "none";
+    elLive.style.display = "block";
+
+    // 4. Data resetten
+    data = [];
+    chunks = [];
+    elCount.innerText = "0";
+
+    // 5. Slider resetten
+    slider.value = 0;
+    slider.disabled = true;
+
+    // 6. Tijdlabel resetten
+    timeLabel.innerText = "0.00s / 0.00s";
+
+    // 7. Grafieken leegmaken
+    clearGraphs();
+
+    // 8. UI terugzetten
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnSave').disabled = true;
+
+    // 9. Selectie wissen
+    selectedDisplay.textContent = "-- Worp Selecteren --";
+    delete selectedDisplay.dataset.value;
+    optionsList.style.display = "none";
+};
+
+function deleteSession() {
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId || !confirm("Verwijderen?")) return;
+
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(sessionId));
+    tx.oncomplete = () => {
+        selectedDisplay.textContent = "-- Worp Selecteren --";
+        delete selectedDisplay.dataset.value;
         elBack.src = "";
         elBack.style.display = "none";
         elLive.style.display = "block";
-
-        data = [];
-        chunks = [];
-        elCount.innerText = "0";
-
-        slider.value = 0;
-        slider.disabled = true;
-
-        timeLabel.innerText = "0.00s / 0.00s";
-
+        loadArchiveList();
         clearGraphs();
-
-        document.getElementById('btnStart').disabled = false;
-        document.getElementById('btnStop').disabled = true;
-        document.getElementById('btnSave').disabled = true;
-
-        selectedDisplay.textContent = "-- Worp Selecteren --";
-        delete selectedDisplay.dataset.value;
-        optionsList.style.display = "none";
     };
+}
+    
+function setAxis(a) {
+    axis = a.toLowerCase();
 
-    function deleteSession() {
-        const sessionId = selectedDisplay.dataset.value;
-        if (!sessionId || !confirm("Verwijderen?")) return;
+    document.querySelectorAll('.axisBtn').forEach(b => {
+        const bid = b.id.toLowerCase();
+        const target = 'b' + axis;
+        b.classList.toggle('active', bid === target);
+    });
 
-        const tx = db.transaction("sessions", "readwrite");
-        tx.objectStore("sessions").delete(Number(sessionId));
-        tx.oncomplete = () => {
-            selectedDisplay.textContent = "-- Worp Selecteren --";
-            delete selectedDisplay.dataset.value;
-            elBack.src = "";
-            elBack.style.display = "none";
-            elLive.style.display = "block";
-            loadArchiveList();
-            clearGraphs();
+    updateUI();
+}
+
+function computeScale(points, type) {
+    const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
+    const maxPos = Math.max(...points, 0.0001);
+
+    // -----------------------------
+    // ROTATIE (gyro) – auto-detect
+    // -----------------------------
+    const isGyro = maxAbs > 20; // versnelling komt nooit boven 20
+
+    // -----------------------------
+    // ROTATIE XYZ (kwadratisch gemiddelde)
+    // -----------------------------
+    if (type === "xyz" && isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxPos) || 1000;
+
+        let labels = [];
+        for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
+
+        return { min: 0, max, labels };
+    }
+
+    // -----------------------------
+    // ROTATIE X-Y-Z (drie lijnen)
+    // -----------------------------
+    if (isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxAbs) || 1000;
+
+        return { 
+            min: -max, 
+            max, 
+            labels: [-max, -max/2, 0, max/2, max] 
         };
     }
-    
-    function setAxis(a) {
-        axis = a.toLowerCase();
 
-        document.querySelectorAll('.axisBtn').forEach(b => {
-            const bid = b.id.toLowerCase();
-            const target = 'b' + axis;
-            b.classList.toggle('active', bid === target);
-        });
-
-        updateUI();
-    }
-
-    function computeScale(points, type) {
-        const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
-        const maxPos = Math.max(...points, 0.0001);
-
-        const isGyro = maxAbs > 20;
-
-        if (type === "xyz" && isGyro) {
-            const nice = [50,100,200,500,1000];
-            let max = nice.find(n => n >= maxPos) || 1000;
-
-            let labels = [];
-            for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
-
-            return { min: 0, max, labels };
-        }
-
-        if (isGyro) {
-            const nice = [50,100,200,500,1000];
-            let max = nice.find(n => n >= maxAbs) || 1000;
-
-            return { 
-                min: -max, 
-                max, 
-                labels: [-max, -max/2, 0, max/2, max] 
-            };
-        }
-
-        if (type === "xyz") {
-            let max;
-            if (maxPos <= 1) max = 1;
-            else if (maxPos <= 2) max = 2;
-            else if (maxPos <= 3) max = 3;
-            else if (maxPos <= 4) max = 4;
-            else max = 5;
-
-            let labels;
-            if (max === 1) labels = [0, 0.5, 1];
-            else labels = Array.from({length: max + 1}, (_, i) => i);
-
-            return { min: 0, max, labels };
-        }
-
+    // -----------------------------
+    // VERSNELLING XYZ (kwadratisch gemiddelde)
+    // -----------------------------
+    if (type === "xyz") {
         let max;
-        if (maxAbs <= 1) max = 1;
-        else if (maxAbs <= 2) max = 2;
-        else if (maxAbs <= 3) max = 3;
-        else if (maxAbs <= 4) max = 4;
+        if (maxPos <= 1) max = 1;
+        else if (maxPos <= 2) max = 2;
+        else if (maxPos <= 3) max = 3;
+        else if (maxPos <= 4) max = 4;
         else max = 5;
 
         let labels;
-        if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
-        else if (max === 2) labels = [-2, -1, 0, 1, 2];
-        else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
-        else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-        else labels = [-5, -2.5, 0, 2.5, 5];
+        if (max === 1) labels = [0, 0.5, 1];
+        else labels = Array.from({length: max + 1}, (_, i) => i);
 
-        return { min: -max, max, labels };
+        return { min: 0, max, labels };
     }
 
-    function render(id, points, color, label, unit, progress, type) {
-        const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
-        c.width = c.clientWidth * dpr;
-        c.height = c.clientHeight * dpr;
+    // -----------------------------
+    // VERSNELLING X/Y/Z + MULTI
+    // -----------------------------
+    let max;
+    if (maxAbs <= 1) max = 1;
+    else if (maxAbs <= 2) max = 2;
+    else if (maxAbs <= 3) max = 3;
+    else if (maxAbs <= 4) max = 4;
+    else max = 5;
 
-        const w = c.width, h = c.height;
-        const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
-        const gW = w - pL - pR, gH = h - pT - pB;
+    let labels;
+    if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
+    else if (max === 2) labels = [-2, -1, 0, 1, 2];
+    else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
+    else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    else labels = [-5, -2.5, 0, 2.5, 5];
 
-        ctx.clearRect(0, 0, w, h);
+    return { min: -max, max, labels };
+}
 
-        const scale = computeScale(points, type);
-        const { min, max, labels } = scale;
 
-        const scaleY = (type === "xyz")
-            ? gH / max
-            : (gH / 2) / max;
+function render(id, points, color, label, unit, progress, type) {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
 
-        ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
 
-        labels.forEach(val => {
-            const y = (type === "xyz")
-                ? (h - pB) - (val * scaleY)
-                : (h / 2) - (val * scaleY);
+    ctx.clearRect(0, 0, w, h);
 
-            ctx.fillText(val, pL - 8 * dpr, y);
+    const scale = computeScale(points, type);
+    const { min, max, labels } = scale;
 
-            ctx.strokeStyle = "rgba(255,255,255,0.25)";
-            ctx.beginPath();
-            ctx.moveTo(pL, y);
-            ctx.lineTo(w - pR, y);
-            ctx.stroke();
-        });
+    const center = (type === "xyz") ? (h - pB) : (h / 2);
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
+
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    labels.forEach(val => {
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
+
+        ctx.fillText(val, pL - 8 * dpr, y);
 
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
-        ctx.moveTo(pL, pT);
-        ctx.lineTo(pL, h - pB);
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
         ctx.stroke();
+    });
 
+    // Verticale gridlijnen links en rechts
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5 * dpr;
+
+    points.forEach((p, i) => {
+        const x = pL + (i / (points.length - 1)) * gW;
+        const y = (type === "xyz")
+            ? (h - pB) - (p * scaleY)
+            : (h / 2) - (p * scaleY);
+
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
         ctx.beginPath();
-        ctx.moveTo(w - pR, pT);
-        ctx.lineTo(w - pR, h - pB);
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
+    }
 
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+}
+
+function renderMulti(id, series, title, unit, progress, type = "multi") {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
+
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const all = series.flatMap(s => s.points);
+    const scale = computeScale(all, type);
+    const { min, max, labels } = scale;
+
+    const center = (type === "xyz") ? (h - pB) : (h / 2);
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
+
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    labels.forEach(val => {
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
+
+        ctx.fillText(val, pL - 8 * dpr, y);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
-        ctx.strokeStyle = color;
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
+        ctx.stroke();
+    });
+
+    // Verticale gridlijnen links en rechts
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+    
+    series.forEach(s => {
+        ctx.beginPath();
+        ctx.strokeStyle = s.color;
         ctx.lineWidth = 1.5 * dpr;
 
-        points.forEach((p, i) => {
-            const x = pL + (i / (points.length - 1)) * gW;
+        s.points.forEach((p, i) => {
+            const x = pL + (i / (s.points.length - 1)) * gW;
             const y = (type === "xyz")
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
@@ -717,392 +769,333 @@
         });
 
         ctx.stroke();
+    });
 
-        if (progress > 0) {
-            const cursorX = pL + (progress * gW);
-            ctx.strokeStyle = "#ff9500";
-            ctx.beginPath();
-            ctx.moveTo(cursorX, pT);
-            ctx.lineTo(cursorX, h - pB);
-            ctx.stroke();
-        }
-
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "left";
-        ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
     }
 
-    function renderMulti(id, series, title, unit, progress, type = "multi") {
-        const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
-        c.width = c.clientWidth * dpr;
-        c.height = c.clientHeight * dpr;
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-        const w = c.width, h = c.height;
-        const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
-        const gW = w - pL - pR, gH = h - pT - pB;
+// ▼▼▼ LEGEND RECHTSBOVEN (perfect uitgelijnd) ▼▼▼
+let legendX = w - pR - 150 * dpr;   // afstand van rechterrand
+let legendY = pT + 18 * dpr;        // zelfde hoogte als titel
 
-        ctx.clearRect(0, 0, w, h);
+series.forEach(s => {
+    const boxW = 20 * dpr;
+    const boxH = 10 * dpr;
 
-        const all = series.flatMap(s => s.points);
-        const scale = computeScale(all, type);
-        const { min, max, labels } = scale;
+    // kleurblokje (verticaal gecentreerd)
+    ctx.fillStyle = s.color;
+    ctx.fillRect(
+        legendX,
+        legendY - boxH / 2,
+        boxW,
+        boxH
+    );
 
-        const scaleY = (type === "xyz")
-            ? gH / max
-            : (gH / 2) / max;
+    // tekst (perfect gecentreerd naast blokje)
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
-        ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
+    // volgende item
+    legendX += 70 * dpr;
+});
+// ▲▲▲ EINDE LEGEND ▲▲▲
 
-        labels.forEach(val => {
-            const y = (type === "xyz")
-                ? (h - pB) - (val * scaleY)
-                : (h / 2) - (val * scaleY);
+}
 
-            ctx.fillText(val, pL - 8 * dpr, y);
+function draw() {
+    if (data.length < 2) return;
 
-            ctx.strokeStyle = "rgba(255,255,255,0.25)";
-            ctx.beginPath();
-            ctx.moveTo(pL, y);
-            ctx.lineTo(w - pR, y);
-            ctx.stroke();
-        });
+    const progress = (elBack.duration > 0)
+        ? elBack.currentTime / elBack.duration
+        : 0;
 
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.beginPath();
-        ctx.moveTo(pL, pT);
-        ctx.lineTo(pL, h - pB);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(w - pR, pT);
-        ctx.lineTo(w - pR, h - pB);
-        ctx.stroke();
-        
-        series.forEach(s => {
-            ctx.beginPath();
-            ctx.strokeStyle = s.color;
-            ctx.lineWidth = 1.5 * dpr;
-
-            s.points.forEach((p, i) => {
-                const x = pL + (i / (s.points.length - 1)) * gW;
-                const y = (type === "xyz")
-                    ? (h - pB) - (p * scaleY)
-                    : (h / 2) - (p * scaleY);
-
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-            });
-
-            ctx.stroke();
-        });
-
-        if (progress > 0) {
-            const cursorX = pL + (progress * gW);
-            ctx.strokeStyle = "#ff9500";
-            ctx.beginPath();
-            ctx.moveTo(cursorX, pT);
-            ctx.lineTo(cursorX, h - pB);
-            ctx.stroke();
-        }
-
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "left";
-        ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
-
-        let legendX = w - pR - 150 * dpr;
-        let legendY = pT + 18 * dpr;
-
-        series.forEach(s => {
-            const boxW = 20 * dpr;
-            const boxH = 10 * dpr;
-
-            ctx.fillStyle = s.color;
-            ctx.fillRect(
-                legendX,
-                legendY - boxH / 2,
-                boxW,
-                boxH
-            );
-
-            ctx.fillStyle = "#fff";
-            ctx.font = (14 * dpr) + "px Arial";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
-
-            legendX += 70 * dpr;
-        });
-    }
-
-    function draw() {
-        if (data.length < 2) return;
-
-        const progress = (elBack.duration > 0)
-            ? elBack.currentTime / elBack.duration
-            : 0;
-
-        if (axis === 'xyz3') {
-            renderMulti("cAcc",
-                [
-                    { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
-                    { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
-                    { points: data.map(d => d.az), color: "#007aff", label: "Z" }
-                ],
-                "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
-            );
-
-            renderMulti("cGyro",
-                [
-                    { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
-                    { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
-                    { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
-                ],
-                "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
-            );
-
-            return;
-        }
-
-        let accPoints, gyroPoints, labelSuffix, accType, gyroType;
-
-        if (axis === 'xyz') {
-            accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-            gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
-            labelSuffix = "Totaal";
-
-            accType = "xyz";
-            gyroType = "xyz";
-        } else {
-            accPoints = data.map(d => d['a' + axis]);
-            gyroPoints = data.map(d => d['g' + axis]);
-            labelSuffix = axis.toUpperCase();
-
-            accType = "single";
-            gyroType = "gyro";
-        }
-
-        render(
-            "cAcc",
-            accPoints,
-            "#00bfff",
-            "Versnelling " + labelSuffix,
-            "m/s²",
-            progress,
-            accType
+    // ✔️ X‑Y‑Z (drie lijnen)
+    if (axis === 'xyz3') {
+        renderMulti("cAcc",
+            [
+                { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.az), color: "#007aff", label: "Z" }
+            ],
+            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
         );
 
-        render(
-            "cGyro",
-            gyroPoints,
-            "#ff4500",
-            "Rotatie " + labelSuffix,
-            "°/s",
-            progress,
-            gyroType
+        renderMulti("cGyro",
+            [
+                { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
+            ],
+            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
         );
+
+        return;
     }
+
+    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
+
+    // ✔️ XYZ magnitude
+    if (axis === 'xyz') {
+        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        labelSuffix = "Totaal";
+
+        accType = "xyz";
+        gyroType = "xyz"; // rotatie XYZ → positief
+    }
+
+    // ✔️ Single axis (X, Y, Z)
+    else {
+        accPoints = data.map(d => d['a' + axis]);
+        gyroPoints = data.map(d => d['g' + axis]);
+        labelSuffix = axis.toUpperCase();
+
+        accType = "single";
+        gyroType = "gyro"; // rotatie single → gyro schaal
+    }
+
+    // ✔️ Versnelling
+    render(
+        "cAcc",
+        accPoints,
+        "#00bfff",
+        "Versnelling " + labelSuffix,
+        "m/s²",
+        progress,
+        accType
+    );
+
+    // ✔️ Rotatie
+    render(
+        "cGyro",
+        gyroPoints,
+        "#ff4500",
+        "Rotatie " + labelSuffix,
+        "°/s",
+        progress,
+        gyroType
+    );
+}
     
-    const playPauseBtn = document.getElementById("playPauseBtn");
-    const speedButtons = document.querySelectorAll(".speedBtn");
+// --- HIER KOMT DE PLAY/SPEED CODE ---
 
-    playPauseBtn.addEventListener("click", () => {
-        if (elBack.paused) {
-            elBack.play();
-            playPauseBtn.textContent = "⏸";
-        } else {
-            elBack.pause();
-            playPauseBtn.textContent = "▶︎";
-        }
+const playPauseBtn = document.getElementById("playPauseBtn");
+const speedButtons = document.querySelectorAll(".speedBtn");
+
+playPauseBtn.addEventListener("click", () => {
+    if (elBack.paused) {
+        elBack.play();
+        playPauseBtn.textContent = "⏸";
+    } else {
+        elBack.pause();
+        playPauseBtn.textContent = "▶︎";
+    }
+});
+
+speedButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const speed = parseFloat(btn.dataset.speed);
+        elBack.playbackRate = speed;
+
+        // highlight logica
+        speedButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
     });
+});
 
-    speedButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const speed = parseFloat(btn.dataset.speed);
-            elBack.playbackRate = speed;
+document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+    
+// --- EINDE PLAY/SPEED CODE ---
 
-            speedButtons.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
+    
+window.onclick = (e) => {
+    if (!e.target.closest('#customDropdown')) {
+        document.getElementById("optionsList").style.display = "none";
+    }
+};
+
+document.getElementById("btnExport").onclick = async () => {
+    if (!data || data.length === 0) {
+        alert("Geen data om te exporteren.");
+        return;
+    }
+
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId) {
+        alert("Geen sessie geselecteerd.");
+        return;
+    }
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const req = store.get(Number(sessionId));
+
+    req.onsuccess = async () => {
+        const s = req.result;
+        if (!s) return;
+
+        // ▼▼▼ FIX: oude sessies zonder status krijgen status "s" ▼▼▼
+        if (!s.status) {
+            s.status = "s";
+            s.baseName = s.name; 
+        }
+        // ▲▲▲ EINDE FIX ▲▲▲
+
+        // ▼▼▼ STATUS UPDATE ▼▼▼
+        if (s.status === "s") {
+            s.status = "e";
+            s.name = `${s.baseName} (e)`;
+            store.put(s);
+        }
+        // ▲▲▲ EINDE STATUS UPDATE ▲▲▲
+
+        const zip = new JSZip();
+
+        let accCSV = "t,ax,ay,az\n";
+        s.sensorData.forEach((d, i) => {
+            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
         });
-    });
+        zip.file("acc.csv", accCSV);
 
-    document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+        let gyroCSV = "t,gx,gy,gz\n";
+        s.sensorData.forEach((d, i) => {
+            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        });
+        zip.file("gyro.csv", gyroCSV);
+
+        const meta = {
+            name: s.name,
+            axis: s.axis,
+            samples: s.sensorData.length,
+            status: s.status,
+            date: s.date
+        };
+        zip.file("meta.json", JSON.stringify(meta, null, 2));
+
+        zip.file("video.mp4", s.videoBlob);
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+
+        const safeName = s.name.replace(/:/g, "-").replace(/\s+/g, "_");
+        const zipFile = new File([zipBlob], `${safeName}.zip`, {
+            type: "application/zip"
+        });
+
+        try {
+            if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
+                await navigator.share({ files: [zipFile] });
+            } else {
+                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+            }
+        } catch (err) {
+            console.error("Fout bij delen:", err);
+            alert("Er ging iets mis bij het delen van de ZIP.");
+        }
+
+        loadArchiveList();
+        selectedDisplay.textContent = s.name;
+
+        // ▼▼▼ MELDING ▼▼▼
+        alert("Geëxporteerd!");
+        // ▲▲▲ EINDE MELDING ▲▲▲
+    };
+};
+
+async function importSessionFromZip(file) {
+
+    const jszip = new JSZip();
+    const zip = await jszip.loadAsync(file);
+
+    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    for (const f of required) {
+        if (!zip.file(f)) {
+            alert("ZIP mist bestand: " + f);
+            return;
+        }
+    }
+
+    const accText = await zip.file("acc.csv").async("string");
+    const gyroText = await zip.file("gyro.csv").async("string");
+    const metaText = await zip.file("meta.json").async("string");
+    const videoBlob = await zip.file("video.mp4").async("blob");
+
+    const meta = JSON.parse(metaText);
+
+    function parseCSV(text) {
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",");
+        return lines.slice(1).map(line => {
+            const values = line.split(",");
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
+            return obj;
+        });
+    }
+
+    const accData = parseCSV(accText);
+    const gyroData = parseCSV(gyroText);
+
+    const combined = accData.map((d, i) => ({
+        ax: d.ax,
+        ay: d.ay,
+        az: d.az,
+        gx: gyroData[i].gx,
+        gy: gyroData[i].gy,
+        gz: gyroData[i].gz
+    }));
+
+    const baseName = meta.name || "Imported Session";
+    const status = "i"; // ▼▼▼ NIEUW ▼▼▼
+    const name = `${baseName} (${status})`;
+
+    const session = {
+        name,
+        baseName,
+        status,
+        sensorData: combined,
+        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+        axis: meta.axis || "x",
+        date: meta.date || new Date().toISOString()
+    };
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add(session);
+
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+        loadArchiveList();
+        selectSession(newId, session.name);
+    };
+
+    addReq.onerror = () => {
+        alert("Kon sessie niet opslaan in IndexedDB.");
+    };
+}
+
+// UI reset bij opstarten
+    isPlaying = false;
+    btnPlayPause.innerHTML = "▶️";
+
+    elBack.playbackRate = 1.0;
+    btnSpeed025.classList.remove("active");
+    btnSpeed05.classList.remove("active");
+    btnSpeed1.classList.add("active");
     
-    window.onclick = (e) => {
-        if (!e.target.closest('#customDropdown')) {
-            document.getElementById("optionsList").style.display = "none";
-        }
-    };
-
-    document.getElementById("btnExport").onclick = async () => {
-        if (!data || data.length === 0) {
-            alert("Geen data om te exporteren.");
-            return;
-        }
-
-        const sessionId = selectedDisplay.dataset.value;
-        if (!sessionId) {
-            alert("Geen sessie geselecteerd.");
-            return;
-        }
-
-        const tx = db.transaction("sessions", "readwrite");
-        const store = tx.objectStore("sessions");
-        const req = store.get(Number(sessionId));
-
-        req.onsuccess = async () => {
-            const s = req.result;
-            if (!s) return;
-
-            if (!s.status) {
-                s.status = "s";
-                s.baseName = s.name; 
-            }
-
-            if (s.status === "s") {
-                s.status = "e";
-                s.name = `${s.baseName} (e)`;
-                store.put(s);
-            }
-
-            const zip = new JSZip();
-
-            let accCSV = "t,ax,ay,az\n";
-            s.sensorData.forEach((d, i) => {
-                accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
-            });
-            zip.file("acc.csv", accCSV);
-
-            let gyroCSV = "t,gx,gy,gz\n";
-            s.sensorData.forEach((d, i) => {
-                gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
-            });
-            zip.file("gyro.csv", gyroCSV);
-
-            const meta = {
-                name: s.name,
-                axis: s.axis,
-                samples: s.sensorData.length,
-                status: s.status,
-                date: s.date
-            };
-            zip.file("meta.json", JSON.stringify(meta, null, 2));
-
-            zip.file("video.mp4", s.videoBlob);
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-
-            const safeName = s.name.replace(/:/g, "-").replace(/\s+/g, "_");
-            const zipFile = new File([zipBlob], `${safeName}.zip`, {
-                type: "application/zip"
-            });
-
-            try {
-                if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
-                    await navigator.share({ files: [zipFile] });
-                } else {
-                    alert("Delen van bestanden wordt niet ondersteund in deze browser.");
-                }
-            } catch (err) {
-                console.error("Fout bij delen:", err);
-                alert("Er ging iets mis bij het delen van de ZIP.");
-            }
-
-            loadArchiveList();
-            selectedDisplay.textContent = s.name;
-
-            alert("Geëxporteerd!");
-        };
-    };
-
-    document.getElementById("btnImport").onclick = () => {
-        document.getElementById("fileImport").click();
-    };
-
-    document.getElementById("fileImport").addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        await importSessionFromZip(file);
-        e.target.value = "";
-    });
-
-    async function importSessionFromZip(file) {
-        const jszip = new JSZip();
-        const zip = await jszip.loadAsync(file);
-
-        const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
-        for (const f of required) {
-            if (!zip.file(f)) {
-                alert("ZIP mist bestand: " + f);
-                return;
-            }
-        }
-
-        const accText = await zip.file("acc.csv").async("string");
-        const gyroText = await zip.file("gyro.csv").async("string");
-        const metaText = await zip.file("meta.json").async("string");
-        const videoBlob = await zip.file("video.mp4").async("blob");
-
-        const meta = JSON.parse(metaText);
-
-        function parseCSV(text) {
-            const lines = text.trim().split("\n");
-            const headers = lines[0].split(",");
-            return lines.slice(1).map(line => {
-                const values = line.split(",");
-                const obj = {};
-                headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
-                return obj;
-            });
-        }
-
-        const accData = parseCSV(accText);
-        const gyroData = parseCSV(gyroText);
-
-        const combined = accData.map((d, i) => ({
-            ax: d.ax,
-            ay: d.ay,
-            az: d.az,
-            gx: gyroData[i].gx,
-            gy: gyroData[i].gy,
-            gz: gyroData[i].gz
-        }));
-
-        const baseName = meta.name || "Imported Session";
-        const status = "i";
-        const name = `${baseName} (${status})`;
-
-        const session = {
-            name,
-            baseName,
-            status,
-            sensorData: combined,
-            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
-            axis: meta.axis || "x",
-            date: meta.date || new Date().toISOString()
-        };
-
-        const tx = db.transaction("sessions", "readwrite");
-        const store = tx.objectStore("sessions");
-        const addReq = store.add(session);
-
-        addReq.onsuccess = () => {
-            const newId = addReq.result;
-            loadArchiveList();
-            selectSession(newId, session.name);
-        };
-
-        addReq.onerror = () => {
-            alert("Kon sessie niet opslaan in IndexedDB.");
-        };
-    }
-    </script>
-
-    <script>
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("service-worker.js").catch(() => {});
-    }
-    </script>
+  
+</script>
 </body>
 </html>
