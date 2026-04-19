@@ -447,12 +447,12 @@ document.getElementById('btnSave').onclick = () => {
     if (!inputNaam) return; 
     
     const baseName = datumString + " - " + inputNaam;
-    const status = "s"; // ▼▼▼ NIEUW ▼▼▼
-
+    const status = "s";
     const name = `${baseName} (${status})`;
 
     const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({ 
+    const store = tx.objectStore("sessions");
+    const addReq = store.add({ 
         name,
         baseName,
         status,
@@ -461,10 +461,17 @@ document.getElementById('btnSave').onclick = () => {
         axis, 
         date: nu
     });
-    tx.oncomplete = () => { 
-        loadArchiveList(); 
-        document.getElementById("selectedDisplay").textContent = name;
-        alert("Opgeslagen!"); 
+
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+
+        loadArchiveList();
+
+        // ▼▼▼ BELANGRIJK: DIRECT SELECTEREN ▼▼▼
+        selectSession(newId, name);
+        // ▲▲▲ EINDE FIX ▲▲▲
+
+        alert("Opgeslagen!");
     };
 };
 
