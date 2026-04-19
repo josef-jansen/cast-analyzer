@@ -1158,15 +1158,14 @@ function fixViewport() {
 }
 
 window.addEventListener("load", () => {
-    fixViewport();
-    if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("portrait").catch(() => {});
-    }
+    setTimeout(() => {
+        fixViewport();
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("portrait").catch(() => {});
+        }
+    }, 120);
 });
 
-window.addEventListener("resize", () => {
-    fixViewport();
-});
 </script>
 
 </body>
