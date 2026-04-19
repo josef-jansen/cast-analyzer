@@ -307,12 +307,9 @@ function loadArchiveList() {
     store.openCursor(null, "prev").onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
-            const item = document.createElement("div");
-            
-            // WE ZETTEN DE DATA NU HARD IN HET ELEMENT
-            const sid = cursor.value.id;
-            const sname = cursor.value.name;
+            const s = cursor.value;
 
+            const item = document.createElement("div");
             item.style.padding = "12px 10px";
             item.style.borderBottom = "1px solid #eee";
             item.style.fontSize = "16px";
@@ -320,12 +317,11 @@ function loadArchiveList() {
             item.style.overflow = "hidden";
             item.style.textOverflow = "ellipsis";
             item.style.textAlign = "left";
-            item.textContent = sname;
-            
-            // De klik-functie gebruikt nu de bevroren variabelen sid en sname
+
+            item.textContent = s.name;
+
             item.onclick = function() {
-                console.log("Klik gedetecteerd op ID:", sid); // Voor controle
-                selectSession(sid, sname);
+                selectSession(s.id, s.name);
                 list.style.display = "none";
             };
             
@@ -358,6 +354,7 @@ function selectSession(id, name) {
         slider.disabled = false;
     };
 }
+
 
 
 // Zorg dat de lijst opent als je op de display klikt
@@ -449,23 +446,28 @@ document.getElementById('btnSave').onclick = () => {
     const inputNaam = prompt("Naam van de worp:", "Worp");
     if (!inputNaam) return; 
     
-    const name = datumString + " - " + inputNaam;
+    const baseName = datumString + " - " + inputNaam;
+    const status = "s"; // ▼▼▼ NIEUW ▼▼▼
+
+    const name = `${baseName} (${status})`;
 
     const tx = db.transaction("sessions", "readwrite");
     tx.objectStore("sessions").add({ 
-        name, 
+        name,
+        baseName,
+        status,
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+        date: nu
     });
     tx.oncomplete = () => { 
         loadArchiveList(); 
-        const displayNaam = datumString + " - " + inputNaam;
-        document.getElementById("selectedDisplay").textContent = displayNaam;
+        document.getElementById("selectedDisplay").textContent = name;
         alert("Opgeslagen!"); 
     };
 };
+
 
 document.getElementById('btnReset').onclick = async () => {
 
@@ -924,62 +926,76 @@ document.getElementById("btnExport").onclick = async () => {
         return;
     }
 
-    const zip = new JSZip();
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId) {
+        alert("Geen sessie geselecteerd.");
+        return;
+    }
 
-    // --- BESTANDSNAAM OP BASIS VAN SESSIENAAM ---
-    let rawName = selectedDisplay.textContent || "Onbekend";
-    rawName = rawName.replace(/:/g, "-").replace(/\s+/g, "_"); 
-    const zipFileName = `${rawName}.zip`;
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const req = store.get(Number(sessionId));
 
-    // --- ACC CSV ---
-    let accCSV = "t,ax,ay,az\n";
-    data.forEach((d, i) => {
-        accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
-    });
-    zip.file("acc.csv", accCSV);
+    req.onsuccess = async () => {
+        const s = req.result;
+        if (!s) return;
 
-    // --- GYRO CSV ---
-    let gyroCSV = "t,gx,gy,gz\n";
-    data.forEach((d, i) => {
-        gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
-    });
-    zip.file("gyro.csv", gyroCSV);
+        // ▼▼▼ STATUS UPDATE ▼▼▼
+        if (s.status === "s") {
+            s.status = "e";
+            s.name = `${s.baseName} (e)`;
+            store.put(s);
+        }
+        // ▲▲▲ EINDE STATUS UPDATE ▲▲▲
 
-    // --- META ---
-    const meta = {
-        name: selectedDisplay.textContent || "Onbekend",
-        axis: axis,
-        samples: data.length,
-        date: new Date().toISOString()
-    };
-    zip.file("meta.json", JSON.stringify(meta, null, 2));
+        const zip = new JSZip();
 
-    // --- VIDEO ---
-    const videoBlob = currentVideoBlob;
-    zip.file("video.mp4", videoBlob);
+        let accCSV = "t,ax,ay,az\n";
+        s.sensorData.forEach((d, i) => {
+            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+        });
+        zip.file("acc.csv", accCSV);
 
-    // --- ZIP GENEREREN ---
-    const zipBlob = await zip.generateAsync({ type: "blob" });
+        let gyroCSV = "t,gx,gy,gz\n";
+        s.sensorData.forEach((d, i) => {
+            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        });
+        zip.file("gyro.csv", gyroCSV);
 
-    // --- DELEN VIA IOS (WERKT IN BLUEFY!) ---
-    try {
-        const zipFile = new File([zipBlob], zipFileName, {
+        const meta = {
+            name: s.name,
+            axis: s.axis,
+            samples: s.sensorData.length,
+            status: s.status,
+            date: s.date
+        };
+        zip.file("meta.json", JSON.stringify(meta, null, 2));
+
+        zip.file("video.mp4", s.videoBlob);
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+
+        const safeName = s.name.replace(/:/g, "-").replace(/\s+/g, "_");
+        const zipFile = new File([zipBlob], `${safeName}.zip`, {
             type: "application/zip"
         });
 
-        if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
-            await navigator.share({
-                files: [zipFile]
-            });
-
-        } else {
-            alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+        try {
+            if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
+                await navigator.share({ files: [zipFile] });
+            } else {
+                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+            }
+        } catch (err) {
+            console.error("Fout bij delen:", err);
+            alert("Er ging iets mis bij het delen van de ZIP.");
         }
-    } catch (err) {
-        console.error("Fout bij delen:", err);
-        alert("Er ging iets mis bij het delen van de ZIP.");
-    }
+
+        loadArchiveList();
+        selectedDisplay.textContent = s.name;
+    };
 };
+
 
 const fileInput = document.getElementById("fileImport");
 const btnImport = document.getElementById("btnImport");
@@ -1045,8 +1061,14 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
+    const baseName = meta.name || "Imported Session";
+    const status = "i"; // ▼▼▼ NIEUW ▼▼▼
+    const name = `${baseName} (${status})`;
+
     const session = {
-        name: meta.name || "Imported Session",
+        name,
+        baseName,
+        status,
         sensorData: combined,
         videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
         axis: meta.axis || "x",
@@ -1058,15 +1080,10 @@ async function importSessionFromZip(file) {
     const addReq = store.add(session);
 
     addReq.onsuccess = () => {
-    const newId = addReq.result;
-
-    // JUISTE FUNCTIE NAAM:
-    loadArchiveList();
-
-    // Direct de nieuwe sessie selecteren:
-    selectSession(newId, session.name);
-};
-
+        const newId = addReq.result;
+        loadArchiveList();
+        selectSession(newId, session.name);
+    };
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
