@@ -2,7 +2,49 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            touch-action: none;
+        }
+
+        /* iPad fullscreen fix */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                position: fixed;
+                inset: 0;
+            }
+        }
+
+        /* Landscape blokkeren met overlay */
+        #rotateOverlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 9999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (orientation: landscape) {
+            #rotateOverlay {
+                display: flex;
+            }
+        }
+    </style>
+
     <title>Cast-Analyzer</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -196,8 +238,13 @@
        
     </style>
 </head>
+
 <body>
 
+    <div id="rotateOverlay">
+    Draai je iPad naar portretmodus om Cast Analyzer te gebruiken.
+    </div>
+    
     <div class="controls">
         <button id="btnConnect">Connect</button>
         <button id="btnStart" disabled>Start</button>
@@ -1094,8 +1141,33 @@ async function importSessionFromZip(file) {
     btnSpeed025.classList.remove("active");
     btnSpeed05.classList.remove("active");
     btnSpeed1.classList.add("active");
-    
-  
+
+<script>
+function fixViewport() {
+    document.documentElement.style.width = "100vw";
+    document.documentElement.style.height = "100vh";
+    document.body.style.width = "100vw";
+    document.body.style.height = "100vh";
+    window.scrollTo(0, 0);
+    setTimeout(() => {
+        document.documentElement.style.width = "";
+        document.documentElement.style.height = "";
+        document.body.style.width = "";
+        document.body.style.height = "";
+    }, 50);
+}
+
+window.addEventListener("load", () => {
+    fixViewport();
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("portrait").catch(() => {});
+    }
+});
+
+window.addEventListener("resize", () => {
+    fixViewport();
+});
 </script>
+
 </body>
 </html>
