@@ -947,6 +947,13 @@ document.getElementById("btnExport").onclick = async () => {
         const s = req.result;
         if (!s) return;
 
+        // ▼▼▼ FIX: oude sessies zonder status krijgen status "s" ▼▼▼
+        if (!s.status) {
+            s.status = "s";
+            s.baseName = s.name; 
+        }
+        // ▲▲▲ EINDE FIX ▲▲▲
+
         // ▼▼▼ STATUS UPDATE ▼▼▼
         if (s.status === "s") {
             s.status = "e";
@@ -1001,29 +1008,10 @@ document.getElementById("btnExport").onclick = async () => {
         loadArchiveList();
         selectedDisplay.textContent = s.name;
 
-        // ▼▼▼ NIEUWE MELDING ▼▼▼
+        // ▼▼▼ MELDING ▼▼▼
         alert("Geëxporteerd!");
-        //
-
-const fileInput = document.getElementById("fileImport");
-const btnImport = document.getElementById("btnImport");
-
-btnImport.onclick = () => {
-    fileInput.click();
-};
-
-fileInput.onchange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".zip")) {
-        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
-        return;
-    }
-
-    await importSessionFromZip(file);
-
-    fileInput.value = "";
+        // ▲▲▲ EINDE MELDING ▲▲▲
+    };
 };
 
 async function importSessionFromZip(file) {
