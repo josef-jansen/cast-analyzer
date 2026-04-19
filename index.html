@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 
     <style>
         html, body {
@@ -46,6 +46,11 @@
     </style>
 
     <title>Cast-Analyzer</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cast Analyzer">
+   
     <link rel="manifest" href="manifest.json">
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -1157,16 +1162,12 @@ function fixViewport() {
         document.body.style.height = "";
     }, 50);
 }
+</script>
 
-window.addEventListener("load", () => {
-    setTimeout(() => {
-        fixViewport();
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("portrait").catch(() => {});
-        }
-    }, 120);
-});
-
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+}
 </script>
 
 </body>
