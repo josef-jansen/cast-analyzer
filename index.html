@@ -477,30 +477,53 @@ let char, stream, recorder;
 
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        // Camera openen
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // 1. BLE CONNECTIE (originele, werkende flow)
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: "Cast-Analyzer" }],
+            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+        });
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+
+        // 2. CAMERA OPENEN (pas NA BLE)
+        stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" },
             audio: false
         });
 
-        // Video koppelen maar nog NIET tonen
+        // 3. VIDEO KOPPELEN MAAR NOG NIET TONEN
         elLive.style.display = "none";
         elLive.srcObject = stream;
 
-        // BLUEFY FIX: pas tonen als stream metadata geladen is
+        // 4. BLUEFY FIX: pas tonen als metadata geladen is
         elLive.onloadedmetadata = () => {
-            elLive.play();                 // nodig voor sommige Bluefy builds
+            elLive.play();
             elLive.style.display = "block";
-            void elLive.offsetHeight;      // force reflow
+            void elLive.offsetHeight; // force reflow
         };
 
-        // UI updates
-        document.getElementById('btnStart').disabled = false;
-        document.getElementById('btnConnect').disabled = true;
+        // 5. SENSOR DATA HANDLER (originele code)
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            const v = e.target.value;
+            data.push({
+                ax: v.getInt16(0, true)/100,
+                ay: v.getInt16(2, true)/100,
+                az: v.getInt16(4, true)/100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
+                gz: v.getInt16(10, true)
+            });
+            elCount.innerText = data.length;
+        });
 
-    } catch (err) {
-        console.error("Camera error:", err);
-        alert("Kan camera niet openen.");
+        // 6. UI UPDATES
+        document.getElementById('btnConnect').disabled = true;
+        document.getElementById('btnStart').disabled = false;
+
+    } catch (e) {
+        alert(e);
     }
 };
 
