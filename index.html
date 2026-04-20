@@ -8,13 +8,15 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
         
+        /* Layout verdeling */
         .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
         
         :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
         
         .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
         .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
-
+        
+        /* De Brede Slider onderaan */
         .bottom-area {
             min-height: var(--bottom-area);
             height: auto;
@@ -47,6 +49,15 @@
         }
 
         canvas { width: 100% !important; height: 100% !important; display: block; }
+        
+        .video-container {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
 
         video {
             width: 100%;
@@ -55,10 +66,11 @@
             object-fit: cover;
         }
 
+        /* Buttons & UI */
         button {
-            padding: 0 16px;
-            height: 44px;
-            line-height: 44px;
+            padding: 0 16px;       /* Padding boven/onder weg, we gebruiken height */
+            height: 44px;          /* Exact gelijk aan de Del knop en balk */
+            line-height: 44px;     /* Tekst verticaal centreren */
             border: none;
             border-radius: 8px;
             font-size: 16px;
@@ -66,15 +78,17 @@
             background: #666;
             min-width: 90px; 
             margin: 4px;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Zorgt dat borders de knop niet groter maken */
         }
+        
+        /* Kleuren per knop */
+        #btnConnect { background: #007aff; }  /* blauw */
+        #btnStart   { background: #34c759; }  /* groen */
+        #btnStop    { background: #ff3b30; }  /* rood */
+        #btnSave    { background: #5856d6; }  /* paars */
+        #btnReset   { background: #8e8e93; }  /* grijs */
 
-        #btnConnect { background: #007aff; }
-        #btnStart   { background: #34c759; }
-        #btnStop    { background: #ff3b30; }
-        #btnSave    { background: #5856d6; }
-        #btnReset   { background: #8e8e93; }
-
+        /* X/Y/Z segmented control */
         .axisBtn {
             padding: 0 14px;
             height: 32px;
@@ -87,6 +101,8 @@
             margin: 0 3px;
             min-width: 44px;
             box-sizing: border-box;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .axisBtn.active {
@@ -100,6 +116,7 @@
             padding: 0 14px;
         }
 
+        
         .speedBtn {
             padding: 0 14px;
             height: 32px;
@@ -118,9 +135,10 @@
             background: #007aff;
             color: #fff;
         }
-
+        
+        /* DEL knop in dezelfde stijl als Reset */
         #btnDel {
-            background: #ff3b30;
+            background: #8e8e93;
             height: 36px;
             line-height: 36px;
             padding: 0 14px;
@@ -129,11 +147,30 @@
             font-size: 14px;
             border: none;
         }
+        
+        #archiveSelect {
+            appearance: select; /* Terug naar de basis */
+            -webkit-appearance: select;
+            width: 80%;
+            height: 44px;
+            font-size: 18px; /* Iets groter om iPad te dwingen */
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: #fff;
+            margin-top: 10px;
+            padding: 0 10px;
+        }
+
+        /* Dit zorgt dat de regels in het uitklapmenu ook groot zijn */
+        #archiveSelect option {
+            font-size: 18px;
+        }
 
         .status-text { font-size: 10px; color: #666; margin-top: 4px; }
-
+        #vBack { display: none; }
+        
         .graph-container {
-            background: #1c1c1e;
+            background: #1c1c1e; /* Donkergrijs/zwart */
             border-radius: 8px;
             padding: 5px;
             margin: 8px;
@@ -144,20 +181,21 @@
             justify-content: center;
         }
 
+        /* Professionele videokaart */
         .video-card {
             background: #000;
             border-radius: 12px;
             margin: 10px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             height: calc(var(--content-h) - 20px);
-            overflow: hidden;
+            overflow: hidden; /* voorkomt dat video buiten de randen komt */
             display: flex;
             align-items: center;
             justify-content: center;
         }
+       
     </style>
 </head>
-
 <body>
 
     <div class="controls">
@@ -165,58 +203,62 @@
         <button id="btnStart" disabled>Start</button>
         <button id="btnStop" disabled>Stop</button>
         <button id="btnSave" disabled>Save</button>
-        <button id="btnReset">Reset</button>
+        <button id="btnReset" style="background:#8e8e93;">Reset</button>
         <button id="btnExport">Export</button>
-
-        <input type="file" id="fileImport" accept=".zip" style="display:none" />
+        <input 
+            type="file" 
+            id="fileImport" 
+            accept=".zip" 
+            style="display:none"
+        />
         <button id="btnImport">Import</button>
-
+        
         <div class="status-text">Data: <span id="dataCount">0</span> | <span id="dbStatus">DB Ready</span></div>
 
-        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:10px;">
-            <div id="customDropdown" style="width:80%; position:relative;">
-                <div id="selectedDisplay"
-                     style="height:44px; line-height:42px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:0 10px; font-size:16px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
-                    -- Worp Selecteren --
-                </div>
-
-                <div id="optionsList"
-                     style="display:none; position:absolute; top:48px; left:0; width:100%; background:#fff; border:1px solid #ccc; border-radius:8px; z-index:1000; max-height:300px; overflow-y:auto; box-shadow:0 4px 10px rgba(0,0,0,0.2);">
-                </div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; position: relative;">
+        <!-- HIER MOET DE ID STAAN: -->
+        <div id="customDropdown" style="width: 80%; position: relative;">
+            <div id="selectedDisplay" style="height: 44px; line-height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 0 10px; text-align: left; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                -- Worp Selecteren --
             </div>
-
-            <button id="btnDel">Del</button>
+            <div id="optionsList" style="display: none; position: absolute; top: 48px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                <!-- Hier komen de sessies -->
+            </div>
         </div>
+        <button onclick="deleteSession()" style="background:#ff3b30; min-width: 60px; margin: 0;">Del</button>
+    </div>
 
-        <div style="margin-top:10px;">
+        <div style="margin-top:10px; line-height: 1;">
             <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
             <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
             <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
             <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
             <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+
         </div>
     </div>
 
-    <div class="section">
-        <div class="graph-container">
-            <canvas id="cAcc"></canvas>
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cAcc"></canvas>
+            </div>
         </div>
-    </div>
 
-    <div class="section">
-        <div class="graph-container">
-            <canvas id="cGyro"></canvas>
+        <div class="section">
+            <div class="graph-container">
+                <canvas id="cGyro"></canvas>
+            </div>
         </div>
-    </div>
-
-    <div class="section">
-        <div class="video-card">
-            <video id="vLive" playsinline muted autoplay></video>
-            <video id="vBack" playsinline></video>
+    
+        <div class="section">
+            <div class="video-card">
+                <video id="vLive" playsinline muted autoplay></video>
+                <video id="vBack" playsinline></video>
+            </div>
         </div>
-    </div>
 
-    <div class="bottom-area">
+
+        <div class="bottom-area">
         <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
             <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
             <button id="playPauseBtn">▶︎</button>
@@ -225,147 +267,80 @@
             <button class="speedBtn" data-speed="1">1x</button>
         </div>
 
-        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
-    </div>
+            <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
+        </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
+    
 <script>
-/* ============================================================
-   SUFFIX ENGINE — NIEUW
-   ============================================================ */
 
-function stripSuffix(name) {
-    return name.replace(/\s*\([sei]\)$/, "").trim();
-}
-
-function applySuffix(baseName, status) {
-    return `${baseName} (${status})`;
-}
-
-/* ============================================================
-   INDEXEDDB — NIEUWE STRUCTUUR (baseName + status)
-   ============================================================ */
-
-let db;
-let data = [];
-let chunks = [];
-let axis = "x";
+let char, stream, recorder, db, data = [];
+let axis = 'x', chunks = [];
 let currentVideoBlob = null;
 
-const elLive = document.getElementById('vLive');
-const elBack = document.getElementById('vBack');
-const elCount = document.getElementById('dataCount');
-const slider = document.getElementById('syncSlider');
-const timeLabel = document.getElementById('timeLabel');
-const optionsList = document.getElementById('optionsList');
-const selectedDisplay = document.getElementById('selectedDisplay');
+const elLive = document.getElementById('vLive'), elBack = document.getElementById('vBack'), elCount = document.getElementById('dataCount');
+const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
+const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
-// OPEN/CLOSE DROPDOWN  ← FIX
-selectedDisplay.onclick = () => {
-    optionsList.style.display =
-        optionsList.style.display === "none" ? "block" : "none";
-};
-
-const dbRequest = indexedDB.open("CastAnalyzerDB", 2);
-
-dbRequest.onupgradeneeded = (e) => {
-    const db = e.target.result;
-
-    if (!db.objectStoreNames.contains("sessions")) {
-        db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
-    } else {
-        const store = e.target.transaction.objectStore("sessions");
-
-        // MIGRATIE: oude sessies met "name" → omzetten naar baseName + status
-        store.openCursor().onsuccess = (ev) => {
-            const cursor = ev.target.result;
-            if (!cursor) return;
-
-            const v = cursor.value;
-
-            if (v.name && !v.baseName) {
-                const clean = stripSuffix(v.name);
-                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : "s";
-
-                v.baseName = clean;
-                v.status = status;
-
-                delete v.name;
-                cursor.update(v);
-            }
-
-            cursor.continue();
-        };
-    }
-};
-
-dbRequest.onsuccess = (e) => {
-    db = e.target.result;
-    loadArchiveList();
-};
-
-
-/* ============================================================
-   ARCHIVE LIST — NIEUW (baseName + status)
-   ============================================================ */
+// ---------------------------------------------------------
+// Hulpfunctie: maakt beide grafieken volledig leeg
+// ---------------------------------------------------------
+function clearGraphs() {
+    const ids = ["cAcc", "cGyro"];
+    ids.forEach(id => {
+        const c = document.getElementById(id);
+        const ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, c.width, c.height);
+    });
+}
+    
+// --- DATABASE ---
+const dbRequest = indexedDB.open("CastAnalyzerDB", 1);
+dbRequest.onupgradeneeded = (e) => { e.target.result.createObjectStore("sessions", { keyPath: "id", autoIncrement: true }); };
+dbRequest.onsuccess = (e) => { db = e.target.result; loadArchiveList(); };
 
 function loadArchiveList() {
     const list = document.getElementById("optionsList");
-    list.innerHTML = "";
+    list.innerHTML = ""; 
 
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
-
-    const sessions = [];
-
-    store.openCursor().onsuccess = (e) => {
+    const store = db.transaction("sessions", "readonly").objectStore("sessions");
+    store.openCursor(null, "prev").onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
-            sessions.push(cursor.value);
+            const item = document.createElement("div");
+            
+            // WE ZETTEN DE DATA NU HARD IN HET ELEMENT
+            const sid = cursor.value.id;
+            const sname = cursor.value.name;
+
+            item.style.padding = "12px 10px";
+            item.style.borderBottom = "1px solid #eee";
+            item.style.fontSize = "16px";
+            item.style.whiteSpace = "nowrap";
+            item.style.overflow = "hidden";
+            item.style.textOverflow = "ellipsis";
+            item.style.textAlign = "left";
+            item.textContent = sname;
+            
+            // De klik-functie gebruikt nu de bevroren variabelen sid en sname
+            item.onclick = function() {
+                console.log("Klik gedetecteerd op ID:", sid); // Voor controle
+                selectSession(sid, sname);
+                list.style.display = "none";
+            };
+            
+            list.appendChild(item);
             cursor.continue();
-        } else {
-            // Sorteer op datum (nieuwste boven)
-            sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            sessions.forEach(s => {
-                const fullName = applySuffix(s.baseName, s.status);
-
-                const item = document.createElement("div");
-                item.style.padding = "12px 10px";
-                item.style.borderBottom = "1px solid #eee";
-                item.style.fontSize = "16px";
-                item.style.whiteSpace = "nowrap";
-                item.style.overflow = "hidden";
-                item.style.textOverflow = "ellipsis";
-                item.style.textAlign = "left";   // ← FIX: links uitlijnen
-
-                item.textContent = fullName;
-
-                item.onclick = () => {
-                    selectSession(s.id, s.baseName, s.status);
-                    list.style.display = "none";
-                };
-
-                list.appendChild(item);
-            });
         }
     };
 }
 
+function selectSession(id, name) {
+    const display = document.getElementById("selectedDisplay");
+    display.textContent = name;
+    display.dataset.value = id;
 
-/* ============================================================
-   SELECT SESSION — NIEUW (suffix zichtbaar)
-   ============================================================ */
-
-function selectSession(id, baseName, status) {
-    const fullName = applySuffix(baseName, status);
-
-    selectedDisplay.textContent = fullName;
-    selectedDisplay.dataset.id = id;
-
-    const tx = db.transaction("sessions", "readonly");
-    tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+    db.transaction("sessions", "readonly").objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
         if (!s) return;
 
@@ -376,249 +351,36 @@ function selectSession(id, baseName, status) {
         elBack.currentTime = 0;
         elBack.pause();
 
-        setAxis(s.axis || "x");
+        setAxis(s.axis || 'x');
 
         elLive.style.display = "none";
         elBack.style.display = "block";
         slider.disabled = false;
-
-        updateUI();
     };
 }
 
 
-/* ============================================================
-   DELETE SESSION — NIEUW
-   ============================================================ */
-
-document.getElementById("btnDel").onclick = () => {
-    const id = selectedDisplay.dataset.id;
-    if (!id) return;
-    if (!confirm("Verwijderen?")) return;
-
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").delete(Number(id));
-
-    tx.oncomplete = () => {
-        selectedDisplay.textContent = "-- Worp Selecteren --";
-        delete selectedDisplay.dataset.id;
-
-        elBack.src = "";
-        elBack.style.display = "none";
-        elLive.style.display = "block";
-
-        data = [];
-        chunks = [];
-        elCount.textContent = "0";
-
-        clearGraphs();
-        loadArchiveList();
-    };
+// Zorg dat de lijst opent als je op de display klikt
+selectedDisplay.onclick = () => {
+    optionsList.style.display = optionsList.style.display === "none" ? "block" : "none";
 };
 
 
-/* ============================================================
-   SAVE — NIEUW (status = "s")
-   ============================================================ */
-
-document.getElementById('btnSave').onclick = () => {
-    const nu = new Date();
-    const datumString =
-        nu.getFullYear() + "-" +
-        String(nu.getMonth() + 1).padStart(2, '0') + "-" +
-        String(nu.getDate()).padStart(2, '0') + " " +
-        String(nu.getHours()).padStart(2, '0') + ":" +
-        String(nu.getMinutes()).padStart(2, '0');
-
-    const inputNaam = prompt("Naam van de worp:", "Worp");
-    if (!inputNaam) return;
-
-    const baseName = `${datumString} - ${stripSuffix(inputNaam)}`;
-    const status = "s";
-
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").add({
-        baseName,
-        status,
-        sensorData: data,
-        videoBlob: new Blob(chunks, { type: "video/mp4" }),
-        axis,
-        date: nu.toISOString()
-    });
-
-    tx.oncomplete = () => {
-        const fullName = applySuffix(baseName, status);
-        selectedDisplay.textContent = fullName;
-
-        loadArchiveList();
-        alert("Opgeslagen!");
-    };
-};
-    
-/* ============================================================
-   CLEAR GRAPHS
-   ============================================================ */
-
-function clearGraphs() {
-    const ids = ["cAcc", "cGyro"];
-    ids.forEach(id => {
-        const c = document.getElementById(id);
-        const ctx = c.getContext("2d");
-        ctx.clearRect(0, 0, c.width, c.height);
-    });
-}
-
-
-/* ============================================================
-   BLUETOOTH CONNECTIE
-   ============================================================ */
-
-let char, stream, recorder;
-
-document.getElementById("btnConnect").onclick = async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-        });
-
-        // Video live stream koppelen
-        elLive.srcObject = stream;
-
-        // FIX: iPad Safari halve-video bug
-        setTimeout(() => {
-            elLive.style.display = "none";
-            void elLive.offsetHeight;   // force reflow
-            elLive.style.display = "block";
-        }, 50);
-
-        // UI updates
-        document.getElementById("btnStart").disabled = false;
-        document.getElementById("btnConnect").disabled = true;
-
-    } catch (err) {
-        console.error("Camera error:", err);
-        alert("Kan camera niet openen.");
-    }
-};
-
-/* ============================================================
-   START RECORDING
-   ============================================================ */
-
-document.getElementById('btnStart').onclick = async () => {
-    data = [];
-    chunks = [];
-    elCount.innerText = "0";
-    slider.disabled = true;
-
-    await char.startNotifications();
-
-    recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-
-    recorder.onstop = () => {
-        elLive.style.display = "none";
-        elBack.style.display = "block";
-
-        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
-        elBack.src = URL.createObjectURL(currentVideoBlob);
-
-        document.getElementById('btnSave').disabled = false;
-        slider.disabled = false;
-
-        // Na opname automatisch Y-as tonen
-        setAxis('y');
-
-        setTimeout(updateUI, 1000);
-    };
-
-    recorder.start();
-
-    elBack.style.display = "none";
-    elLive.style.display = "block";
-
-    document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled = false;
-};
-
-
-/* ============================================================
-   STOP RECORDING
-   ============================================================ */
-
-document.getElementById('btnStop').onclick = async () => {
-    try { await char.stopNotifications(); } catch (e) {}
-
-    recorder.stop();
-
-    document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnStart').disabled = false;
-};
-
-
-/* ============================================================
-   RESET
-   ============================================================ */
-
-document.getElementById('btnReset').onclick = async () => {
-
-    try { if (char) await char.stopNotifications(); } catch (e) {}
-    try { if (recorder && recorder.state !== "inactive") recorder.stop(); } catch (e) {}
-
-    elBack.pause();
-    elBack.src = "";
-    elBack.style.display = "none";
-    elLive.style.display = "block";
-
-    data = [];
-    chunks = [];
-    elCount.innerText = "0";
-
-    slider.value = 0;
-    slider.disabled = true;
-
-    timeLabel.innerText = "0.00s / 0.00s";
-
-    clearGraphs();
-
-    document.getElementById('btnStart').disabled = false;
-    document.getElementById('btnStop').disabled = true;
-    document.getElementById('btnSave').disabled = true;
-
-    selectedDisplay.textContent = "-- Worp Selecteren --";
-    delete selectedDisplay.dataset.id;
-    optionsList.style.display = "none";
-};
-
-
-/* ============================================================
-   AXIS SELECTIE
-   ============================================================ */
-
-function setAxis(a) {
-    axis = a.toLowerCase();
-
-    document.querySelectorAll('.axisBtn').forEach(b => {
-        const bid = b.id.toLowerCase();
-        const target = 'b' + axis;
-        b.classList.toggle('active', bid === target);
-    });
-
-    updateUI();
-}
-
-
-/* ============================================================
-   UI UPDATE
-   ============================================================ */
-
+// --- SLIDER & UI ---
 slider.oninput = () => {
     if (elBack.duration > 0) {
         elBack.currentTime = (slider.value / 1000) * elBack.duration;
         updateUI();
     }
 };
+
+function updateUI() {
+    if (elBack.duration > 0) {
+        timeLabel.innerText = elBack.currentTime.toFixed(2) + "s / " + elBack.duration.toFixed(2) + "s";
+    }
+    draw();
+    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+}
 
 elBack.ontimeupdate = () => {
     if (!recorder || recorder.state !== "recording") {
@@ -631,28 +393,165 @@ elBack.onended = () => {
     playPauseBtn.textContent = "▶︎";
 };
 
-function updateUI() {
-    if (elBack.duration > 0) {
-        timeLabel.innerText =
-            elBack.currentTime.toFixed(2) + "s / " +
-            elBack.duration.toFixed(2) + "s";
-    }
+// --- CORE ---
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast-Analyzer" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        elLive.srcObject = stream;
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            const v = e.target.value;
+            data.push({ ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100, gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true) });
+            elCount.innerText = data.length;
+        });
+        document.getElementById('btnConnect').disabled = true; document.getElementById('btnStart').disabled = false;
+    } catch (e) { alert(e); }
+};
 
-    draw();
+document.getElementById('btnStart').onclick = async () => {
+    data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
+    await char.startNotifications();
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+        elLive.style.display = "none"; elBack.style.display = "block";
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        document.getElementById('btnSave').disabled = false; slider.disabled = false;
 
-    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
+        
+        setTimeout(updateUI, 1000);
+    };
+    recorder.start();
+    elBack.style.display = "none"; elLive.style.display = "block";
+    document.getElementById('btnStart').disabled = true; document.getElementById('btnStop').disabled = false;
+};
+
+document.getElementById('btnStop').onclick = async () => {
+    try { await char.stopNotifications(); } catch(e) {}
+    recorder.stop();
+    document.getElementById('btnStop').disabled = true; document.getElementById('btnStart').disabled = false;
+};
+
+document.getElementById('btnSave').onclick = () => {
+    const nu = new Date();
+    const datumString = nu.getFullYear() + "-" + 
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" + 
+        String(nu.getDate()).padStart(2, '0') + " " + 
+        String(nu.getHours()).padStart(2, '0') + ":" + 
+        String(nu.getMinutes()).padStart(2, '0');
+    
+    const inputNaam = prompt("Naam van de worp:", "Worp");
+    if (!inputNaam) return; 
+    
+    const name = datumString + " - " + inputNaam;
+
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").add({ 
+        name, 
+        sensorData: data, 
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
+        axis, 
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
+    });
+    tx.oncomplete = () => { 
+        loadArchiveList(); 
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
+        alert("Opgeslagen!"); 
+    };
+};
+
+document.getElementById('btnReset').onclick = async () => {
+
+    // 1. Stop BLE notificaties (als actief)
+    try { 
+        if (char) await char.stopNotifications(); 
+    } catch(e) {}
+
+    // 2. Stop recorder (als actief)
+    try { 
+        if (recorder && recorder.state !== "inactive") recorder.stop(); 
+    } catch(e) {}
+
+    // 3. Video terug naar live
+    elBack.pause();
+    elBack.src = "";
+    elBack.style.display = "none";
+    elLive.style.display = "block";
+
+    // 4. Data resetten
+    data = [];
+    chunks = [];
+    elCount.innerText = "0";
+
+    // 5. Slider resetten
+    slider.value = 0;
+    slider.disabled = true;
+
+    // 6. Tijdlabel resetten
+    timeLabel.innerText = "0.00s / 0.00s";
+
+    // 7. Grafieken leegmaken
+    clearGraphs();
+
+    // 8. UI terugzetten
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnSave').disabled = true;
+
+    // 9. Selectie wissen
+    selectedDisplay.textContent = "-- Worp Selecteren --";
+    delete selectedDisplay.dataset.value;
+    optionsList.style.display = "none";
+};
+
+function deleteSession() {
+    const sessionId = selectedDisplay.dataset.value;
+    if (!sessionId || !confirm("Verwijderen?")) return;
+
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(sessionId));
+    tx.oncomplete = () => {
+        selectedDisplay.textContent = "-- Worp Selecteren --";
+        delete selectedDisplay.dataset.value;
+        elBack.src = "";
+        elBack.style.display = "none";
+        elLive.style.display = "block";
+        loadArchiveList();
+        clearGraphs();
+    };
 }
+    
+function setAxis(a) {
+    axis = a.toLowerCase();
 
-/* ============================================================
-   SCHAALBEREKENING
-   ============================================================ */
+    document.querySelectorAll('.axisBtn').forEach(b => {
+        const bid = b.id.toLowerCase();
+        const target = 'b' + axis;
+        b.classList.toggle('active', bid === target);
+    });
+
+    updateUI();
+}
 
 function computeScale(points, type) {
     const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
     const maxPos = Math.max(...points, 0.0001);
 
-    const isGyro = maxAbs > 20;
+    // -----------------------------
+    // ROTATIE (gyro) – auto-detect
+    // -----------------------------
+    const isGyro = maxAbs > 20; // versnelling komt nooit boven 20
 
+    // -----------------------------
+    // ROTATIE XYZ (kwadratisch gemiddelde)
+    // -----------------------------
     if (type === "xyz" && isGyro) {
         const nice = [50,100,200,500,1000];
         let max = nice.find(n => n >= maxPos) || 1000;
@@ -663,6 +562,9 @@ function computeScale(points, type) {
         return { min: 0, max, labels };
     }
 
+    // -----------------------------
+    // ROTATIE X-Y-Z (drie lijnen)
+    // -----------------------------
     if (isGyro) {
         const nice = [50,100,200,500,1000];
         let max = nice.find(n => n >= maxAbs) || 1000;
@@ -674,6 +576,9 @@ function computeScale(points, type) {
         };
     }
 
+    // -----------------------------
+    // VERSNELLING XYZ (kwadratisch gemiddelde)
+    // -----------------------------
     if (type === "xyz") {
         let max;
         if (maxPos <= 1) max = 1;
@@ -689,6 +594,9 @@ function computeScale(points, type) {
         return { min: 0, max, labels };
     }
 
+    // -----------------------------
+    // VERSNELLING X/Y/Z + MULTI
+    // -----------------------------
     let max;
     if (maxAbs <= 1) max = 1;
     else if (maxAbs <= 2) max = 2;
@@ -707,10 +615,6 @@ function computeScale(points, type) {
 }
 
 
-/* ============================================================
-   RENDER SINGLE GRAPH
-   ============================================================ */
-
 function render(id, points, color, label, unit, progress, type) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
@@ -725,6 +629,7 @@ function render(id, points, color, label, unit, progress, type) {
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
 
+    const center = (type === "xyz") ? (h - pB) : (h / 2);
     const scaleY = (type === "xyz")
         ? gH / max
         : (gH / 2) / max;
@@ -748,6 +653,7 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     });
 
+    // Verticale gridlijnen links en rechts
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -788,11 +694,6 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-
-/* ============================================================
-   RENDER MULTI GRAPH
-   ============================================================ */
-
 function renderMulti(id, series, title, unit, progress, type = "multi") {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
@@ -808,6 +709,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
 
+    const center = (type === "xyz") ? (h - pB) : (h / 2);
     const scaleY = (type === "xyz")
         ? gH / max
         : (gH / 2) / max;
@@ -831,6 +733,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // Verticale gridlijnen links en rechts
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -872,31 +775,36 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-    // LEGEND
-    let legendX = w - pR - 150 * dpr;
-    let legendY = pT + 18 * dpr;
+// ▼▼▼ LEGEND RECHTSBOVEN (perfect uitgelijnd) ▼▼▼
+let legendX = w - pR - 150 * dpr;   // afstand van rechterrand
+let legendY = pT + 18 * dpr;        // zelfde hoogte als titel
 
-    series.forEach(s => {
-        const boxW = 20 * dpr;
-        const boxH = 10 * dpr;
+series.forEach(s => {
+    const boxW = 20 * dpr;
+    const boxH = 10 * dpr;
 
-        ctx.fillStyle = s.color;
-        ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
+    // kleurblokje (verticaal gecentreerd)
+    ctx.fillStyle = s.color;
+    ctx.fillRect(
+        legendX,
+        legendY - boxH / 2,
+        boxW,
+        boxH
+    );
 
-        ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
+    // tekst (perfect gecentreerd naast blokje)
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
-        legendX += 70 * dpr;
-    });
+    // volgende item
+    legendX += 70 * dpr;
+});
+// ▲▲▲ EINDE LEGEND ▲▲▲
+
 }
-
-
-/* ============================================================
-   DRAW
-   ============================================================ */
 
 function draw() {
     if (data.length < 2) return;
@@ -905,6 +813,7 @@ function draw() {
         ? elBack.currentTime / elBack.duration
         : 0;
 
+    // ✔️ X‑Y‑Z (drie lijnen)
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
@@ -929,32 +838,50 @@ function draw() {
 
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
+    // ✔️ XYZ magnitude
     if (axis === 'xyz') {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
 
         accType = "xyz";
-        gyroType = "xyz";
+        gyroType = "xyz"; // rotatie XYZ → positief
     }
 
+    // ✔️ Single axis (X, Y, Z)
     else {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
 
         accType = "single";
-        gyroType = "gyro";
+        gyroType = "gyro"; // rotatie single → gyro schaal
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+    // ✔️ Versnelling
+    render(
+        "cAcc",
+        accPoints,
+        "#00bfff",
+        "Versnelling " + labelSuffix,
+        "m/s²",
+        progress,
+        accType
+    );
+
+    // ✔️ Rotatie
+    render(
+        "cGyro",
+        gyroPoints,
+        "#ff4500",
+        "Rotatie " + labelSuffix,
+        "°/s",
+        progress,
+        gyroType
+    );
 }
-
-
-/* ============================================================
-   PLAY / PAUSE
-   ============================================================ */
+    
+// --- HIER KOMT DE PLAY/SPEED CODE ---
 
 const playPauseBtn = document.getElementById("playPauseBtn");
 const speedButtons = document.querySelectorAll(".speedBtn");
@@ -969,43 +896,27 @@ playPauseBtn.addEventListener("click", () => {
     }
 });
 
-
-/* ============================================================
-   SPEED BUTTONS
-   ============================================================ */
-
 speedButtons.forEach(btn => {
     btn.addEventListener("click", () => {
         const speed = parseFloat(btn.dataset.speed);
         elBack.playbackRate = speed;
 
+        // highlight logica
         speedButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
     });
 });
 
-// OPEN/CLOSE DROPDOWN  ← FIX
-selectedDisplay.onclick = () => {
-    optionsList.style.display =
-        optionsList.style.display === "none" ? "block" : "none";
-};
-    
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+    
+// --- EINDE PLAY/SPEED CODE ---
 
-
-/* ============================================================
-   DROPDOWN CLOSE
-   ============================================================ */
-
+    
 window.onclick = (e) => {
     if (!e.target.closest('#customDropdown')) {
         document.getElementById("optionsList").style.display = "none";
     }
 };
-
-/* ============================================================
-   EXPORT — NIEUW (status = "e")
-   ============================================================ */
 
 document.getElementById("btnExport").onclick = async () => {
     if (!data || data.length === 0) {
@@ -1013,89 +924,69 @@ document.getElementById("btnExport").onclick = async () => {
         return;
     }
 
-    const id = selectedDisplay.dataset.id;
-    if (!id) {
-        alert("Geen sessie geselecteerd.");
-        return;
-    }
+    const zip = new JSZip();
 
-    const tx = db.transaction("sessions", "readwrite");
-    const store = tx.objectStore("sessions");
+    // --- BESTANDSNAAM OP BASIS VAN SESSIENAAM ---
+    let rawName = selectedDisplay.textContent || "Onbekend";
+    rawName = rawName.replace(/:/g, "-").replace(/\s+/g, "_"); 
+    const zipFileName = `${rawName}.zip`;
 
-    const req = store.get(Number(id));
-    req.onsuccess = async () => {
-        const session = req.result;
-        if (!session) return;
+    // --- ACC CSV ---
+    let accCSV = "t,ax,ay,az\n";
+    data.forEach((d, i) => {
+        accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+    });
+    zip.file("acc.csv", accCSV);
 
-        // ZIP-bestandsnaam zonder suffix
-        const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
+    // --- GYRO CSV ---
+    let gyroCSV = "t,gx,gy,gz\n";
+    data.forEach((d, i) => {
+        gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+    });
+    zip.file("gyro.csv", gyroCSV);
 
-        const zip = new JSZip();
-
-        // ACC CSV
-        let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d, i) => {
-            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
-        });
-        zip.file("acc.csv", accCSV);
-
-        // GYRO CSV
-        let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d, i) => {
-            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
-        });
-        zip.file("gyro.csv", gyroCSV);
-
-        // META
-        const meta = {
-            name: session.baseName,
-            axis: session.axis,
-            samples: session.sensorData.length,
-            date: session.date
-        };
-        zip.file("meta.json", JSON.stringify(meta, null, 2));
-
-        // VIDEO
-        zip.file("video.mp4", session.videoBlob);
-
-        // ZIP genereren
-        const zipBlob = await zip.generateAsync({ type: "blob" });
-
-        // Delen via iOS
-        try {
-            const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
-
-            if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
-                await navigator.share({ files: [zipFile] });
-            } else {
-                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
-            }
-        } catch (err) {
-            console.error("Fout bij delen:", err);
-            alert("Er ging iets mis bij het delen van de ZIP.");
-        }
-
-        // STATUS → "e"
-        session.status = "e";
-        store.put(session);
-
-        tx.oncomplete = () => {
-            selectedDisplay.textContent = applySuffix(session.baseName, "e");
-            selectedDisplay.dataset.id = id;   // ← FIX
-            loadArchiveList();
-        };
+    // --- META ---
+    const meta = {
+        name: selectedDisplay.textContent || "Onbekend",
+        axis: axis,
+        samples: data.length,
+        date: new Date().toISOString()
     };
+    zip.file("meta.json", JSON.stringify(meta, null, 2));
+
+    // --- VIDEO ---
+    const videoBlob = currentVideoBlob;
+    zip.file("video.mp4", videoBlob);
+
+    // --- ZIP GENEREREN ---
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // --- DELEN VIA IOS (WERKT IN BLUEFY!) ---
+    try {
+        const zipFile = new File([zipBlob], zipFileName, {
+            type: "application/zip"
+        });
+
+        if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
+            await navigator.share({
+                files: [zipFile]
+            });
+
+        } else {
+            alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+        }
+    } catch (err) {
+        console.error("Fout bij delen:", err);
+        alert("Er ging iets mis bij het delen van de ZIP.");
+    }
 };
-
-
-/* ============================================================
-   IMPORT — NIEUW (status = "i")
-   ============================================================ */
 
 const fileInput = document.getElementById("fileImport");
 const btnImport = document.getElementById("btnImport");
 
-btnImport.onclick = () => fileInput.click();
+btnImport.onclick = () => {
+    fileInput.click();
+};
 
 fileInput.onchange = async (event) => {
     const file = event.target.files[0];
@@ -1107,6 +998,7 @@ fileInput.onchange = async (event) => {
     }
 
     await importSessionFromZip(file);
+
     fileInput.value = "";
 };
 
@@ -1153,12 +1045,8 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    const baseName = stripSuffix(meta.name || "Imported Session");
-    const status = "i";
-
     const session = {
-        baseName,
-        status,
+        name: meta.name || "Imported Session",
         sensorData: combined,
         videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
         axis: meta.axis || "x",
@@ -1170,20 +1058,22 @@ async function importSessionFromZip(file) {
     const addReq = store.add(session);
 
     addReq.onsuccess = () => {
-        const newId = addReq.result;
+    const newId = addReq.result;
 
-        loadArchiveList();
+    // JUISTE FUNCTIE NAAM:
+    loadArchiveList();
 
-        selectSession(newId, baseName, status);
-    };
+    // Direct de nieuwe sessie selecteren:
+    selectSession(newId, session.name);
+};
+
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
     };
 }
 
+  
 </script>
 </body>
 </html>
-
-    
