@@ -282,6 +282,10 @@ const elLive = document.getElementById('vLive'), elBack = document.getElementByI
 const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
+function isWebBLEAvailable() {
+    return !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+}
+    
 function stripSuffix(name) {
     if (!name) return "";
     return name.replace(/\s\([sei]\)$/, "");
@@ -400,21 +404,51 @@ elBack.onended = () => {
 
 // --- CORE ---
 document.getElementById('btnConnect').onclick = async () => {
+
+    // --- WebBLE check ---
+    if (!isWebBLEAvailable()) {
+        alert("⚠️ Bluefy WebBLE niet actief.\nSluit Bluefy volledig en open opnieuw.");
+        return;
+    }
+
     try {
-        const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast-Analyzer" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: "Cast-Analyzer" }],
+            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+        });
+
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+        });
+
         elLive.srcObject = stream;
+
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-            data.push({ ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100, gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true) });
+            data.push({
+                ax: v.getInt16(0, true) / 100,
+                ay: v.getInt16(2, true) / 100,
+                az: v.getInt16(4, true) / 100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
+                gz: v.getInt16(10, true)
+            });
             elCount.innerText = data.length;
         });
-        document.getElementById('btnConnect').disabled = true; document.getElementById('btnStart').disabled = false;
-    } catch (e) { alert(e); }
+
+        document.getElementById('btnConnect').disabled = true;
+        document.getElementById('btnStart').disabled = false;
+
+    } catch (e) {
+        alert(e);
+    }
 };
+
 
 document.getElementById('btnStart').onclick = async () => {
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
@@ -1110,6 +1144,20 @@ async function importSessionFromZip(file) {
     };
 }
 
+// Automatische WebBLE check bij opstarten
+window.addEventListener("load", () => {
+    const btn = document.getElementById("btnConnect");
+
+    if (!isWebBLEAvailable()) {
+        btn.disabled = true;
+        btn.style.opacity = 0.4;
+        alert("⚠️ Bluetooth niet beschikbaar in deze Bluefy-modus.\nSluit Bluefy volledig en open opnieuw.");
+    } else {
+        btn.disabled = false;
+        btn.style.opacity = 1;
+    }
+});
+   
   
 </script>
 </body>
