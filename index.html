@@ -311,34 +311,45 @@ dbRequest.onsuccess = (e) => {
    ============================================================ */
 
 function loadArchiveList() {
-    const list = optionsList;
+    const list = document.getElementById("optionsList");
     list.innerHTML = "";
 
-    const store = db.transaction("sessions", "readonly").objectStore("sessions");
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
 
-    store.openCursor(null, "prev").onsuccess = (e) => {
+    const sessions = [];
+
+    store.openCursor().onsuccess = (e) => {
         const cursor = e.target.result;
-        if (!cursor) return;
+        if (cursor) {
+            sessions.push(cursor.value);
+            cursor.continue();
+        } else {
+            // Sorteer op datum (nieuwste boven)
+            sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        const s = cursor.value;
-        const fullName = applySuffix(s.baseName, s.status);
+            sessions.forEach(s => {
+                const fullName = applySuffix(s.baseName, s.status);
 
-        const item = document.createElement("div");
-        item.style.padding = "12px 10px";
-        item.style.borderBottom = "1px solid #eee";
-        item.style.fontSize = "16px";
-        item.style.whiteSpace = "nowrap";
-        item.style.overflow = "hidden";
-        item.style.textOverflow = "ellipsis";
-        item.textContent = fullName;
+                const item = document.createElement("div");
+                item.style.padding = "12px 10px";
+                item.style.borderBottom = "1px solid #eee";
+                item.style.fontSize = "16px";
+                item.style.whiteSpace = "nowrap";
+                item.style.overflow = "hidden";
+                item.style.textOverflow = "ellipsis";
+                item.style.textAlign = "left";   // ← FIX: links uitlijnen
 
-        item.onclick = () => {
-            selectSession(s.id, s.baseName, s.status);
-            list.style.display = "none";
-        };
+                item.textContent = fullName;
 
-        list.appendChild(item);
-        cursor.continue();
+                item.onclick = () => {
+                    selectSession(s.id, s.baseName, s.status);
+                    list.style.display = "none";
+                };
+
+                list.appendChild(item);
+            });
+        }
     };
 }
 
@@ -481,6 +492,13 @@ document.getElementById('btnConnect').onclick = async () => {
         });
 
         elLive.srcObject = stream;
+
+        // FIX: iPad Safari halve-video bug
+        setTimeout(() => {
+            elLive.style.display = "none";
+            void elLive.offsetHeight;   // force reflow
+            elLive.style.display = "block";
+        }, 50);
 
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
