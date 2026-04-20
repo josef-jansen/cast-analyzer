@@ -261,6 +261,12 @@ const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
+// OPEN/CLOSE DROPDOWN  ← FIX
+selectedDisplay.onclick = () => {
+    optionsList.style.display =
+        optionsList.style.display === "none" ? "block" : "none";
+};
+
 const dbRequest = indexedDB.open("CastAnalyzerDB", 2);
 
 dbRequest.onupgradeneeded = (e) => {
@@ -980,6 +986,12 @@ speedButtons.forEach(btn => {
     });
 });
 
+// OPEN/CLOSE DROPDOWN  ← FIX
+selectedDisplay.onclick = () => {
+    optionsList.style.display =
+        optionsList.style.display === "none" ? "block" : "none";
+};
+    
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
 
@@ -1071,6 +1083,7 @@ document.getElementById("btnExport").onclick = async () => {
 
         tx.oncomplete = () => {
             selectedDisplay.textContent = applySuffix(session.baseName, "e");
+            selectedDisplay.dataset.id = id;   // ← FIX
             loadArchiveList();
         };
     };
