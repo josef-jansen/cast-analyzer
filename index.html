@@ -475,22 +475,14 @@ function clearGraphs() {
 
 let char, stream, recorder;
 
-document.getElementById('btnConnect').onclick = async () => {
+document.getElementById("btnConnect").onclick = async () => {
     try {
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: "Cast-Analyzer" }],
-            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-        });
-
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" },
             audio: false
         });
 
+        // Video live stream koppelen
         elLive.srcObject = stream;
 
         // FIX: iPad Safari halve-video bug
@@ -500,27 +492,15 @@ document.getElementById('btnConnect').onclick = async () => {
             elLive.style.display = "block";
         }, 50);
 
-        char.addEventListener('characteristicvaluechanged', (e) => {
-            const v = e.target.value;
-            data.push({
-                ax: v.getInt16(0, true) / 100,
-                ay: v.getInt16(2, true) / 100,
-                az: v.getInt16(4, true) / 100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
-            });
-            elCount.innerText = data.length;
-        });
+        // UI updates
+        document.getElementById("btnStart").disabled = false;
+        document.getElementById("btnConnect").disabled = true;
 
-        document.getElementById('btnConnect').disabled = true;
-        document.getElementById('btnStart').disabled = false;
-
-    } catch (e) {
-        alert(e);
+    } catch (err) {
+        console.error("Camera error:", err);
+        alert("Kan camera niet openen.");
     }
 };
-
 
 /* ============================================================
    START RECORDING
