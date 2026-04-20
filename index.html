@@ -282,15 +282,6 @@ const elLive = document.getElementById('vLive'), elBack = document.getElementByI
 const slider = document.getElementById('syncSlider'), timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList'), selectedDisplay = document.getElementById('selectedDisplay');
 
-function isWebBLEAvailable() {
-    return !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
-}
-    
-function stripSuffix(name) {
-    if (!name) return "";
-    return name.replace(/\s\([sei]\)$/, "");
-}
-    
 // ---------------------------------------------------------
 // Hulpfunctie: maakt beide grafieken volledig leeg
 // ---------------------------------------------------------
@@ -404,51 +395,21 @@ elBack.onended = () => {
 
 // --- CORE ---
 document.getElementById('btnConnect').onclick = async () => {
-
-    // --- WebBLE check ---
-    if (!isWebBLEAvailable()) {
-        alert("⚠️ Bluefy WebBLE niet actief.\nSluit Bluefy volledig en open opnieuw.");
-        return;
-    }
-
     try {
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: "Cast-Analyzer" }],
-            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
-        });
-
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ name: "Cast-Analyzer" }], optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214'] });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
-
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-        });
-
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
         elLive.srcObject = stream;
-
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-            data.push({
-                ax: v.getInt16(0, true) / 100,
-                ay: v.getInt16(2, true) / 100,
-                az: v.getInt16(4, true) / 100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
-            });
+            data.push({ ax: v.getInt16(0, true)/100, ay: v.getInt16(2, true)/100, az: v.getInt16(4, true)/100, gx: v.getInt16(6, true), gy: v.getInt16(8, true), gz: v.getInt16(10, true) });
             elCount.innerText = data.length;
         });
-
-        document.getElementById('btnConnect').disabled = true;
-        document.getElementById('btnStart').disabled = false;
-
-    } catch (e) {
-        alert(e);
-    }
+        document.getElementById('btnConnect').disabled = true; document.getElementById('btnStart').disabled = false;
+    } catch (e) { alert(e); }
 };
-
 
 document.getElementById('btnStart').onclick = async () => {
     data = []; chunks = []; elCount.innerText = "0"; slider.disabled = true;
@@ -488,22 +449,20 @@ document.getElementById('btnSave').onclick = () => {
     const inputNaam = prompt("Naam van de worp:", "Worp");
     if (!inputNaam) return; 
     
-    const baseName = datumString + " - " + inputNaam;
-    const name = baseName + " (s)";
+    const name = datumString + " - " + inputNaam;
 
     const tx = db.transaction("sessions", "readwrite");
     tx.objectStore("sessions").add({ 
         name, 
-        baseName,
         sensorData: data, 
         videoBlob: new Blob(chunks, { type: 'video/mp4' }), 
         axis, 
-        status: "s",
-        date: nu
+        date: nu // Hier kun je 'nu' gebruiken die je bovenaan al hebt gemaakt
     });
     tx.oncomplete = () => { 
         loadArchiveList(); 
-        document.getElementById("selectedDisplay").textContent = name;
+        const displayNaam = datumString + " - " + inputNaam;
+        document.getElementById("selectedDisplay").textContent = displayNaam;
         alert("Opgeslagen!"); 
     };
 };
@@ -965,70 +924,44 @@ document.getElementById("btnExport").onclick = async () => {
         return;
     }
 
-    const sessionId = selectedDisplay.dataset.value;
-    if (!sessionId) {
-        alert("Geen sessie geselecteerd.");
-        return;
-    }
-
-    // Sessienaam in DB updaten naar (e)
-    const txMeta = db.transaction("sessions", "readwrite");
-    const storeMeta = txMeta.objectStore("sessions");
-    const getReq = storeMeta.get(Number(sessionId));
-
-    let exportName = selectedDisplay.textContent || "Onbekend";
-
-    getReq.onsuccess = (ev) => {
-        const s = ev.target.result;
-        if (s) {
-            const baseName = s.baseName || stripSuffix(s.name);
-            s.baseName = baseName;
-            s.status = "e";
-            s.name = baseName + " (e)";
-            storeMeta.put(s);
-            exportName = s.name;
-            selectedDisplay.textContent = s.name;
-            loadArchiveList();
-        }
-    };
-
     const zip = new JSZip();
 
-    // BESTANDSNAAM OP BASIS VAN SESSIENAAM (met (e))
-    let rawName = exportName || "Onbekend";
+    // --- BESTANDSNAAM OP BASIS VAN SESSIENAAM ---
+    let rawName = selectedDisplay.textContent || "Onbekend";
     rawName = rawName.replace(/:/g, "-").replace(/\s+/g, "_"); 
     const zipFileName = `${rawName}.zip`;
 
-    // ACC CSV
+    // --- ACC CSV ---
     let accCSV = "t,ax,ay,az\n";
     data.forEach((d, i) => {
         accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
     });
     zip.file("acc.csv", accCSV);
 
-    // GYRO CSV
+    // --- GYRO CSV ---
     let gyroCSV = "t,gx,gy,gz\n";
     data.forEach((d, i) => {
         gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
     });
     zip.file("gyro.csv", gyroCSV);
 
-    // META
+    // --- META ---
     const meta = {
-        name: exportName,
+        name: selectedDisplay.textContent || "Onbekend",
         axis: axis,
         samples: data.length,
         date: new Date().toISOString()
     };
     zip.file("meta.json", JSON.stringify(meta, null, 2));
 
-    // VIDEO
+    // --- VIDEO ---
     const videoBlob = currentVideoBlob;
     zip.file("video.mp4", videoBlob);
 
-    // ZIP GENEREREN
+    // --- ZIP GENEREREN ---
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
+    // --- DELEN VIA IOS (WERKT IN BLUEFY!) ---
     try {
         const zipFile = new File([zipBlob], zipFileName, {
             type: "application/zip"
@@ -1112,15 +1045,11 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    const baseName = stripSuffix(meta.name || "Imported Session");
-
     const session = {
-        name: baseName + " (i)",
-        baseName,
+        name: meta.name || "Imported Session",
         sensorData: combined,
         videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
         axis: meta.axis || "x",
-        status: "i",
         date: meta.date || new Date().toISOString()
     };
 
@@ -1129,35 +1058,21 @@ async function importSessionFromZip(file) {
     const addReq = store.add(session);
 
     addReq.onsuccess = () => {
-        const newId = addReq.result;
-        loadArchiveList();
-        selectSession(newId, session.name);
-    };
+    const newId = addReq.result;
+
+    // JUISTE FUNCTIE NAAM:
+    loadArchiveList();
+
+    // Direct de nieuwe sessie selecteren:
+    selectSession(newId, session.name);
+};
+
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
     };
 }
 
-    addReq.onerror = () => {
-        alert("Kon sessie niet opslaan in IndexedDB.");
-    };
-}
-
-// Automatische WebBLE check bij opstarten
-window.addEventListener("load", () => {
-    const btn = document.getElementById("btnConnect");
-
-    if (!isWebBLEAvailable()) {
-        btn.disabled = true;
-        btn.style.opacity = 0.4;
-        alert("⚠️ Bluetooth niet beschikbaar in deze Bluefy-modus.\nSluit Bluefy volledig en open opnieuw.");
-    } else {
-        btn.disabled = false;
-        btn.style.opacity = 1;
-    }
-});
-   
   
 </script>
 </body>
