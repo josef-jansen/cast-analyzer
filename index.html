@@ -392,9 +392,11 @@ function loadArchiveList() {
 function selectSession(id, baseName, status) {
     const fullName = applySuffix(baseName, status);
 
-    elRecStatus.textContent = (status === "i") ? "Imported" :
-                          (status === "e") ? "Saved" :
-                          "Stopped";
+    elRecStatus.textContent =
+        (status === "i") ? "Imported" :
+        (status === "e") ? "Exported" :
+        (status === "s") ? "Saved" :
+        "Stopped";
 
     selectedDisplay.textContent = fullName;
     selectedDisplay.dataset.id = id;
@@ -1147,7 +1149,7 @@ document.getElementById("btnExport").onclick = async () => {
                 alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
             // Pas NA het delen → correcte timing in Bluefy/iOS
-            elRecStatus.textContent = "Saved";
+            elRecStatus.textContent = "Exported";
             alert("Geëxporteerd!");
 
         } catch (err) {
