@@ -644,32 +644,34 @@ document.getElementById('btnReset').onclick = async () => {
     try { if (char) await char.stopNotifications(); } catch (e) {}
     try { if (recorder && recorder.state !== "inactive") recorder.stop(); } catch (e) {}
 
+    // Video terug naar live
     elBack.pause();
     elBack.src = "";
     elBack.style.display = "none";
     elLive.style.display = "block";
 
-    elRecStatus.textContent = "Stopped";
-   
+    // Status terug naar beginstand
+    elRecStatus.textContent = "Idle";
+
+    // Data leegmaken
     data = [];
     chunks = [];
     elCount.innerText = "0";
 
+    // Sessie deselecteren
+    selectedDisplay.textContent = "";
+    selectedDisplay.dataset.id = "";
+
+    // Slider resetten
     slider.value = 0;
     slider.disabled = true;
 
-    timeLabel.innerText = "0.00s / 0.00s";
-
-    clearGraphs();
-
+    // Knoppen terug naar begin
     document.getElementById('btnStart').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnSave').disabled = true;
-
-    selectedDisplay.textContent = "-- Worp Selecteren --";
-    delete selectedDisplay.dataset.id;
-    optionsList.style.display = "none";
 };
+
 
 
 /* ============================================================
