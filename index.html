@@ -670,9 +670,13 @@ document.getElementById('btnReset').onclick = async () => {
     document.getElementById('btnStart').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnSave').disabled = true;
+
+    // Grafieken leegmaken
+    clearGraph('accCanvas');
+    clearGraph('gyroCanvas');
+    clearGraph('accXYZCanvas');
+    clearGraph('gyroXYZCanvas');
 };
-
-
 
 /* ============================================================
    AXIS SELECTIE
