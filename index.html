@@ -652,6 +652,9 @@ document.getElementById('btnReset').onclick = async () => {
     elBack.style.display = "none";
     elLive.style.display = "block";
 
+    // Tijdlabel resetten
+    timeLabel.textContent = "0.00s / 0.00s";
+
     // Status terug naar beginstand
     elRecStatus.textContent = "Idle";
 
