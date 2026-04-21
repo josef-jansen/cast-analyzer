@@ -485,13 +485,13 @@ document.getElementById('btnSave').onclick = () => {
         date: nu.toISOString()
     });
 
-    elRecStatus.textContent = "Saved";
-
     addReq.onsuccess = () => {
         const newId = addReq.result;
 
         // DIRECT selecteren → FIX voor export-probleem
         selectSession(newId, baseName, status);
+
+        elRecStatus.textContent = "Saved";
 
         loadArchiveList();
         alert("Opgeslagen!");
@@ -625,6 +625,8 @@ document.getElementById('btnStop').onclick = async () => {
     try { await char.stopNotifications(); } catch (e) {}
 
     recorder.stop();
+
+    elRecStatus.textContent = "Stopped";
 
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnStart').disabled = false;
@@ -1157,7 +1159,12 @@ document.getElementById("btnExport").onclick = async () => {
 
         tx.oncomplete = () => {
             selectedDisplay.textContent = applySuffix(session.baseName, "e");
-            selectedDisplay.dataset.id = id;   // ← FIX
+            selectedDisplay.dataset.id = id;
+
+            elRecStatus.textContent = "Saved";   // ← NIEUW
+
+            alert("Geëxporteerd!");              // ← NIEUW
+
             loadArchiveList();
         };
     };
