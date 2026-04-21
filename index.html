@@ -1101,11 +1101,11 @@ document.getElementById("btnExport").onclick = async () => {
     const store = tx.objectStore("sessions");
 
     const req = store.get(Number(id));
+
     req.onsuccess = async () => {
         const session = req.result;
         if (!session) return;
 
-        // ZIP-bestandsnaam zonder suffix
         const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
 
         const zip = new JSZip();
@@ -1136,10 +1136,8 @@ document.getElementById("btnExport").onclick = async () => {
         // VIDEO
         zip.file("video.mp4", session.videoBlob);
 
-        // ZIP genereren
         const zipBlob = await zip.generateAsync({ type: "blob" });
 
-        // Delen via iOS
         try {
             const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
 
@@ -1156,20 +1154,16 @@ document.getElementById("btnExport").onclick = async () => {
         // STATUS → "e"
         session.status = "e";
         store.put(session);
+    };
 
-        tx.oncomplete = () => {
-            selectedDisplay.textContent = applySuffix(session.baseName, "e");
-            selectedDisplay.dataset.id = id;
-
-            elRecStatus.textContent = "Saved";   // ← NIEUW
-
-            alert("Geëxporteerd!");              // ← NIEUW
-
-            loadArchiveList();
-        };
+    tx.oncomplete = () => {
+        // Wordt nu ALTIJD uitgevoerd
+        selectedDisplay.textContent = applySuffix(selectedDisplay.textContent, "e");
+        elRecStatus.textContent = "Saved";
+        alert("Geëxporteerd!");
+        loadArchiveList();
     };
 };
-
 
 /* ============================================================
    IMPORT — NIEUW (status = "i")
