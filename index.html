@@ -647,6 +647,8 @@ document.getElementById('btnReset').onclick = async () => {
     // Video terug naar live
     elBack.pause();
     elBack.src = "";
+    elBack.removeAttribute("src");   // ← BELANGRIJK
+    elBack.load();                   // ← BELANGRIJK
     elBack.style.display = "none";
     elLive.style.display = "block";
 
