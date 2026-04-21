@@ -1146,6 +1146,10 @@ document.getElementById("btnExport").onclick = async () => {
             } else {
                 alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
+            // Pas NA het delen → correcte timing in Bluefy/iOS
+            elRecStatus.textContent = "Saved";
+            alert("Geëxporteerd!");
+
         } catch (err) {
             console.error("Fout bij delen:", err);
             alert("Er ging iets mis bij het delen van de ZIP.");
@@ -1157,10 +1161,6 @@ document.getElementById("btnExport").onclick = async () => {
     };
 
     tx.oncomplete = () => {
-        // Wordt nu ALTIJD uitgevoerd
-        selectedDisplay.textContent = applySuffix(selectedDisplay.textContent, "e");
-        elRecStatus.textContent = "Saved";
-        alert("Geëxporteerd!");
         loadArchiveList();
     };
 };
