@@ -672,10 +672,7 @@ document.getElementById('btnReset').onclick = async () => {
     document.getElementById('btnSave').disabled = true;
 
     // Grafieken leegmaken
-    clearGraph('accCanvas');
-    clearGraph('gyroCanvas');
-    clearGraph('accXYZCanvas');
-    clearGraph('gyroXYZCanvas');
+    clearGraphs();
 };
 
 /* ============================================================
