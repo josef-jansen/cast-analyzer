@@ -1,406 +1,252 @@
 <!DOCTYPE html>
-<html lang='nl'>
+<html lang="nl">
 <head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cast-Analyzer</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
+        
+        .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
+        
+        :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
+        
+        .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
+        .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
 
-<!-- ============================================================
-     GLOBAL CSS — volledige opschoning, alle inline styles eruit
-     ============================================================ -->
-<style>
-    * {
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-    }
+        .bottom-area {
+            min-height: var(--bottom-area);
+            height: auto;
+            width: 100%;
+            background: #f2f2f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 6px 20px 12px 20px;
+            gap: 8px;
+            border-top: 1px solid #ddd;
+        }
 
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-        background: #f2f2f7;
-        font-family: -apple-system, sans-serif;
-    }
+        #syncSlider { 
+            -webkit-appearance: none; width: 90%; height: 12px; 
+            background: #d1d1d6; border-radius: 6px; outline: none; margin: 20px 0; 
+        }
+        
+        #syncSlider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
+            background: #007aff; border: 3px solid #fff; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
+        }
+        
+        #timeLabel { 
+            font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; 
+            color: #007aff; background: #fff; padding: 4px 12px;
+            border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
-    :root {
-        --controls-h: 145px;
-        --bottom-h: 130px;
-        --section-h: calc((100vh - var(--controls-h) - var(--bottom-h)) / 3);
-    }
+        canvas { width: 100% !important; height: 100% !important; display: block; }
 
-    /* ============================================================
-       CONTROLS AREA
-       ============================================================ */
-    .controls {
-        height: var(--controls-h);
-        padding: 10px;
-        text-align: center;
-        background: #f2f2f7;
-        border-bottom: 1px solid #ddd;
-        position: relative;
-        z-index: 20;
-    }
+        button {
+            padding: 0 16px;
+            height: 44px;
+            line-height: 44px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #fff;
+            background: #666;
+            min-width: 90px; 
+            margin: 4px;
+            box-sizing: border-box;
+        }
 
-    .status-text {
-        font-size: 10px;
-        color: #666;
-        margin-top: 4px;
-    }
+        #btnConnect { background: #007aff; }
+        #btnStart   { background: #34c759; }
+        #btnStop    { background: #ff3b30; }
+        #btnSave    { background: #5856d6; }
+        #btnReset   { background: #8e8e93; }
 
-    /* ============================================================
-       BUTTONS
-       ============================================================ */
-    button {
-        padding: 0 16px;
-        height: 44px;
-        line-height: 44px;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        color: #fff;
-        background: #666;
-        min-width: 90px;
-        margin: 4px;
-    }
+        .axisBtn {
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
+            border: 1px solid #007aff;
+            border-radius: 6px;
+            background: #fff;
+            color: #007aff;
+            font-size: 14px;
+            margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+        }
 
-    #btnConnect { background: #007aff; }
-    #btnStart   { background: #34c759; }
-    #btnStop    { background: #ff3b30; }
-    #btnSave    { background: #5856d6; }
-    #btnReset   { background: #8e8e93; }
-    #btnExport  { background: #007aff; }
+        .axisBtn.active {
+            background: #007aff;
+            color: #fff;
+        }
 
-    #btnDel {
-        background: #ff3b30;
-        height: 44px;
-        line-height: 44px;
-        padding: 0 16px;
-        border-radius: 8px;
-        font-size: 16px;
-    }
+        #playPauseBtn {
+            height: 32px;
+            line-height: 30px;
+            padding: 0 14px;
+        }
 
-    /* ============================================================
-       AXIS BUTTONS
-       ============================================================ */
-    .axisBtn {
-        padding: 0 14px;
-        height: 32px;
-        line-height: 30px;
-        border: 1px solid #007aff;
-        border-radius: 6px;
-        background: #fff;
-        color: #007aff;
-        font-size: 14px;
-        margin: 0 3px;
-        min-width: 44px;
-    }
+        .speedBtn {
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
+            border: 1px solid #007aff;
+            border-radius: 6px;
+            background: #fff;
+            color: #007aff;
+            font-size: 14px;
+            margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+        }
 
-    .axisBtn.active {
-        background: #007aff;
-        color: #fff;
-    }
+        .speedBtn.active {
+            background: #007aff;
+            color: #fff;
+        }
 
-    /* ============================================================
-       MAIN SECTIONS (graphs + video)
-       ============================================================ */
-    .section {
-        width: 100%;
-        height: var(--section-h);
-        background: #fff;
-        border-bottom: 1px solid #eee;
-        position: relative;
-        overflow: hidden;
-    }
+        #btnDel {
+            background: #ff3b30;
+            height: 36px;
+            line-height: 36px;
+            padding: 0 14px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            border: none;
+        }
 
-    .graph-container {
-        background: #1c1c1e;
-        border-radius: 8px;
-        padding: 5px;
-        margin: 8px;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        height: calc(var(--section-h) - 16px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
 
-    canvas {
-        width: 100% !important;
-        height: 100% !important;
-        display: block;
-    }
+        .graph-container {
+            background: #1c1c1e;
+            border-radius: 8px;
+            padding: 5px;
+            margin: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            height: calc(var(--content-h) - 16px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    /* ============================================================
-       VIDEO CARD — verbeterde versie
-       ============================================================ */
-    .video-card {
-        position: relative;
-        background: #1c1c1e;
-        border-radius: 8px;
-        padding: 5px;
-        margin: 8px;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        width: calc(100% - 16px);
-        height: calc(var(--section-h) - 16px);
-        overflow: hidden;
-    }
+        .video-card {
+            position: relative;
+            background: #1c1c1e;                 /* zelfde als grafiek */
+            border-radius: 8px;                  /* zelfde ronding */
+            padding: 5px;                        /* zelfde padding */
+            margin: 8px;                         /* zelfde marge */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);  /* zelfde shadow */
+            width: calc(100% - 16px);            /* zelfde breedte als grafiek */
+            height: calc(var(--content-h) - 16px);
+            overflow: hidden;                    /* belangrijk voor crop */
+        }
 
-    .video-card video {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 100%;
-        height: auto;
-        min-height: 120%;
-        object-fit: cover;
-    }
+        /* Beide video’s exact over elkaar, groter dan de container,
+        zodat je het MIDDEN van het beeld ziet (top/bottom gecropt) */
+        .video-card video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;           /* breedte volgt container */
+            height: auto;
+            min-height: 120%;      /* iets hoger dan container → middenband zichtbaar */
+            object-fit: cover;     /* vult zonder zwarte balken */
+        }
 
-    /* ============================================================
-       BOTTOM AREA — play controls + slider
-       ============================================================ */
-    .bottom-area {
-        min-height: var(--bottom-h);
-        background: #f2f2f7;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 6px 20px 12px 20px;
-        gap: 8px;
-        border-top: 1px solid #ddd;
-    }
-
-    #playControls {
-        display: flex;
-        gap: 12px;
-        margin-top: 10px;
-        align-items: center;
-    }
-
-    #timeLabel {
-        font-variant-numeric: tabular-nums;
-        font-size: 16px;
-        font-weight: 600;
-        color: #007aff;
-        background: #fff;
-        padding: 4px 12px;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        min-width: 80px;
-        text-align: right;
-    }
-
-    #playPauseBtn {
-        height: 32px;
-        line-height: 30px;
-        padding: 0 14px;
-    }
-
-    .speedBtn {
-        padding: 0 14px;
-        height: 32px;
-        line-height: 30px;
-        border: 1px solid #007aff;
-        border-radius: 6px;
-        background: #fff;
-        color: #007aff;
-        font-size: 14px;
-        min-width: 44px;
-    }
-
-    .speedBtn.active {
-        background: #007aff;
-        color: #fff;
-    }
-
-    #syncSlider {
-        -webkit-appearance: none;
-        width: 90%;
-        height: 12px;
-        background: #d1d1d6;
-        border-radius: 6px;
-        outline: none;
-        margin: 20px 0;
-    }
-
-    #syncSlider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 28px;
-        height: 28px;
-        background: #007aff;
-        border: 3px solid #fff;
-        border-radius: 50%;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    /* ============================================================
-       DROPDOWN — lichte verbetering
-       ============================================================ */
-    .dropdown-wrapper {
-        width: 100%;
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        justify-content: center;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-
-    .controls > div:nth-of-type(2) {
-        margin-top: 6px;
-    }
-
-    #optionsList {
-        width: 100%;
-    }
-
-    .dropdown-item {
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    #selectedDisplay {
-        height: 44px;
-        line-height: 42px;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 0 10px;
-        font-size: 16px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        cursor: pointer;
-    }
-
-    #optionsList {
-        display: none;
-        position: absolute;
-        top: 48px;
-        left: 0;
-        width: 100%;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        z-index: 1000;
-        max-height: 300px;
-        overflow-y: auto;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    .dropdown-item {
-        padding: 12px 10px;
-        border-bottom: 1px solid #eee;
-        font-size: 16px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        text-align: left;
-        cursor: pointer;
-    }
-
-    .dropdown-item:hover {
-        background: #f2f2f7;
-    }
 </style>
 </head>
 
 <body>
 
-<!-- ============================================================
-     CONTROLS BLOCK — knoppen + status + dropdown
-     ============================================================ -->
-<div class='controls'>
-    <button id='btnConnect'>Connect</button>
-    <button id='btnStart' disabled>Start</button>
-    <button id='btnStop' disabled>Stop</button>
-    <button id='btnSave' disabled>Save</button>
-    <button id='btnReset'>Reset</button>
-    <button id='btnExport'>Export</button>
+    <div class="controls">
+        <button id="btnConnect">Connect</button>
+        <button id="btnStart" disabled>Start</button>
+        <button id="btnStop" disabled>Stop</button>
+        <button id="btnSave" disabled>Save</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnExport">Export</button>
 
-    <input type='file' id='fileImport' accept='.zip' style='display:none'>
-    <button id='btnImport'>Import</button>
+        <input type="file" id="fileImport" accept=".zip" style="display:none" />
+        <button id="btnImport">Import</button>
 
-    <div class='status-text'>
-        Status: <span id='recStatus'>Idle</span> |
-        Data: <span id='dataCount'>0</span>
+        <div class="status-text">
+            Status: <span id="recStatus">Idle</span> |
+            Data: <span id="dataCount">0</span>
+        </div>
+
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:10px;">
+            <div id="customDropdown" style="width:80%; position:relative;">
+                <div id="selectedDisplay"
+                     style="height:44px; line-height:42px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:0 10px; font-size:16px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    -- Worp Selecteren --
+                </div>
+
+                <div id="optionsList"
+                     style="display:none; position:absolute; top:48px; left:0; width:100%; background:#fff; border:1px solid #ccc; border-radius:8px; z-index:1000; max-height:300px; overflow-y:auto; box-shadow:0 4px 10px rgba(0,0,0,0.2);">
+                </div>
+            </div>
+
+            <button id="btnDel">Del</button>
+        </div>
+
+        <div style="margin-top:10px;">
+            <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
+            <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
+            <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
+            <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
+            <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+        </div>
     </div>
 
-    <div class='dropdown-wrapper'>
-        <div id='selectedDisplay'>-- Worp Selecteren --</div>
-        <div id='optionsList'></div>
-        <button id='btnDel'>Del</button>
+    <div class="section">
+        <div class="graph-container">
+            <canvas id="cAcc"></canvas>
+        </div>
     </div>
 
-    <div>
-        <button id='bX' class='axisBtn active' onclick='setAxis("x")'>X</button>
-        <button id='bY' class='axisBtn' onclick='setAxis("y")'>Y</button>
-        <button id='bZ' class='axisBtn' onclick='setAxis("z")'>Z</button>
-        <button id='bXYZ' class='axisBtn' onclick='setAxis("xyz")'>XYZ</button>
-        <button id='bxyz3' class='axisBtn' onclick='setAxis("xyz3")'>X‑Y‑Z</button>
-    </div>
-</div>
-
-<!-- ============================================================
-     GRAPH SECTIONS
-     ============================================================ -->
-<div class='section'>
-    <div class='graph-container'>
-        <canvas id='cAcc'></canvas>
-    </div>
-</div>
-
-<div class='section'>
-    <div class='graph-container'>
-        <canvas id='cGyro'></canvas>
-    </div>
-</div>
-
-<!-- ============================================================
-     VIDEO SECTION — live + back video
-     ============================================================ -->
-<div class='section'>
-    <div class='video-card'>
-        <video id='vLive' playsinline muted autoplay></video>
-        <video id='vBack' playsinline></video>
-    </div>
-</div>
-
-<!-- ============================================================
-     BOTTOM AREA — play/pause + speed + slider
-     ============================================================ -->
-<div class='bottom-area'>
-    <div id='playControls'>
-        <div id='timeLabel'>0.00s / 0.00s</div>
-        <button id='playPauseBtn'>▶︎</button>
-        <button class='speedBtn' data-speed='0.25'>0.25x</button>
-        <button class='speedBtn' data-speed='0.5'>0.5x</button>
-        <button class='speedBtn' data-speed='1'>1x</button>
+    <div class="section">
+        <div class="graph-container">
+            <canvas id="cGyro"></canvas>
+        </div>
     </div>
 
-    <input type='range' id='syncSlider' min='0' max='1000' value='0' disabled>
-</div>
+    <div class="section">
+        <div class="video-card">
+            <video id="vLive" playsinline muted autoplay></video>
+            <video id="vBack" playsinline></video>
+        </div>
+    </div>
 
-<!-- ============================================================
-     JS START — DEEL 2/5 komt hierna
-     ============================================================ -->
-<script src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'></script>
+    <div class="bottom-area">
+        <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
+            <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
+            <button id="playPauseBtn">▶︎</button>
+            <button class="speedBtn" data-speed="0.25">0.25x</button>
+            <button class="speedBtn" data-speed="0.5">0.5x</button>
+            <button class="speedBtn" data-speed="1">1x</button>
+        </div>
 
-<!-- ============================================================
-     JS — DEEL 2/5
-     Suffix Engine + IndexedDB + Archive List + Select/Delete/Save
-     ============================================================ -->
+        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
 /* ============================================================
-   SUFFIX ENGINE — naam + status (s/e/i)
+   SUFFIX ENGINE — NIEUW
    ============================================================ */
+
 function stripSuffix(name) {
-    return name.replace(/\s*\([sei]\)$/, '').trim();
+    return name.replace(/\s*\([sei]\)$/, "").trim();
 }
 
 function applySuffix(baseName, status) {
@@ -408,65 +254,61 @@ function applySuffix(baseName, status) {
 }
 
 /* ============================================================
-   GLOBALE VARIABELEN + ELEMENTREFERENTIES
+   INDEXEDDB — NIEUWE STRUCTUUR (baseName + status)
    ============================================================ */
+
 let db;
 let data = [];
 let chunks = [];
-let axis = 'x';
+let axis = "x";
 let currentVideoBlob = null;
 
-const elRecStatus      = document.getElementById('recStatus');
-const elLive           = document.getElementById('vLive');
-const elBack           = document.getElementById('vBack');
-const elCount          = document.getElementById('dataCount');
-const slider           = document.getElementById('syncSlider');
-const timeLabel        = document.getElementById('timeLabel');
-const optionsList      = document.getElementById('optionsList');
-const selectedDisplay  = document.getElementById('selectedDisplay');
+const elRecStatus = document.getElementById('recStatus');
+const elLive = document.getElementById('vLive');
+const elBack = document.getElementById('vBack');
+const elCount = document.getElementById('dataCount');
+const slider = document.getElementById('syncSlider');
+const timeLabel = document.getElementById('timeLabel');
+const optionsList = document.getElementById('optionsList');
+const selectedDisplay = document.getElementById('selectedDisplay');
 
-/* ============================================================
-   VIDEO CENTERING — Bluefy‑proof
-   ============================================================ */
 function centerVideo(el) {
+    // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
+    // Daarom wachten we tot metadata echt beschikbaar is.
     if (!el.videoWidth || !el.videoHeight) {
         el.addEventListener('loadedmetadata', () => centerVideo(el), { once: true });
         return;
     }
 
+    // We centreren altijd op het midden van de video.
     el.style.top = '50%';
     el.style.left = '50%';
     el.style.transform = 'translate(-50%, -50%)';
+
+    // Zorg dat de video altijd groter is dan de container
     el.style.width = '100%';
     el.style.height = 'auto';
     el.style.minHeight = '120%';
     el.style.objectFit = 'cover';
 }
 
-/* ============================================================
-   DROPDOWN OPEN/CLOSE
-   ============================================================ */
+// OPEN/CLOSE DROPDOWN  ← FIX
 selectedDisplay.onclick = () => {
     optionsList.style.display =
-        optionsList.style.display === 'none' || optionsList.style.display === ''
-            ? 'block'
-            : 'none';
+        optionsList.style.display === "none" ? "block" : "none";
 };
 
-/* ============================================================
-   INDEXEDDB INIT — CastAnalyzerDB v2
-   ============================================================ */
-const dbRequest = indexedDB.open('CastAnalyzerDB', 2);
+const dbRequest = indexedDB.open("CastAnalyzerDB", 2);
 
 dbRequest.onupgradeneeded = (e) => {
     const db = e.target.result;
 
-    if (!db.objectStoreNames.contains('sessions')) {
-        db.createObjectStore('sessions', { keyPath: 'id', autoIncrement: true });
+    if (!db.objectStoreNames.contains("sessions")) {
+        db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
     } else {
-        const store = e.target.transaction.objectStore('sessions');
+        const store = e.target.transaction.objectStore("sessions");
 
-        // Migratie: oude 'name' → baseName + status
+        // MIGRATIE: oude sessies met "name" → omzetten naar baseName + status
         store.openCursor().onsuccess = (ev) => {
             const cursor = ev.target.result;
             if (!cursor) return;
@@ -474,11 +316,11 @@ dbRequest.onupgradeneeded = (e) => {
             const v = cursor.value;
 
             if (v.name && !v.baseName) {
-                const clean  = stripSuffix(v.name);
-                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : 's';
+                const clean = stripSuffix(v.name);
+                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : "s";
 
                 v.baseName = clean;
-                v.status   = status;
+                v.status = status;
 
                 delete v.name;
                 cursor.update(v);
@@ -494,14 +336,17 @@ dbRequest.onsuccess = (e) => {
     loadArchiveList();
 };
 
-/* ============================================================
-   ARCHIVE LIST — sessies laden + sorteren
-   ============================================================ */
-function loadArchiveList() {
-    optionsList.innerHTML = '';
 
-    const tx = db.transaction('sessions', 'readonly');
-    const store = tx.objectStore('sessions');
+/* ============================================================
+   ARCHIVE LIST — NIEUW (baseName + status)
+   ============================================================ */
+
+function loadArchiveList() {
+    const list = document.getElementById("optionsList");
+    list.innerHTML = "";
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
 
     const sessions = [];
 
@@ -511,56 +356,57 @@ function loadArchiveList() {
             sessions.push(cursor.value);
             cursor.continue();
         } else {
+            // Sorteer op datum (nieuwste boven)
             sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sessions.forEach(s => {
-                const fullName = applySuffix(s.baseName, s.status); // Behoud de suffix voor compatibiliteit
+                const fullName = applySuffix(s.baseName, s.status);
 
-                const item = document.createElement('div');
-                item.className = 'dropdown-item';
+                const item = document.createElement("div");
+                item.style.padding = "12px 10px";
+                item.style.borderBottom = "1px solid #eee";
+                item.style.fontSize = "16px";
+                item.style.whiteSpace = "nowrap";
+                item.style.overflow = "hidden";
+                item.style.textOverflow = "ellipsis";
+                item.style.textAlign = "left";   // ← FIX: links uitlijnen
 
-                // Gebruik iconen in plaats van suffix in de UI
-                const statusLabels = { 's': '💾', 'e': '📤', 'i': '📥' }; // Status iconen
-                const statusIcon = statusLabels[s.status] || ''; // Verkrijg het juiste icoon
-
-                // Maak de tekst met het icoon en de naam
-                item.innerHTML = `
-                    <span class="status-icon">${statusIcon}</span>
-                    <span class="name-text">${fullName}</span>
-                `;
+                item.textContent = fullName;
 
                 item.onclick = () => {
                     selectSession(s.id, s.baseName, s.status);
-                    optionsList.style.display = 'none';
+                    list.style.display = "none";
                 };
 
-                optionsList.appendChild(item);
+                list.appendChild(item);
             });
         }
     };
 }
 
+
 /* ============================================================
-   SELECT SESSION — sessie kiezen + video/data laden
+   SELECT SESSION — NIEUW (suffix zichtbaar)
    ============================================================ */
+
 function selectSession(id, baseName, status) {
     const fullName = applySuffix(baseName, status);
 
     elRecStatus.textContent =
-        (status === 'i') ? 'Imported' :
-        (status === 'e') ? 'Exported' :
-        (status === 's') ? 'Saved' :
-        'Stopped';
+        (status === "i") ? "Imported" :
+        (status === "e") ? "Exported" :
+        (status === "s") ? "Saved" :
+        "Stopped";
 
     selectedDisplay.textContent = fullName;
-    selectedDisplay.dataset.id  = id;
+    selectedDisplay.dataset.id = id;
 
-    const tx = db.transaction('sessions', 'readonly');
-    tx.objectStore('sessions').get(Number(id)).onsuccess = (e) => {
+    const tx = db.transaction("sessions", "readonly");
+    tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
         if (!s) return;
 
-        data             = s.sensorData;
+        data = s.sensorData;
         currentVideoBlob = s.videoBlob;
 
         elBack.src = URL.createObjectURL(currentVideoBlob);
@@ -569,72 +415,74 @@ function selectSession(id, baseName, status) {
         elBack.currentTime = 0;
         elBack.pause();
 
-        setAxis(s.axis || 'x');
+        setAxis(s.axis || "x");
 
-        elLive.style.display = 'none';
-        elBack.style.display = 'block';
-        slider.disabled      = false;
+        elLive.style.display = "none";
+        elBack.style.display = "block";
+        slider.disabled = false;
 
         updateUI();
     };
 }
 
+
 /* ============================================================
-   DELETE SESSION — sessie verwijderen
+   DELETE SESSION — NIEUW
    ============================================================ */
-document.getElementById('btnDel').onclick = () => {
+
+document.getElementById("btnDel").onclick = () => {
     const id = selectedDisplay.dataset.id;
     if (!id) return;
-    if (!confirm('Verwijderen?')) return;
+    if (!confirm("Verwijderen?")) return;
 
-    const tx    = db.transaction('sessions', 'readwrite');
-    const store = tx.objectStore('sessions');
-
-    store.delete(Number(id));
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(id));
 
     tx.oncomplete = () => {
-        selectedDisplay.textContent = '-- Worp Selecteren --';
+        selectedDisplay.textContent = "-- Worp Selecteren --";
         delete selectedDisplay.dataset.id;
 
-        elBack.src = '';
-        elBack.style.display = 'none';
-        elLive.style.display = 'block';
+        elBack.src = "";
+        elBack.style.display = "none";
+        elLive.style.display = "block";
 
         data = [];
         chunks = [];
-        elCount.textContent = '0';
+        elCount.textContent = "0";
 
         clearGraphs();
         loadArchiveList();
     };
 };
 
+
 /* ============================================================
-   SAVE SESSION — status = 's'
+   SAVE — NIEUW (status = "s")
    ============================================================ */
+
 document.getElementById('btnSave').onclick = () => {
     const nu = new Date();
     const datumString =
-        nu.getFullYear() + '-' +
-        String(nu.getMonth() + 1).padStart(2, '0') + '-' +
-        String(nu.getDate()).padStart(2, '0') + ' ' +
-        String(nu.getHours()).padStart(2, '0') + ':' +
+        nu.getFullYear() + "-" +
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" +
+        String(nu.getDate()).padStart(2, '0') + " " +
+        String(nu.getHours()).padStart(2, '0') + ":" +
         String(nu.getMinutes()).padStart(2, '0');
 
-    const inputNaam = prompt('Naam van de worp:', 'Worp');
+    const inputNaam = prompt("Naam van de worp:", "Worp");
     if (!inputNaam) return;
 
     const baseName = `${datumString} - ${stripSuffix(inputNaam)}`;
-    const status   = 's';
+    const status = "s";
 
-    const tx    = db.transaction('sessions', 'readwrite');
-    const store = tx.objectStore('sessions');
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
 
     const addReq = store.add({
         baseName,
         status,
         sensorData: data,
-        videoBlob: new Blob(chunks, { type: 'video/mp4' }),
+        videoBlob: new Blob(chunks, { type: "video/mp4" }),
         axis,
         date: nu.toISOString()
     });
@@ -642,121 +490,120 @@ document.getElementById('btnSave').onclick = () => {
     addReq.onsuccess = () => {
         const newId = addReq.result;
 
-        // Direct selecteren → fix voor export‑flow
+        // DIRECT selecteren → FIX voor export-probleem
         selectSession(newId, baseName, status);
 
-        elRecStatus.textContent = 'Saved';
+        elRecStatus.textContent = "Saved";
 
         loadArchiveList();
-        alert('Opgeslagen!');
+        alert("Opgeslagen!");
     };
 };
-</script>
 
-<!-- ============================================================
-     JS — DEEL 3/5
-     Clear graphs + Bluetooth + Start/Stop + Reset + Axis + UI‑update
-     ============================================================ -->
-<script>
+    
 /* ============================================================
-   CLEAR GRAPHS — beide canvassen leegmaken
+   CLEAR GRAPHS
    ============================================================ */
+
 function clearGraphs() {
-    const ids = ['cAcc', 'cGyro'];
+    const ids = ["cAcc", "cGyro"];
     ids.forEach(id => {
-        const c   = document.getElementById(id);
-        const ctx = c.getContext('2d');
+        const c = document.getElementById(id);
+        const ctx = c.getContext("2d");
         ctx.clearRect(0, 0, c.width, c.height);
     });
 }
 
+
 /* ============================================================
-   BLUETOOTH CONNECTIE — Cast-Analyzer + camera openen
+   BLUETOOTH CONNECTIE
    ============================================================ */
+
 let char, stream, recorder;
 
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        // 1. BLE connectie
+        // 1. BLE CONNECTIE (originele, werkende flow)
         const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: 'Cast-Analyzer' }],
+            filters: [{ name: "Cast-Analyzer" }],
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
 
-        const server  = await device.gatt.connect();
+        const server = await device.gatt.connect();
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
-        char          = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
 
-        // 2. Camera openen (pas na BLE)
+        // 2. CAMERA OPENEN (pas NA BLE)
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
+            video: { facingMode: "environment" },
             audio: false
         });
 
-        // 3. Video koppelen maar nog niet tonen
-        elLive.style.display = 'none';
-        elLive.srcObject     = stream;
+        // 3. VIDEO KOPPELEN MAAR NOG NIET TONEN
+        elLive.style.display = "none";
+        elLive.srcObject = stream;
 
-        // 4. Bluefy‑fix: pas tonen als metadata geladen is
+        // 4. BLUEFY FIX: pas tonen als metadata geladen is
         elLive.onloadedmetadata = () => {
-            centerVideo(elLive);
+        centerVideo(elLive);
             elLive.play();
-            elLive.style.display = 'block';
+            elLive.style.display = "block";
         };
 
-        // 5. Sensor data handler
+
+        // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
             data.push({
-                ax: v.getInt16(0,  true) / 100,
-                ay: v.getInt16(2,  true) / 100,
-                az: v.getInt16(4,  true) / 100,
-                gx: v.getInt16(6,  true),
-                gy: v.getInt16(8,  true),
+                ax: v.getInt16(0, true)/100,
+                ay: v.getInt16(2, true)/100,
+                az: v.getInt16(4, true)/100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
                 gz: v.getInt16(10, true)
             });
             elCount.innerText = data.length;
         });
 
-        // 6. UI updates
+        // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
-        document.getElementById('btnStart').disabled   = false;
+        document.getElementById('btnStart').disabled = false;
 
     } catch (e) {
         alert(e);
     }
 };
 
-/* ============================================================
-   START RECORDING — sensor + video
-   ============================================================ */
-document.getElementById('btnStart').onclick = async () => {
-    data   = [];
-    chunks = [];
-    elCount.innerText = '0';
-    slider.disabled   = true;
 
-    elRecStatus.textContent = 'Recording';
+/* ============================================================
+   START RECORDING
+   ============================================================ */
+
+document.getElementById('btnStart').onclick = async () => {
+    data = [];
+    chunks = [];
+    elCount.innerText = "0";
+    slider.disabled = true;
+
+    elRecStatus.textContent = "Recording";
 
     await char.startNotifications();
 
     recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-    };
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
     recorder.onstop = () => {
-        elLive.style.display = 'none';
-        elBack.style.display = 'block';
+        elLive.style.display = "none";
+        elBack.style.display = "block";
 
-        currentVideoBlob = new Blob(chunks, { type: 'video/mp4' });
-        elBack.src       = URL.createObjectURL(currentVideoBlob);
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
         centerVideo(elBack);
 
         document.getElementById('btnSave').disabled = false;
         slider.disabled = false;
 
-        // Na opname automatisch Y‑as tonen
+        // Na opname automatisch Y-as tonen
         setAxis('y');
 
         setTimeout(updateUI, 1000);
@@ -764,78 +611,84 @@ document.getElementById('btnStart').onclick = async () => {
 
     recorder.start();
 
-    elBack.style.display = 'none';
-    elLive.style.display = 'block';
+    elBack.style.display = "none";
+    elLive.style.display = "block";
 
     document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled  = false;
+    document.getElementById('btnStop').disabled = false;
 };
+
 
 /* ============================================================
    STOP RECORDING
    ============================================================ */
+
 document.getElementById('btnStop').onclick = async () => {
     try { await char.stopNotifications(); } catch (e) {}
 
     recorder.stop();
 
-    elRecStatus.textContent = 'Stopped';
+    elRecStatus.textContent = "Stopped";
 
-    document.getElementById('btnStop').disabled  = true;
+    document.getElementById('btnStop').disabled = true;
     document.getElementById('btnStart').disabled = false;
 };
 
+
 /* ============================================================
-   RESET — alles terug naar beginsituatie
+   RESET
    ============================================================ */
+
 document.getElementById('btnReset').onclick = async () => {
-    try { if (char)     await char.stopNotifications(); } catch (e) {}
-    try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+
+    try { if (char) await char.stopNotifications(); } catch (e) {}
+    try { if (recorder && recorder.state !== "inactive") recorder.stop(); } catch (e) {}
 
     // Video terug naar live
     elBack.pause();
-    elBack.src = '';
-    elBack.removeAttribute('src');
-    elBack.load();
-    elBack.style.display = 'none';
-    elLive.style.display = 'block';
+    elBack.src = "";
+    elBack.removeAttribute("src");   // ← BELANGRIJK
+    elBack.load();                   // ← BELANGRIJK
+    elBack.style.display = "none";
+    elLive.style.display = "block";
 
     // Tijdlabel resetten
-    timeLabel.textContent = '0.00s / 0.00s';
+    timeLabel.textContent = "0.00s / 0.00s";
 
     // Status terug naar beginstand
-    elRecStatus.textContent = 'Idle';
+    elRecStatus.textContent = "Idle";
 
     // Data leegmaken
-    data   = [];
+    data = [];
     chunks = [];
-    elCount.innerText = '0';
+    elCount.innerText = "0";
 
     // Sessie deselecteren
-    selectedDisplay.textContent  = '-- Worp Selecteren --';
-    selectedDisplay.dataset.id   = '';
+    selectedDisplay.textContent = "";
+    selectedDisplay.dataset.id = "";
 
     // Slider resetten
-    slider.value    = 0;
+    slider.value = 0;
     slider.disabled = true;
 
     // Knoppen terug naar begin
     document.getElementById('btnStart').disabled = false;
-    document.getElementById('btnStop').disabled  = true;
-    document.getElementById('btnSave').disabled  = true;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnSave').disabled = true;
 
     // Grafieken leegmaken
     clearGraphs();
 };
 
 /* ============================================================
-   AXIS SELECTIE — X/Y/Z/XYZ/XYZ3
+   AXIS SELECTIE
    ============================================================ */
+
 function setAxis(a) {
     axis = a.toLowerCase();
 
     document.querySelectorAll('.axisBtn').forEach(b => {
-        const bid    = b.id.toLowerCase();
+        const bid = b.id.toLowerCase();
         const target = 'b' + axis;
         b.classList.toggle('active', bid === target);
     });
@@ -843,9 +696,11 @@ function setAxis(a) {
     updateUI();
 }
 
+
 /* ============================================================
-   UI UPDATE — tijdlabel + slider + grafieken
+   UI UPDATE
    ============================================================ */
+
 slider.oninput = () => {
     if (elBack.duration > 0) {
         elBack.currentTime = (slider.value / 1000) * elBack.duration;
@@ -854,68 +709,60 @@ slider.oninput = () => {
 };
 
 elBack.ontimeupdate = () => {
-    if (!recorder || recorder.state !== 'recording') {
+    if (!recorder || recorder.state !== "recording") {
         slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
         updateUI();
     }
 };
 
 elBack.onended = () => {
-    playPauseBtn.textContent = '▶︎';
+    playPauseBtn.textContent = "▶︎";
 };
 
 function updateUI() {
     if (elBack.duration > 0) {
         timeLabel.innerText =
-            elBack.currentTime.toFixed(2) + 's / ' +
-            elBack.duration.toFixed(2) + 's';
+            elBack.currentTime.toFixed(2) + "s / " +
+            elBack.duration.toFixed(2) + "s";
     }
 
     draw();
 
     slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
-</script>
 
-<!-- ============================================================
-     JS — DEEL 4/5
-     Schaalberekening + Render Single/Multi + Draw
-     ============================================================ -->
-<script>
 /* ============================================================
-   SCHAALBEREKENING — bepaalt min/max/labels voor grafieken
+   SCHAALBEREKENING
    ============================================================ */
+
 function computeScale(points, type) {
     const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
     const maxPos = Math.max(...points, 0.0001);
 
     const isGyro = maxAbs > 20;
 
-    // XYZ totaal (accelerometer of gyro)
-    if (type === 'xyz' && isGyro) {
-        const nice = [50, 100, 200, 500, 1000];
+    if (type === "xyz" && isGyro) {
+        const nice = [50,100,200,500,1000];
         let max = nice.find(n => n >= maxPos) || 1000;
 
         let labels = [];
-        for (let i = 0; i <= 5; i++) labels.push((max / 5) * i);
+        for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
 
         return { min: 0, max, labels };
     }
 
-    // Gyro single‑axis
     if (isGyro) {
-        const nice = [50, 100, 200, 500, 1000];
+        const nice = [50,100,200,500,1000];
         let max = nice.find(n => n >= maxAbs) || 1000;
 
-        return {
-            min: -max,
-            max,
-            labels: [-max, -max / 2, 0, max / 2, max]
+        return { 
+            min: -max, 
+            max, 
+            labels: [-max, -max/2, 0, max/2, max] 
         };
     }
 
-    // XYZ totaal accelerometer
-    if (type === 'xyz') {
+    if (type === "xyz") {
         let max;
         if (maxPos <= 1) max = 1;
         else if (maxPos <= 2) max = 2;
@@ -925,12 +772,11 @@ function computeScale(points, type) {
 
         let labels;
         if (max === 1) labels = [0, 0.5, 1];
-        else labels = Array.from({ length: max + 1 }, (_, i) => i);
+        else labels = Array.from({length: max + 1}, (_, i) => i);
 
         return { min: 0, max, labels };
     }
 
-    // Accelerometer single‑axis
     let max;
     if (maxAbs <= 1) max = 1;
     else if (maxAbs <= 2) max = 2;
@@ -948,59 +794,49 @@ function computeScale(points, type) {
     return { min: -max, max, labels };
 }
 
-/* ============================================================
-   RENDER SINGLE GRAPH — één lijn (X/Y/Z of totaal)
-   ============================================================ */
-function render(id, points, color, label, unit, progress, type) {
-    const c   = document.getElementById(id);
-    const ctx = c.getContext('2d');
-    const dpr = window.devicePixelRatio || 2;
 
-    c.width  = c.clientWidth * dpr;
+/* ============================================================
+   RENDER SINGLE GRAPH
+   ============================================================ */
+
+function render(id, points, color, label, unit, progress, type) {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
 
-    const w = c.width;
-    const h = c.height;
-
-    const pL = w * 0.1;
-    const pR = w * 0.1;
-    const pT = h * 0.1;
-    const pB = h * 0.1;
-
-    const gW = w - pL - pR;
-    const gH = h - pT - pB;
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
 
     ctx.clearRect(0, 0, w, h);
 
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === 'xyz')
+    const scaleY = (type === "xyz")
         ? gH / max
         : (gH / 2) / max;
 
-    // Labels + grid
-    ctx.fillStyle = '#fff';
-    ctx.font = (14 * dpr) + 'px Arial';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (type === 'xyz')
+        const y = (type === "xyz")
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
         ctx.fillText(val, pL - 8 * dpr, y);
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    // Verticale randen
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
@@ -1011,14 +847,13 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // Lijn tekenen
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
 
     points.forEach((p, i) => {
         const x = pL + (i / (points.length - 1)) * gW;
-        const y = (type === 'xyz')
+        const y = (type === "xyz")
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
 
@@ -1027,43 +862,33 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.stroke();
 
-    // Cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = '#ff9500';
+        ctx.strokeStyle = "#ff9500";
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    // Titel
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'left';
-    ctx.fillText(label + ' (' + unit + ')', pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-/* ============================================================
-   RENDER MULTI GRAPH — X/Y/Z tegelijk
-   ============================================================ */
-function renderMulti(id, series, title, unit, progress, type = 'multi') {
-    const c   = document.getElementById(id);
-    const ctx = c.getContext('2d');
-    const dpr = window.devicePixelRatio || 2;
 
-    c.width  = c.clientWidth * dpr;
+/* ============================================================
+   RENDER MULTI GRAPH
+   ============================================================ */
+
+function renderMulti(id, series, title, unit, progress, type = "multi") {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
 
-    const w = c.width;
-    const h = c.height;
-
-    const pL = w * 0.1;
-    const pR = w * 0.1;
-    const pT = h * 0.1;
-    const pB = h * 0.1;
-
-    const gW = w - pL - pR;
-    const gH = h - pT - pB;
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
 
     ctx.clearRect(0, 0, w, h);
 
@@ -1071,32 +896,30 @@ function renderMulti(id, series, title, unit, progress, type = 'multi') {
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === 'xyz')
+    const scaleY = (type === "xyz")
         ? gH / max
         : (gH / 2) / max;
 
-    // Labels + grid
-    ctx.fillStyle = '#fff';
-    ctx.font = (14 * dpr) + 'px Arial';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (type === 'xyz')
+        const y = (type === "xyz")
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
         ctx.fillText(val, pL - 8 * dpr, y);
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    // Verticale randen
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
@@ -1106,8 +929,7 @@ function renderMulti(id, series, title, unit, progress, type = 'multi') {
     ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
-
-    // Lijnen tekenen
+    
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -1115,7 +937,7 @@ function renderMulti(id, series, title, unit, progress, type = 'multi') {
 
         s.points.forEach((p, i) => {
             const x = pL + (i / (s.points.length - 1)) * gW;
-            const y = (type === 'xyz')
+            const y = (type === "xyz")
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
 
@@ -1125,22 +947,20 @@ function renderMulti(id, series, title, unit, progress, type = 'multi') {
         ctx.stroke();
     });
 
-    // Cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = '#ff9500';
+        ctx.strokeStyle = "#ff9500";
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    // Titel
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'left';
-    ctx.fillText(title + ' (' + unit + ')', pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-    // Legend
+    // LEGEND
     let legendX = w - pR - 150 * dpr;
     let legendY = pT + 18 * dpr;
 
@@ -1151,19 +971,21 @@ function renderMulti(id, series, title, unit, progress, type = 'multi') {
         ctx.fillStyle = s.color;
         ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
 
-        ctx.fillStyle = '#fff';
-        ctx.font = (14 * dpr) + 'px Arial';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
+        ctx.fillStyle = "#fff";
+        ctx.font = (14 * dpr) + "px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
         ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
         legendX += 70 * dpr;
     });
 }
 
+
 /* ============================================================
-   DRAW — centrale dispatcher voor grafieken
+   DRAW
    ============================================================ */
+
 function draw() {
     if (data.length < 2) return;
 
@@ -1171,117 +993,122 @@ function draw() {
         ? elBack.currentTime / elBack.duration
         : 0;
 
-    // XYZ3 → drie losse lijnen tegelijk
     if (axis === 'xyz3') {
-        renderMulti('cAcc',
+        renderMulti("cAcc",
             [
-                { points: data.map(d => d.ax), color: '#ff3b30', label: 'X' },
-                { points: data.map(d => d.ay), color: '#34c759', label: 'Y' },
-                { points: data.map(d => d.az), color: '#007aff', label: 'Z' }
+                { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            'Versnelling X‑Y‑Z', 'm/s²', progress, 'multi'
+            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
         );
 
-        renderMulti('cGyro',
+        renderMulti("cGyro",
             [
-                { points: data.map(d => d.gx), color: '#ff3b30', label: 'X' },
-                { points: data.map(d => d.gy), color: '#34c759', label: 'Y' },
-                { points: data.map(d => d.gz), color: '#007aff', label: 'Z' }
+                { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            'Rotatie X‑Y‑Z', '°/s', progress, 'gyro'
+            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
         );
 
         return;
     }
 
-    // XYZ totaal
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
     if (axis === 'xyz') {
-        accPoints  = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        labelSuffix = "Totaal";
 
-        labelSuffix = 'Totaal';
-        accType     = 'xyz';
-        gyroType    = 'xyz';
-    } else {
-        // Single axis
-        accPoints  = data.map(d => d['a' + axis]);
-        gyroPoints = data.map(d => d['g' + axis]);
-
-        labelSuffix = axis.toUpperCase();
-        accType     = 'single';
-        gyroType    = 'gyro';
+        accType = "xyz";
+        gyroType = "xyz";
     }
 
-    render('cAcc', accPoints, '#00bfff', 'Versnelling ' + labelSuffix, 'm/s²', progress, accType);
-    render('cGyro', gyroPoints, '#ff4500', 'Rotatie ' + labelSuffix, '°/s', progress, gyroType);
-}
-</script>
+    else {
+        accPoints = data.map(d => d['a' + axis]);
+        gyroPoints = data.map(d => d['g' + axis]);
+        labelSuffix = axis.toUpperCase();
 
-<!-- ============================================================
-     JS — DEEL 5/5
-     Play/Pause + Speed + Dropdown Close + Export + Import
-     ============================================================ -->
-<script>
+        accType = "single";
+        gyroType = "gyro";
+    }
+
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+}
+
+
 /* ============================================================
    PLAY / PAUSE
    ============================================================ */
-const playPauseBtn = document.getElementById('playPauseBtn');
-const speedButtons = document.querySelectorAll('.speedBtn');
 
-playPauseBtn.addEventListener('click', () => {
+const playPauseBtn = document.getElementById("playPauseBtn");
+const speedButtons = document.querySelectorAll(".speedBtn");
+
+playPauseBtn.addEventListener("click", () => {
     if (elBack.paused) {
         elBack.play();
-        playPauseBtn.textContent = '⏸';
+        playPauseBtn.textContent = "⏸";
     } else {
         elBack.pause();
-        playPauseBtn.textContent = '▶︎';
+        playPauseBtn.textContent = "▶︎";
     }
 });
+
 
 /* ============================================================
    SPEED BUTTONS
    ============================================================ */
+
 speedButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener("click", () => {
         const speed = parseFloat(btn.dataset.speed);
         elBack.playbackRate = speed;
 
-        speedButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        speedButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
     });
 });
 
-// Standaard 1x actief
-document.querySelector('.speedBtn[data-speed="1"]').classList.add('active');
+// OPEN/CLOSE DROPDOWN  ← FIX
+selectedDisplay.onclick = () => {
+    optionsList.style.display =
+        optionsList.style.display === "none" ? "block" : "none";
+};
+    
+document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+
 
 /* ============================================================
-   DROPDOWN CLOSE — klik buiten custom dropdown
+   DROPDOWN CLOSE
    ============================================================ */
+
 window.onclick = (e) => {
-    if (!e.target.closest('.dropdown-wrapper')) {
-        optionsList.style.display = 'none';
+    if (!e.target.closest('#customDropdown')) {
+        document.getElementById("optionsList").style.display = "none";
     }
 };
 
 /* ============================================================
-   EXPORT — status = 'e'
+   EXPORT — NIEUW (status = "e")
    ============================================================ */
-document.getElementById('btnExport').onclick = async () => {
+
+document.getElementById("btnExport").onclick = async () => {
     if (!data || data.length === 0) {
-        alert('Geen data om te exporteren.');
+        alert("Geen data om te exporteren.");
         return;
     }
 
     const id = selectedDisplay.dataset.id;
     if (!id) {
-        alert('Geen sessie geselecteerd.');
+        alert("Geen sessie geselecteerd.");
         return;
     }
 
-    const tx    = db.transaction('sessions', 'readwrite');
-    const store = tx.objectStore('sessions');
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
 
     const req = store.get(Number(id));
 
@@ -1289,59 +1116,58 @@ document.getElementById('btnExport').onclick = async () => {
         const session = req.result;
         if (!session) return;
 
-        const zipName = session.baseName.replace(/:/g, '-').replace(/\s+/g, '_') + '.zip';
+        const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
 
         const zip = new JSZip();
 
         // ACC CSV
-        let accCSV = 't,ax,ay,az\n';
+        let accCSV = "t,ax,ay,az\n";
         session.sensorData.forEach((d, i) => {
             accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
         });
-        zip.file('acc.csv', accCSV);
+        zip.file("acc.csv", accCSV);
 
         // GYRO CSV
-        let gyroCSV = 't,gx,gy,gz\n';
+        let gyroCSV = "t,gx,gy,gz\n";
         session.sensorData.forEach((d, i) => {
             gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
         });
-        zip.file('gyro.csv', gyroCSV);
+        zip.file("gyro.csv", gyroCSV);
 
         // META
         const meta = {
-            name:   session.baseName,
-            axis:   session.axis,
+            name: session.baseName,
+            axis: session.axis,
             samples: session.sensorData.length,
-            date:   session.date
+            date: session.date
         };
-        zip.file('meta.json', JSON.stringify(meta, null, 2));
+        zip.file("meta.json", JSON.stringify(meta, null, 2));
 
         // VIDEO
-        zip.file('video.mp4', session.videoBlob);
+        zip.file("video.mp4", session.videoBlob);
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const zipBlob = await zip.generateAsync({ type: "blob" });
 
         try {
-            const zipFile = new File([zipBlob], zipName, { type: 'application/zip' });
+            const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
 
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
             } else {
-                alert('Delen van bestanden wordt niet ondersteund in deze browser.');
+                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
+            // Pas NA het delen → correcte timing in Bluefy/iOS
+            elRecStatus.textContent = "Exported";
+            alert("Geëxporteerd!");
 
-            elRecStatus.textContent = 'Exported';
-            alert('Geëxporteerd!');
         } catch (err) {
-            console.error('Fout bij delen:', err);
-            alert('Er ging iets mis bij het delen van de ZIP.');
+            console.error("Fout bij delen:", err);
+            alert("Er ging iets mis bij het delen van de ZIP.");
         }
 
-        // STATUS → 'e'
-        session.status = 'e';
+        // STATUS → "e"
+        session.status = "e";
         store.put(session);
-        selectedDisplay.textContent = applySuffix(session.baseName, 'e');
-        selectedDisplay.dataset.id = session.id;
     };
 
     tx.oncomplete = () => {
@@ -1350,10 +1176,11 @@ document.getElementById('btnExport').onclick = async () => {
 };
 
 /* ============================================================
-   IMPORT — status = 'i'
+   IMPORT — NIEUW (status = "i")
    ============================================================ */
-const fileInput = document.getElementById('fileImport');
-const btnImport = document.getElementById('btnImport');
+
+const fileInput = document.getElementById("fileImport");
+const btnImport = document.getElementById("btnImport");
 
 btnImport.onclick = () => fileInput.click();
 
@@ -1361,66 +1188,86 @@ fileInput.onchange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.zip')) {
-        alert('Kies een ZIP-bestand van een Cast Analyzer sessie.');
+    if (!file.name.endsWith(".zip")) {
+        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
         return;
     }
 
     await importSessionFromZip(file);
-    fileInput.value = '';
+    fileInput.value = "";
 };
 
-async function sessionExists(baseName, date) {
-    return new Promise((resolve) => {
-        const tx = db.transaction('sessions', 'readonly');
-        const store = tx.objectStore('sessions');
-        store.openCursor().onsuccess = (e) => {
-            const cursor = e.target.result;
-            if (cursor) {
-                // Controleer op naam en datum
-                if (cursor.value.baseName === baseName && cursor.value.date === date) {
-                    resolve(true); // Sessie bestaat al
-                    return;
-                }
-                cursor.continue();
-            } else {
-                resolve(false); // Sessie bestaat niet
-            }
-        };
-    });
-}
-    
-async function importSessionFromZip(zipFile) {
-    const { baseName, date } = await extractSessionInfo(zipFile);
+async function importSessionFromZip(file) {
 
-    // Controleer of de sessie al bestaat
-    const exists = await sessionExists(baseName, date);
-    if (exists) {
-        alert('Deze sessie bestaat al en kan niet opnieuw worden geïmporteerd.');
-        return; // Stop de import
+    const jszip = new JSZip();
+    const zip = await jszip.loadAsync(file);
+
+    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    for (const f of required) {
+        if (!zip.file(f)) {
+            alert("ZIP mist bestand: " + f);
+            return;
+        }
     }
 
-    // Verwerk het zip-bestand
-    const sessionData = await readZipFile(zipFile);
-    const sessionObject = {
-        baseName: baseName,
-        date: date,
-        data: sessionData,
-        status: 's' // Stel de initiële status in
+    const accText = await zip.file("acc.csv").async("string");
+    const gyroText = await zip.file("gyro.csv").async("string");
+    const metaText = await zip.file("meta.json").async("string");
+    const videoBlob = await zip.file("video.mp4").async("blob");
+
+    const meta = JSON.parse(metaText);
+
+    function parseCSV(text) {
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",");
+        return lines.slice(1).map(line => {
+            const values = line.split(",");
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
+            return obj;
+        });
+    }
+
+    const accData = parseCSV(accText);
+    const gyroData = parseCSV(gyroText);
+
+    const combined = accData.map((d, i) => ({
+        ax: d.ax,
+        ay: d.ay,
+        az: d.az,
+        gx: gyroData[i].gx,
+        gy: gyroData[i].gy,
+        gz: gyroData[i].gz
+    }));
+
+    const baseName = stripSuffix(meta.name || "Imported Session");
+    const status = "i";
+
+    const session = {
+        baseName,
+        status,
+        sensorData: combined,
+        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+        axis: meta.axis || "x",
+        date: meta.date || new Date().toISOString()
     };
 
-    // Sla de sessie op in de database
-    const tx = db.transaction('sessions', 'readwrite');
-    const store = tx.objectStore('sessions');
-    const request = store.add(sessionObject);
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add(session);
 
-    request.onsuccess = () => {
-        alert('Sessie succesvol geïmporteerd!');
-        loadArchiveList(); // Vernieuw de lijst met sessies in de UI
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+
+        loadArchiveList();
+
+        selectSession(newId, baseName, status);
     };
 
-    request.onerror = () => {
-        alert('Er is een fout opgetreden bij het opslaan van de sessie.');
+    elRecStatus.textContent = "Imported";
+
+    addReq.onerror = () => {
+        alert("Kon sessie niet opslaan in IndexedDB.");
     };
 }
 
@@ -1428,4 +1275,4 @@ async function importSessionFromZip(zipFile) {
 </body>
 </html>
 
-    
+     
