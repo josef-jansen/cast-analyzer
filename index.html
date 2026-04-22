@@ -1423,7 +1423,9 @@ async function importSessionFromZip(file) {
         const newId = addReq.result;
 
         loadArchiveList();
-        selectSession(newId, baseName, status);
+        selectSession(newId, baseName);
+        selectedDisplay.textContent = applySuffix(baseName, 'i');
+        selectedDisplay.dataset.id = newId;
     };
 
     elRecStatus.textContent = 'Imported';
