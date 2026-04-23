@@ -183,7 +183,13 @@
             z-index: 9999;
         }
 
-
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
 </style>
 </head>
 
@@ -1338,6 +1344,18 @@ function showMessage(text) {
     }, 2000);
 }
 
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        // Forceer fullscreen redraw
+        document.documentElement.style.height = '100%';
+        document.body.style.height = '100%';
+
+        // Forceer reflow
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
+    }
+});    
     
 </script>
 
