@@ -299,6 +299,8 @@ const slider = document.getElementById('syncSlider');
 const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
+const playPauseBtn = document.getElementById("playPauseBtn");
+const speedButtons = document.querySelectorAll(".speedBtn");
 
 function centerVideo(el) {
     // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
@@ -1263,9 +1265,6 @@ function draw() {
 /* ============================================================
    PLAY / PAUSE
    ============================================================ */
-
-const playPauseBtn = document.getElementById("playPauseBtn");
-const speedButtons = document.querySelectorAll(".speedBtn");
 
 playPauseBtn.style.border = '2px solid red';
 playPauseBtn.style.zIndex = '9999';
