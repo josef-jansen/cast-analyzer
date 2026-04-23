@@ -400,6 +400,9 @@ function selectSession(id, baseName, status) {
 
     selectedDisplay.textContent = fullName;
     selectedDisplay.dataset.id = id;
+    
+    // Dropdown altijd sluiten na selectie
+    optionsList.style.display = "none";
 
     const tx = db.transaction("sessions", "readonly");
     tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
@@ -664,7 +667,7 @@ document.getElementById('btnReset').onclick = async () => {
     elCount.innerText = "0";
 
     // Sessie deselecteren
-    selectedDisplay.textContent = "";
+    selectedDisplay.textContent = "Worp selecteren";
     selectedDisplay.dataset.id = "";
 
     // Slider resetten
@@ -1071,13 +1074,7 @@ speedButtons.forEach(btn => {
         btn.classList.add("active");
     });
 });
-
-// OPEN/CLOSE DROPDOWN  ← FIX
-selectedDisplay.onclick = () => {
-    optionsList.style.display =
-        optionsList.style.display === "none" ? "block" : "none";
-};
-    
+ 
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
 
@@ -1086,8 +1083,15 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
    ============================================================ */
 
 window.onclick = (e) => {
+    // Niet sluiten wanneer je op de display klikt
+    if (e.target === selectedDisplay) return;
+
+    // Niet sluiten wanneer je op een item in de lijst klikt
+    if (e.target.closest('#optionsList')) return;
+
+    // Buiten dropdown → sluiten
     if (!e.target.closest('#customDropdown')) {
-        document.getElementById("optionsList").style.display = "none";
+        optionsList.style.display = "none";
     }
 };
 
@@ -1252,6 +1256,8 @@ async function importSessionFromZip(file) {
         date: meta.date || new Date().toISOString()
     };
 
+    setAxis(session.axis || "x");
+
     const tx = db.transaction("sessions", "readwrite");
     const store = tx.objectStore("sessions");
     const addReq = store.add(session);
@@ -1262,9 +1268,10 @@ async function importSessionFromZip(file) {
         loadArchiveList();
 
         selectSession(newId, baseName, status);
+    
+        // UI-status fix voor import
+        elRecStatus.textContent = "Imported";
     };
-
-    elRecStatus.textContent = "Imported";
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
