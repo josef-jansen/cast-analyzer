@@ -470,37 +470,40 @@ document.getElementById("btnDel").onclick = () => {
     tx.objectStore("sessions").delete(Number(id));
 
     tx.oncomplete = () => {
-        // UI reset
+
+        // --- UI SELECTIE RESET ---
         selectedDisplay.textContent = "-- Worp Selecteren --";
         delete selectedDisplay.dataset.id;
 
-        // VIDEO RESET
-        const v = elBack;          // jouw video-element
+        // --- VIDEO RESET ---
+        const v = elBack;
         v.pause();
-        v.removeAttribute('src');  // belangrijk voor iOS
-        v.src = "";                // dubbele zekerheid
-        v.load();                  // forceert metadata reset
-        v.currentTime = 0;
 
-        // Tijdlabel resetten
+        // iOS/Bluefy metadata flush
+        v.removeAttribute('src');
+        v.src = "";
+        v.load();              // CRUCIAAL: wist duration + currentTime
+
+        // UI tijdlabel reset
         document.getElementById('lblTime').textContent = "0.00s / 0.00s";
 
         // UI video zichtbaarheid
         elBack.style.display = "none";
         elLive.style.display = "block";
 
-        // Data reset
+        // --- DATA RESET ---
         data = [];
         chunks = [];
         elCount.textContent = "0";
 
-        // Grafieken resetten
-        clearGraphs();
+        // --- GRAFIEKEN RESET ---
+        clearGraphs();         // jouw functie
 
-        // Lijst opnieuw laden
+        // --- ARCHIEFLIJST OPNIEUW LADEN ---
         loadArchiveList();
     };
 };
+
 
 /* ============================================================
    SAVE — NIEUW (status = "s")
