@@ -851,10 +851,25 @@ elBack.onended = () => {
    PLAY / PAUSE — MET SMOOTH PLAYHEAD
    ============================================================ */
 
-playPauseBtn.addEventListener('click', () => {
-    alert('PLAY BUTTON CLICKED');
-});
+playPauseBtn.addEventListener("click", () => {
+    if (elBack.paused) {
+        elBack.play();
+        playPauseBtn.textContent = "⏸";
 
+        // Smooth playhead starten
+        if (!smoothRAF) smoothPlayheadLoop();
+
+    } else {
+        elBack.pause();
+        playPauseBtn.textContent = "▶︎";
+
+        // Smooth playhead stoppen
+        if (smoothRAF) {
+            cancelAnimationFrame(smoothRAF);
+            smoothRAF = null;
+        }
+    }
+});
     
 /* ============================================================
    SCHAALBEREKENING
@@ -1252,6 +1267,14 @@ function draw() {
 const playPauseBtn = document.getElementById("playPauseBtn");
 const speedButtons = document.querySelectorAll(".speedBtn");
 
+playPauseBtn.style.border = '2px solid red';
+playPauseBtn.style.zIndex = '9999';
+playPauseBtn.style.position = 'relative';
+
+playPauseBtn.addEventListener('click', () => {
+    alert('PLAY BUTTON CLICKED');
+});
+    
 playPauseBtn.addEventListener("click", () => {
     if (elBack.paused) {
         elBack.play();
