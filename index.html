@@ -1266,14 +1266,6 @@ function draw() {
    PLAY / PAUSE
    ============================================================ */
 
-playPauseBtn.style.border = '2px solid red';
-playPauseBtn.style.zIndex = '9999';
-playPauseBtn.style.position = 'relative';
-
-playPauseBtn.addEventListener('click', () => {
-    alert('PLAY BUTTON CLICKED');
-});
-    
 playPauseBtn.addEventListener("click", () => {
     if (elBack.paused) {
         elBack.play();
