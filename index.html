@@ -499,7 +499,7 @@ document.getElementById('btnSave').onclick = () => {
         elRecStatus.textContent = "Saved";
 
         loadArchiveList();
-        alert("Opgeslagen!");
+        alert("Opgeslagen.");
     };
 };
 
@@ -1162,7 +1162,7 @@ document.getElementById("btnExport").onclick = async () => {
             }
             // Pas NA het delen → correcte timing in Bluefy/iOS
             elRecStatus.textContent = "Exported";
-            alert("Geëxporteerd!");
+            alert("Geëxporteerd.");
 
         } catch (err) {
             console.error("Fout bij delen:", err);
@@ -1260,7 +1260,7 @@ async function importSessionFromZip(file) {
         const exists = all.some(s => s.baseName === baseName);
 
         if (exists) {
-            alert("Deze sessie bestaat al en wordt niet opnieuw geïmporteerd.");
+            alert("Sessie bestaat al.\nImport gestopt.");
             return; // STOP → NIET importeren
         }
 
