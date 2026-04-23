@@ -162,6 +162,26 @@
             object-fit: cover;     /* vult zonder zwarte balken */
         }
 
+        #msgBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 240px;
+            max-width: 80%;
+            padding: 16px 20px;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            border-radius: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
+            white-space: pre-line; /* \n wordt nieuwe regel */
+            z-index: 9999;
+        }
+
 </style>
 </head>
 
@@ -499,7 +519,7 @@ document.getElementById('btnSave').onclick = () => {
         elRecStatus.textContent = "Saved";
 
         loadArchiveList();
-        alert("Opgeslagen.");
+        showMessage("Opgeslagen.");
     };
 };
 
@@ -1101,13 +1121,13 @@ window.onclick = (e) => {
 
 document.getElementById("btnExport").onclick = async () => {
     if (!data || data.length === 0) {
-        alert("Geen data om te exporteren.");
+        showMessage("Geen data om te exporteren.");
         return;
     }
 
     const id = selectedDisplay.dataset.id;
     if (!id) {
-        alert("Geen sessie geselecteerd.");
+        showMessage("Geen sessie geselecteerd.");
         return;
     }
 
@@ -1158,15 +1178,15 @@ document.getElementById("btnExport").onclick = async () => {
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
             } else {
-                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
+                showMessage("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
             // Pas NA het delen → correcte timing in Bluefy/iOS
             elRecStatus.textContent = "Exported";
-            alert("Geëxporteerd.");
+            showMessage("Geëxporteerd.");
 
         } catch (err) {
             console.error("Fout bij delen:", err);
-            alert("Er ging iets mis bij het delen van de ZIP.");
+            showMessage("Er ging iets mis bij het delen van de ZIP.");
         }
 
         // STATUS → "e"
@@ -1193,7 +1213,7 @@ fileInput.onchange = async (event) => {
     if (!file) return;
 
     if (!file.name.endsWith(".zip")) {
-        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
+        showMessage("Kies een ZIP-bestand van een Cast Analyzer sessie.");
         return;
     }
 
@@ -1209,7 +1229,7 @@ async function importSessionFromZip(file) {
     const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
     for (const f of required) {
         if (!zip.file(f)) {
-            alert("ZIP mist bestand: " + f);
+            showMessage("ZIP mist bestand: " + f);
             return;
         }
     }
@@ -1260,7 +1280,7 @@ async function importSessionFromZip(file) {
         const exists = all.some(s => s.baseName === baseName);
 
         if (exists) {
-            alert("Sessie bestaat al.\nImport gestopt.");
+            showMessage("Sessie bestaat al.\nImport gestopt.");
             return; // STOP → NIET importeren
         }
 
@@ -1294,17 +1314,33 @@ async function importSessionFromZip(file) {
         };
 
         addReq.onerror = () => {
-            alert("Kon sessie niet opslaan in IndexedDB.");
+            showMessage("Kon sessie niet opslaan in IndexedDB.");
         };
     };
 
     getAllReq.onerror = () => {
-        alert("Kon sessies niet controleren in IndexedDB.");
+        showMessage("Kon sessies niet controleren in IndexedDB.");
     };
 }
 
+function showMessage(text) {
+    const box = document.getElementById('msgBox');
+    box.textContent = text;
 
+    // direct zichtbaar
+    box.style.opacity = '1';
+
+    // na 2 seconden direct weg
+    setTimeout(() => {
+        box.style.opacity = '0';
+    }, 2000);
+}
+
+    
 </script>
+
+<div id="msgBox"></div>
+    
 </body>
 </html>
 
