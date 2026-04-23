@@ -1214,15 +1214,15 @@ async function importSessionFromZip(file) {
         }
     }
 
-    const accText = await zip.file("acc.csv").async("string");
-    const gyroText = await zip.file("gyro.csv").async("string");
-    const metaText = await zip.file("meta.json").async("string");
+    const accText   = await zip.file("acc.csv").async("string");
+    const gyroText  = await zip.file("gyro.csv").async("string");
+    const metaText  = await zip.file("meta.json").async("string");
     const videoBlob = await zip.file("video.mp4").async("blob");
 
     const meta = JSON.parse(metaText);
 
     function parseCSV(text) {
-        const lines = text.trim().split("\n");
+        const lines   = text.trim().split("\n");
         const headers = lines[0].split(",");
         return lines.slice(1).map(line => {
             const values = line.split(",");
@@ -1232,7 +1232,7 @@ async function importSessionFromZip(file) {
         });
     }
 
-    const accData = parseCSV(accText);
+    const accData  = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
     const combined = accData.map((d, i) => ({
@@ -1245,38 +1245,64 @@ async function importSessionFromZip(file) {
     }));
 
     const baseName = stripSuffix(meta.name || "Imported Session");
-    const status = "i";
+    const status   = "i";
 
-    const session = {
-        baseName,
-        status,
-        sensorData: combined,
-        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
-        axis: meta.axis || "x",
-        date: meta.date || new Date().toISOString()
+    // ---------------------------------------------------------
+    // 1) CHECK OF SESSIE AL BESTAAT  (ANTI-DUPLICAAT)
+    // ---------------------------------------------------------
+    const txCheck = db.transaction("sessions", "readonly");
+    const storeCheck = txCheck.objectStore("sessions");
+    const getAllReq = storeCheck.getAll();
+
+    getAllReq.onsuccess = () => {
+        const all = getAllReq.result;
+
+        const exists = all.some(s => s.baseName === baseName);
+
+        if (exists) {
+            alert("Deze sessie bestaat al en wordt niet opnieuw geïmporteerd.");
+            return; // STOP → NIET importeren
+        }
+
+        // ---------------------------------------------------------
+        // 2) SESSIE BESTAAT NIET → NORMALE IMPORT
+        // ---------------------------------------------------------
+
+        const session = {
+            baseName,
+            status,
+            sensorData: combined,
+            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+            axis: meta.axis || "x",
+            date: meta.date || new Date().toISOString()
+        };
+
+        // Axis direct instellen in UI
+        setAxis(session.axis || "x");
+
+        const tx = db.transaction("sessions", "readwrite");
+        const store = tx.objectStore("sessions");
+        const addReq = store.add(session);
+
+        addReq.onsuccess = () => {
+            const newId = addReq.result;
+
+            loadArchiveList();
+            selectSession(newId, baseName, status);
+
+            elRecStatus.textContent = "Imported";
+        };
+
+        addReq.onerror = () => {
+            alert("Kon sessie niet opslaan in IndexedDB.");
+        };
     };
 
-    setAxis(session.axis || "x");
-
-    const tx = db.transaction("sessions", "readwrite");
-    const store = tx.objectStore("sessions");
-    const addReq = store.add(session);
-
-    addReq.onsuccess = () => {
-        const newId = addReq.result;
-
-        loadArchiveList();
-
-        selectSession(newId, baseName, status);
-    
-        // UI-status fix voor import
-        elRecStatus.textContent = "Imported";
-    };
-
-    addReq.onerror = () => {
-        alert("Kon sessie niet opslaan in IndexedDB.");
+    getAllReq.onerror = () => {
+        alert("Kon sessies niet controleren in IndexedDB.");
     };
 }
+
 
 </script>
 </body>
