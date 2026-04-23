@@ -568,6 +568,7 @@ function clearGraphs() {
    ============================================================ */
 
 let char, stream, recorder;
+let smoothRAF = null;
 
 document.getElementById('btnConnect').onclick = async () => {
     try {
@@ -593,23 +594,28 @@ document.getElementById('btnConnect').onclick = async () => {
 
         // 4. BLUEFY FIX: pas tonen als metadata geladen is
         elLive.onloadedmetadata = () => {
-        centerVideo(elLive);
+            centerVideo(elLive);
             elLive.play();
             elLive.style.display = "block";
         };
 
-
-        // 5. SENSOR DATA HANDLER (originele code)
+        // 5. SENSOR DATA HANDLER — NU MET TIJDSTEMPEL
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
+
+            // 🔥 NIEUW: echte timestamp in milliseconden
+            const t = performance.now();
+
             data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
+                t,  // <‑‑ NIEUW veld voor synchronisatie
+                ax: v.getInt16(0, true) / 100,
+                ay: v.getInt16(2, true) / 100,
+                az: v.getInt16(4, true) / 100,
                 gx: v.getInt16(6, true),
                 gy: v.getInt16(8, true),
                 gz: v.getInt16(10, true)
             });
+
             elCount.innerText = data.length;
         });
 
@@ -621,6 +627,7 @@ document.getElementById('btnConnect').onclick = async () => {
         alert(e);
     }
 };
+
 
 
 /* ============================================================
@@ -749,24 +756,6 @@ function setAxis(a) {
    UI UPDATE
    ============================================================ */
 
-slider.oninput = () => {
-    if (elBack.duration > 0) {
-        elBack.currentTime = (slider.value / 1000) * elBack.duration;
-        updateUI();
-    }
-};
-
-elBack.ontimeupdate = () => {
-    if (!recorder || recorder.state !== "recording") {
-        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
-        updateUI();
-    }
-};
-
-elBack.onended = () => {
-    playPauseBtn.textContent = "▶︎";
-};
-
 function updateUI() {
     if (elBack.duration > 0) {
         timeLabel.innerText =
@@ -775,10 +764,113 @@ function updateUI() {
     }
 
     draw();
-
-    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
 
+/* ============================================================
+   SMOOTH PLAYHEAD (60 FPS)
+   ============================================================ */
+
+function smoothPlayheadLoop() {
+    // Stoppen als video niet speelt
+    if (!elBack || elBack.paused || elBack.ended) {
+        smoothRAF = null;
+        return;
+    }
+
+    // Slider smooth updaten
+    if (elBack.duration > 0) {
+        const progress = elBack.currentTime / elBack.duration;
+        slider.value = progress * 1000;
+    }
+
+    // Tijdlabel smooth updaten
+    if (elBack.duration > 0) {
+        timeLabel.textContent =
+            elBack.currentTime.toFixed(2) + "s / " +
+            elBack.duration.toFixed(2) + "s";
+    }
+
+    // Cursor + grafiek smooth updaten
+    draw();
+
+    // Volgende frame
+    smoothRAF = requestAnimationFrame(smoothPlayheadLoop);
+}
+
+/* ============================================================
+   SLIDER → VIDEO (TIJDGEBASEERD)
+   ============================================================ */
+
+slider.oninput = () => {
+    if (elBack.duration > 0) {
+        const videoTime = (slider.value / 1000) * elBack.duration;
+        elBack.currentTime = videoTime;
+        updateUI();
+    }
+
+    // Smooth loop pauzeren tijdens scrubbing
+    if (smoothRAF) {
+        cancelAnimationFrame(smoothRAF);
+        smoothRAF = null;
+    }
+};
+
+slider.onchange = () => {
+    // Smooth loop hervatten als video speelt
+    if (!elBack.paused && !smoothRAF) {
+        smoothPlayheadLoop();
+    }
+};
+
+/* ============================================================
+   VIDEO → SLIDER (FALLBACK)
+   ============================================================ */
+
+elBack.ontimeupdate = () => {
+    // Als video speelt, doet smooth loop het werk
+    if (!elBack.paused) return;
+
+    if (elBack.duration > 0) {
+        const progress = elBack.currentTime / elBack.duration;
+        slider.value = progress * 1000;
+    }
+
+    updateUI();
+};
+
+elBack.onended = () => {
+    playPauseBtn.textContent = "▶︎";
+
+    if (smoothRAF) {
+        cancelAnimationFrame(smoothRAF);
+        smoothRAF = null;
+    }
+};
+
+/* ============================================================
+   PLAY / PAUSE — MET SMOOTH PLAYHEAD
+   ============================================================ */
+
+playPauseBtn.addEventListener("click", () => {
+    if (elBack.paused) {
+        elBack.play();
+        playPauseBtn.textContent = "⏸";
+
+        // Smooth playhead starten
+        if (!smoothRAF) smoothPlayheadLoop();
+
+    } else {
+        elBack.pause();
+        playPauseBtn.textContent = "▶︎";
+
+        // Smooth playhead stoppen
+        if (smoothRAF) {
+            cancelAnimationFrame(smoothRAF);
+            smoothRAF = null;
+        }
+    }
+});
+    
 /* ============================================================
    SCHAALBEREKENING
    ============================================================ */
@@ -844,10 +936,10 @@ function computeScale(points, type) {
 
 
 /* ============================================================
-   RENDER SINGLE GRAPH
+   RENDER SINGLE GRAPH — TIJDGEBASEERD (NIEUW)
    ============================================================ */
 
-function render(id, points, color, label, unit, progress, type) {
+function render(id, points, timesMs, color, label, unit, progress, type) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -865,6 +957,12 @@ function render(id, points, color, label, unit, progress, type) {
         ? gH / max
         : (gH / 2) / max;
 
+    // TIJDAS
+    const t0 = timesMs[0];
+    const tEnd = timesMs[timesMs.length - 1];
+    const tRange = Math.max(tEnd - t0, 1);
+
+    // Y‑as labels
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -884,6 +982,7 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     });
 
+    // Y‑as lijnen
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -895,12 +994,15 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
+    // DATA TEKENEN OP BASIS VAN TIJD
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
 
     points.forEach((p, i) => {
-        const x = pL + (i / (points.length - 1)) * gW;
+        const tx = (timesMs[i] - t0) / tRange;
+        const x = pL + tx * gW;
+
         const y = (type === "xyz")
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
@@ -910,6 +1012,7 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.stroke();
 
+    // CURSOR
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -924,12 +1027,11 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-
 /* ============================================================
-   RENDER MULTI GRAPH
+   RENDER MULTI GRAPH — TIJDGEBASEERD (NIEUW)
    ============================================================ */
 
-function renderMulti(id, series, title, unit, progress, type = "multi") {
+function renderMulti(id, series, timesMs, title, unit, progress, type = "multi") {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -948,6 +1050,12 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ? gH / max
         : (gH / 2) / max;
 
+    // TIJDAS
+    const t0 = timesMs[0];
+    const tEnd = timesMs[timesMs.length - 1];
+    const tRange = Math.max(tEnd - t0, 1);
+
+    // Y‑as labels
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -967,6 +1075,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // Y‑as lijnen
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -977,14 +1086,17 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
-    
+
+    // DATA TEKENEN OP BASIS VAN TIJD
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 1.5 * dpr;
 
         s.points.forEach((p, i) => {
-            const x = pL + (i / (s.points.length - 1)) * gW;
+            const tx = (timesMs[i] - t0) / tRange;
+            const x = pL + tx * gW;
+
             const y = (type === "xyz")
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
@@ -995,6 +1107,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // CURSOR
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -1029,35 +1142,80 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     });
 }
 
-
 /* ============================================================
-   DRAW
+   DRAW — TIJDGEBASEERD (NIEUW)
    ============================================================ */
 
 function draw() {
     if (data.length < 2) return;
 
-    const progress = (elBack.duration > 0)
-        ? elBack.currentTime / elBack.duration
-        : 0;
+    /* --------------------------------------------------------
+       1) TIJDAS OPBOUWEN
+          - Nieuwe sessies: echte timestamps (d.t)
+          - Oude sessies: reconstrueren via videoduur
+          - Geen video: fallback op index
+    -------------------------------------------------------- */
+    let timesMs;
+
+    if (data[0].t != null) {
+        // Nieuwe sessies
+        timesMs = data.map(d => d.t);
+    } else if (elBack.duration > 0) {
+        // Oude sessies → lineaire tijdverdeling over videoduur
+        const totalMs = elBack.duration * 1000;
+        const step = totalMs / (data.length - 1);
+        timesMs = data.map((_, i) => i * step);
+    } else {
+        // Fallback
+        timesMs = data.map((_, i) => i);
+    }
+
+    const t0 = timesMs[0];
+    const tEnd = timesMs[timesMs.length - 1];
+    const tRange = Math.max(tEnd - t0, 1);
+
+    /* --------------------------------------------------------
+       2) VIDEO → CURSOR POSITIE (TIJD)
+    -------------------------------------------------------- */
+    let progressTime = 0;
+
+    if (elBack.duration > 0) {
+        const videoTimeMs = elBack.currentTime * 1000;
+        progressTime = (videoTimeMs - t0) / tRange;
+        progressTime = Math.min(Math.max(progressTime, 0), 1);
+    }
+
+    /* --------------------------------------------------------
+       3) DATA VOOR ACC / GYRO
+    -------------------------------------------------------- */
 
     if (axis === 'xyz3') {
-        renderMulti("cAcc",
+        renderMulti(
+            "cAcc",
             [
                 { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
                 { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
+            timesMs,
+            "Versnelling X‑Y‑Z",
+            "m/s²",
+            progressTime,
+            "multi"
         );
 
-        renderMulti("cGyro",
+        renderMulti(
+            "cGyro",
             [
                 { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
                 { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
+            timesMs,
+            "Rotatie X‑Y‑Z",
+            "°/s",
+            progressTime,
+            "gyro"
         );
 
         return;
@@ -1069,24 +1227,38 @@ function draw() {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
-
         accType = "xyz";
         gyroType = "xyz";
-    }
-
-    else {
+    } else {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
-
         accType = "single";
         gyroType = "gyro";
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
-}
+    render(
+        "cAcc",
+        accPoints,
+        timesMs,
+        "#00bfff",
+        "Versnelling " + labelSuffix,
+        "m/s²",
+        progressTime,
+        accType
+    );
 
+    render(
+        "cGyro",
+        gyroPoints,
+        timesMs,
+        "#ff4500",
+        "Rotatie " + labelSuffix,
+        "°/s",
+        progressTime,
+        gyroType
+    );
+}
 
 /* ============================================================
    PLAY / PAUSE
