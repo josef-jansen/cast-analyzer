@@ -461,49 +461,48 @@ function selectSession(id, baseName, status) {
    DELETE SESSION — NIEUW
    ============================================================ */
 
-document.getElementById("btnDel").onclick = () => {
+document.getElementById('btnDel').onclick = () => {
     const id = selectedDisplay.dataset.id;
     if (!id) return;
-    if (!confirm("Verwijderen?")) return;
+    if (!confirm('Verwijderen?')) return;
 
-    const tx = db.transaction("sessions", "readwrite");
-    tx.objectStore("sessions").delete(Number(id));
+    const tx = db.transaction('sessions', 'readwrite');
+    tx.objectStore('sessions').delete(Number(id));
 
     tx.oncomplete = () => {
-
         // --- UI SELECTIE RESET ---
-        selectedDisplay.textContent = "-- Worp Selecteren --";
+        selectedDisplay.textContent = '-- Worp Selecteren --';
         delete selectedDisplay.dataset.id;
 
         // --- VIDEO RESET ---
         const v = elBack;
         v.pause();
-
-        // iOS/Bluefy metadata flush
         v.removeAttribute('src');
-        v.src = "";
-        v.load();              // CRUCIAAL: wist duration + currentTime
+        v.src = '';
+        v.load(); // metadata + duration + currentTime reset
 
-        // UI tijdlabel reset
-        document.getElementById('lblTime').textContent = "0.00s / 0.00s";
+        // --- TIJD + SLIDER + PLAYBUTTON RESET ---
+        timeLabel.textContent = '0.00s / 0.00s';
+        slider.value = 0;
+        slider.disabled = true;
+        playPauseBtn.textContent = '▶︎';
 
-        // UI video zichtbaarheid
-        elBack.style.display = "none";
-        elLive.style.display = "block";
+        // --- VIDEO ZICHTBAARHEID ---
+        elBack.style.display = 'none';
+        elLive.style.display = 'block';
 
         // --- DATA RESET ---
         data = [];
         chunks = [];
-        elCount.textContent = "0";
+        elCount.textContent = '0';
 
         // --- GRAFIEKEN RESET ---
-        clearGraphs();         // jouw functie
+        clearGraphs();
 
         // --- ARCHIEFLIJST OPNIEUW LADEN ---
         loadArchiveList();
     };
 };
-
 
 /* ============================================================
    SAVE — NIEUW (status = "s")
@@ -1381,5 +1380,3 @@ document.addEventListener('visibilitychange', () => {
     
 </body>
 </html>
-
-     
