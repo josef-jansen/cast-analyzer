@@ -851,25 +851,10 @@ elBack.onended = () => {
    PLAY / PAUSE — MET SMOOTH PLAYHEAD
    ============================================================ */
 
-playPauseBtn.addEventListener("click", () => {
-    if (elBack.paused) {
-        elBack.play();
-        playPauseBtn.textContent = "⏸";
-
-        // Smooth playhead starten
-        if (!smoothRAF) smoothPlayheadLoop();
-
-    } else {
-        elBack.pause();
-        playPauseBtn.textContent = "▶︎";
-
-        // Smooth playhead stoppen
-        if (smoothRAF) {
-            cancelAnimationFrame(smoothRAF);
-            smoothRAF = null;
-        }
-    }
+playPauseBtn.addEventListener('click', () => {
+    alert('PLAY BUTTON CLICKED');
 });
+
     
 /* ============================================================
    SCHAALBEREKENING
