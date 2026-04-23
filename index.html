@@ -470,22 +470,37 @@ document.getElementById("btnDel").onclick = () => {
     tx.objectStore("sessions").delete(Number(id));
 
     tx.oncomplete = () => {
+        // UI reset
         selectedDisplay.textContent = "-- Worp Selecteren --";
         delete selectedDisplay.dataset.id;
 
-        elBack.src = "";
+        // VIDEO RESET
+        const v = elBack;          // jouw video-element
+        v.pause();
+        v.removeAttribute('src');  // belangrijk voor iOS
+        v.src = "";                // dubbele zekerheid
+        v.load();                  // forceert metadata reset
+        v.currentTime = 0;
+
+        // Tijdlabel resetten
+        document.getElementById('lblTime').textContent = "0.00s / 0.00s";
+
+        // UI video zichtbaarheid
         elBack.style.display = "none";
         elLive.style.display = "block";
 
+        // Data reset
         data = [];
         chunks = [];
         elCount.textContent = "0";
 
+        // Grafieken resetten
         clearGraphs();
+
+        // Lijst opnieuw laden
         loadArchiveList();
     };
 };
-
 
 /* ============================================================
    SAVE — NIEUW (status = "s")
