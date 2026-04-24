@@ -46,6 +46,8 @@
             border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        canvas { width: 100% !important; height: 100% !important; display: block; }
+
         button {
             padding: 0 16px;
             height: 44px;
@@ -129,7 +131,7 @@
             padding: 5px;
             margin: 8px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-            height: 320px;
+            height: calc(var(--content-h) - 16px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -235,16 +237,15 @@
 
     <div class="section">
         <div class="graph-container">
-            <canvas id="cAcc" width="900" height="300"></canvas>
+            <canvas id="cAcc"></canvas>
         </div>
     </div>
 
     <div class="section">
         <div class="graph-container">
-            <canvas id="cGyro" width="900" height="300"></canvas>
+            <canvas id="cGyro"></canvas>
         </div>
     </div>
-
 
     <div class="section">
         <div class="video-card">
@@ -289,7 +290,6 @@ let data = [];
 let chunks = [];
 let axis = "x";
 let currentVideoBlob = null;
-let recordingStartTime = 0;
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
@@ -602,21 +602,15 @@ document.getElementById('btnConnect').onclick = async () => {
         // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-
-            const now = performance.now();
-            const tNorm = now - recordingStartTime;   // ← NIEUW
-
             data.push({
-                t: tNorm,                              // ← vervangt t: now
-                ax: v.getInt16(0, true) / 100,
-                ay: v.getInt16(2, true) / 100,
-                az: v.getInt16(4, true) / 100,
+                ax: v.getInt16(0, true)/100,
+                ay: v.getInt16(2, true)/100,
+                az: v.getInt16(4, true)/100,
                 gx: v.getInt16(6, true),
                 gy: v.getInt16(8, true),
                 gz: v.getInt16(10, true)
             });
-
-        elCount.innerText = data.length;
+            elCount.innerText = data.length;
         });
 
         // 6. UI UPDATES
@@ -640,9 +634,7 @@ document.getElementById('btnStart').onclick = async () => {
     slider.disabled = true;
 
     elRecStatus.textContent = "Recording";
-    
-    recordingStartTime = performance.now();
-    
+
     await char.startNotifications();
 
     recorder = new MediaRecorder(stream);
@@ -743,16 +735,15 @@ document.getElementById('btnReset').onclick = async () => {
 function setAxis(a) {
     axis = a.toLowerCase();
 
-    // UI updaten
     document.querySelectorAll('.axisBtn').forEach(b => {
         const bid = b.id.toLowerCase();
         const target = 'b' + axis;
         b.classList.toggle('active', bid === target);
     });
 
-    // Render aanroepen
-    render();
+    updateUI();
 }
+
 
 /* ============================================================
    UI UPDATE
@@ -856,94 +847,71 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render() {
-    const c = document.getElementById(canvasId);
-    if (!c) return;
+function render(id, points, color, label, unit, progress, type) {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
 
-    const ctx = c.getContext("2d");
-    const w = c.width;
-    const h = c.height;
-
-    const pL = 50 * dpr;
-    const pR = 20 * dpr;
-    const pT = 20 * dpr;
-    const pB = 30 * dpr;
-
-    const gW = w - pL - pR;
-    const gH = h - pT - pB;
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
 
     ctx.clearRect(0, 0, w, h);
 
-    // -----------------------------
-    // 1. DATA SELECTIE
-    // -----------------------------
-    let values = [];
+    const scale = computeScale(points, type);
+    const { min, max, labels } = scale;
 
-    if (axis === 'x') {
-        values = accX;
-    } else if (axis === 'y') {
-        values = accY;
-    } else if (axis === 'z') {
-        values = accZ;
-    } else if (axis === 'xyz') {
-        values = magnitude;
-    } else if (axis === 'xyz3') {
-        // MULTI-LINE
-        renderMulti();
-        return;
-    }
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
 
-    if (!values || values.length < 2) return;
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
 
-    // -----------------------------
-    // 2. TIJD RANGE
-    // -----------------------------
-    const { tMin, tMax } = getTimeRange();
-    const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
+    labels.forEach(val => {
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
 
-    // -----------------------------
-    // 3. Y RANGE
-    // -----------------------------
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
-    const range = maxVal - minVal || 1;
+        ctx.fillText(val, pL - 8 * dpr, y);
 
-    // -----------------------------
-    // 4. GRID
-    // -----------------------------
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
+        ctx.stroke();
+    });
 
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // -----------------------------
-    // 5. LIJN TEKENEN
-    // -----------------------------
-    ctx.strokeStyle = "#00ff88";
-    ctx.lineWidth = 2 * dpr;
     ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5 * dpr;
 
-    values.forEach((v, i) => {
-        const x = xPositions[i];
-        const y = pT + gH - ((v - minVal) / range) * gH;
+    points.forEach((p, i) => {
+        const x = pL + (i / (points.length - 1)) * gW;
+        const y = (type === "xyz")
+            ? (h - pB) - (p * scaleY)
+            : (h / 2) - (p * scaleY);
 
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
 
     ctx.stroke();
 
-    // -----------------------------
-    // 6. CURSOR
-    // -----------------------------
     if (progress > 0) {
-        const cursorTime = progress * tMax;
-        const cursorX = pL + ((cursorTime - tMin) / (tMax - tMin)) * gW;
-
+        const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
@@ -951,14 +919,10 @@ function render() {
         ctx.stroke();
     }
 
-    // -----------------------------
-    // 7. TITEL
-    // -----------------------------
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    ctx.fillText(axis.toUpperCase(), pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
-
 
 
 /* ============================================================
@@ -1065,38 +1029,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     });
 }
 
-/* ============================================================
-   TIME RANGE (voor tijd-gebaseerde grafiek)
-   ============================================================ */
 
-function getTimeRange() {
-    if (data.length < 2) {
-        return { tMin: 0, tMax: 0 };
-    }
-
-    const tMin = data[0].t;
-    const tMax = data[data.length - 1].t;
-
-    return { tMin, tMax };
-}
-
-/* ============================================================
-   X-POSITIES OP BASIS VAN TIJD
-   ============================================================ */
-
-function computeXPositions(points, tMin, tMax, gW, pL) {
-    if (tMax <= tMin) {
-        // alle samples op dezelfde tijd → zet alles op links
-        return points.map(() => pL);
-    }
-
-    return points.map(p => {
-        const t = p.t;
-        const ratio = (t - tMin) / (tMax - tMin);
-        return pL + ratio * gW;
-    });
-}
-    
 /* ============================================================
    DRAW
    ============================================================ */
@@ -1108,7 +1041,6 @@ function draw() {
         ? elBack.currentTime / elBack.duration
         : 0;
 
-    // MULTI-MODE (oude index-based)
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
@@ -1131,17 +1063,30 @@ function draw() {
         return;
     }
 
-    // XYZ totaal
+    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
+
     if (axis === 'xyz') {
-        render("cAcc", data, "axyz", "#00bfff", "Versnelling Totaal", "m/s²", progress);
-        render("cGyro", data, "gxyz", "#ff4500", "Rotatie Totaal", "°/s", progress);
-        return;
+        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        labelSuffix = "Totaal";
+
+        accType = "xyz";
+        gyroType = "xyz";
     }
 
-    // X/Y/Z
-    render("cAcc", data, "a" + axis, "#00bfff", "Versnelling " + axis.toUpperCase(), "m/s²", progress);
-    render("cGyro", data, "g" + axis, "#ff4500", "Rotatie " + axis.toUpperCase(), "°/s", progress);
+    else {
+        accPoints = data.map(d => d['a' + axis]);
+        gyroPoints = data.map(d => d['g' + axis]);
+        labelSuffix = axis.toUpperCase();
+
+        accType = "single";
+        gyroType = "gyro";
+    }
+
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
+
 
 /* ============================================================
    PLAY / PAUSE
