@@ -290,6 +290,7 @@ let data = [];
 let chunks = [];
 let axis = "x";
 let currentVideoBlob = null;
+let recordingStartTime = 0;
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
@@ -603,10 +604,11 @@ document.getElementById('btnConnect').onclick = async () => {
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
 
-            const now = performance.now();   // ← NIEUW: timestamp in ms
+            const now = performance.now();
+            const tNorm = now - recordingStartTime;   // ← NIEUW
 
             data.push({
-                t: now,                      // ← NIEUW: tijdstip van ontvangst
+                t: tNorm,                              // ← vervangt t: now
                 ax: v.getInt16(0, true) / 100,
                 ay: v.getInt16(2, true) / 100,
                 az: v.getInt16(4, true) / 100,
@@ -640,7 +642,9 @@ document.getElementById('btnStart').onclick = async () => {
     slider.disabled = true;
 
     elRecStatus.textContent = "Recording";
-
+    
+    recordingStartTime = performance.now();
+    
     await char.startNotifications();
 
     recorder = new MediaRecorder(stream);
