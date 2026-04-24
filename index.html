@@ -856,17 +856,11 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render(canvasId, data, axisName, color, title, unit, progress) {
+function render() {
     const c = document.getElementById(canvasId);
+    if (!c) return;
+
     const ctx = c.getContext("2d");
-
-    ctx.strokeStyle = "yellow";
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(w, h);
-    ctx.stroke();
-
     const w = c.width;
     const h = c.height;
 
@@ -880,37 +874,43 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
 
     ctx.clearRect(0, 0, w, h);
 
-    if (data.length < 2) return;
+    // -----------------------------
+    // 1. DATA SELECTIE
+    // -----------------------------
+    let values = [];
 
-    // TIJD RANGE
-    const { tMin, tMax } = getTimeRange();
-
-    // X POSITIES
-    const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
-
-    // Y-WAARDEN
-    let values;
-
-    if (axisName === "axyz") {
-        values = data.map(d => Math.sqrt(d.ax*d.ax + d.ay*d.ay + d.az*d.az));
-    }
-    else if (axisName === "gxyz") {
-        values = data.map(d => Math.sqrt(d.gx*d.gx + d.gy*d.gy + d.gz*d.gz));
-    }
-    else {
-        values = data.map(d => d[axisName]);
-    }
-
-    if (!values || values.some(v => v === undefined || isNaN(v))) {
-        console.warn("AxisName mismatch:", axisName);
+    if (axis === 'x') {
+        values = accX;
+    } else if (axis === 'y') {
+        values = accY;
+    } else if (axis === 'z') {
+        values = accZ;
+    } else if (axis === 'xyz') {
+        values = magnitude;
+    } else if (axis === 'xyz3') {
+        // MULTI-LINE
+        renderMulti();
         return;
     }
 
+    if (!values || values.length < 2) return;
+
+    // -----------------------------
+    // 2. TIJD RANGE
+    // -----------------------------
+    const { tMin, tMax } = getTimeRange();
+    const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
+
+    // -----------------------------
+    // 3. Y RANGE
+    // -----------------------------
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
     const range = maxVal - minVal || 1;
 
-    // GRID
+    // -----------------------------
+    // 4. GRID
+    // -----------------------------
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1 * dpr;
 
@@ -920,8 +920,10 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // LIJN
-    ctx.strokeStyle = color;
+    // -----------------------------
+    // 5. LIJN TEKENEN
+    // -----------------------------
+    ctx.strokeStyle = "#00ff88";
     ctx.lineWidth = 2 * dpr;
     ctx.beginPath();
 
@@ -935,7 +937,9 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
 
     ctx.stroke();
 
-    // CURSOR
+    // -----------------------------
+    // 6. CURSOR
+    // -----------------------------
     if (progress > 0) {
         const cursorTime = progress * tMax;
         const cursorX = pL + ((cursorTime - tMin) / (tMax - tMin)) * gW;
@@ -947,11 +951,14 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
         ctx.stroke();
     }
 
-    // TITEL
+    // -----------------------------
+    // 7. TITEL
+    // -----------------------------
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillText(axis.toUpperCase(), pL + 10 * dpr, pT + 18 * dpr);
 }
+
 
 
 /* ============================================================
