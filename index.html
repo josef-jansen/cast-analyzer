@@ -856,7 +856,7 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render(canvasId, points, color, title, unit, progress, type) {
+function render(canvasId, data, axisName, color, title, unit, progress, type) {
     const c = document.getElementById(canvasId);
     const ctx = c.getContext("2d");
 
@@ -873,7 +873,7 @@ function render(canvasId, points, color, title, unit, progress, type) {
 
     ctx.clearRect(0, 0, w, h);
 
-    if (points.length < 2) return;
+    if (data.length < 2) return;
 
     // TIJD RANGE
     const { tMin, tMax } = getTimeRange();
@@ -881,9 +881,11 @@ function render(canvasId, points, color, title, unit, progress, type) {
     // X-POSITIES OP BASIS VAN TIJD
     const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
 
-    // Y RANGE
-    const minVal = Math.min(...points);
-    const maxVal = Math.max(...points);
+    // Y-WAARDEN OPHALEN
+    const values = data.map(d => d[axisName]);
+
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
     const range = maxVal - minVal || 1;
 
     // GRID
@@ -901,7 +903,7 @@ function render(canvasId, points, color, title, unit, progress, type) {
     ctx.lineWidth = 2 * dpr;
     ctx.beginPath();
 
-    points.forEach((v, i) => {
+    values.forEach((v, i) => {
         const x = xPositions[i];
         const y = pT + gH - ((v - minVal) / range) * gH;
 
@@ -1118,8 +1120,8 @@ function draw() {
         gyroType = "gyro";
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+    render("cAcc", data, "a" + axis, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", data, "g" + axis, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
 
 
