@@ -863,6 +863,13 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
     /* test of canvas zichtbaar is */
     c.style.background = "rgba(255,0,0,0.2)";
 
+    ctx.strokeStyle = "yellow";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w, h);
+    ctx.stroke();
+
     const w = c.width;
     const h = c.height;
 
