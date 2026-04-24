@@ -602,16 +602,22 @@ document.getElementById('btnConnect').onclick = async () => {
         // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
+
+            const now = performance.now();   // ← NIEUW: timestamp in ms
+
             data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
+                t: now,                      // ← NIEUW: tijdstip van ontvangst
+                ax: v.getInt16(0, true) / 100,
+                ay: v.getInt16(2, true) / 100,
+                az: v.getInt16(4, true) / 100,
                 gx: v.getInt16(6, true),
                 gy: v.getInt16(8, true),
                 gz: v.getInt16(10, true)
             });
-            elCount.innerText = data.length;
+
+        elCount.innerText = data.length;
         });
+
 
         // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
