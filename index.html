@@ -894,7 +894,6 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
         values = data.map(d => d[axisName]);
     }
 
-    // Als values undefined bevat → grafiek leeg → fallback
     if (!values || values.some(v => v === undefined || isNaN(v))) {
         console.warn("AxisName mismatch:", axisName);
         return;
@@ -946,6 +945,7 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
+
 
 /* ============================================================
    RENDER MULTI GRAPH
