@@ -743,15 +743,16 @@ document.getElementById('btnReset').onclick = async () => {
 function setAxis(a) {
     axis = a.toLowerCase();
 
+    // UI updaten
     document.querySelectorAll('.axisBtn').forEach(b => {
         const bid = b.id.toLowerCase();
         const target = 'b' + axis;
         b.classList.toggle('active', bid === target);
     });
 
-    updateUI();
+    // Render aanroepen
+    render();
 }
-
 
 /* ============================================================
    UI UPDATE
