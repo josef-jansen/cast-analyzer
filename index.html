@@ -129,7 +129,7 @@
             padding: 5px;
             margin: 8px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-            height: calc(var(--content-h) - 16px);
+            height: 320px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -859,8 +859,14 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
     const c = document.getElementById(canvasId);
     const ctx = c.getContext("2d");
 
-    c.width = c.clientWidth * dpr;
-    c.height = c.clientHeight * dpr;
+    c.style.background = "rgba(255,0,0,0.2)";
+
+    ctx.strokeStyle = "yellow";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(c.width, c.height);
+    ctx.stroke();
 
     /* test of canvas zichtbaar is */
     c.style.background = "rgba(255,0,0,0.2)";
