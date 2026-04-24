@@ -882,7 +882,18 @@ function render(canvasId, data, axisName, color, title, unit, progress, type) {
     const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
 
     // Y-WAARDEN OPHALEN
-    const values = data.map(d => d[axisName]);
+    // XYZ MODE
+    let values;
+
+    if (axisName === "axyz") {
+        values = data.map(d => Math.sqrt(d.ax*d.ax + d.ay*d.ay + d.az*d.az));
+    }
+    else if (axisName === "gxyz") {
+        values = data.map(d => Math.sqrt(d.gx*d.gx + d.gy*d.gy + d.gz*d.gz));
+    }
+    else {
+        values = data.map(d => d[axisName]);
+    }
 
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
@@ -1078,6 +1089,9 @@ function draw() {
         ? elBack.currentTime / elBack.duration
         : 0;
 
+    // ------------------------------------------------------------
+    // MULTI-MODE (XYZ3) — werkt nog op index, doen we later
+    // ------------------------------------------------------------
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
@@ -1100,30 +1114,70 @@ function draw() {
         return;
     }
 
-    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
+    // ------------------------------------------------------------
+    // SINGLE AXIS OF XYZ TOTAL (TIJD-GEBASEERD)
+    // ------------------------------------------------------------
+
+    let labelSuffix;
 
     if (axis === 'xyz') {
-        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        // XYZ totaal
         labelSuffix = "Totaal";
 
-        accType = "xyz";
-        gyroType = "xyz";
+        // ACC XYZ
+        render(
+            "cAcc",
+            data,
+            "axyz",
+            "#00bfff",
+            "Versnelling Totaal",
+            "m/s²",
+            progress,
+            "xyz"
+        );
+
+        // GYRO XYZ
+        render(
+            "cGyro",
+            data,
+            "gxyz",
+            "#ff4500",
+            "Rotatie Totaal",
+            "°/s",
+            progress,
+            "xyz"
+        );
     }
 
     else {
-        accPoints = data.map(d => d['a' + axis]);
-        gyroPoints = data.map(d => d['g' + axis]);
+        // X, Y of Z
         labelSuffix = axis.toUpperCase();
 
-        accType = "single";
-        gyroType = "gyro";
+        // ACC X/Y/Z
+        render(
+            "cAcc",
+            data,
+            "a" + axis,
+            "#00bfff",
+            "Versnelling " + labelSuffix,
+            "m/s²",
+            progress,
+            "single"
+        );
+
+        // GYRO X/Y/Z
+        render(
+            "cGyro",
+            data,
+            "g" + axis,
+            "#ff4500",
+            "Rotatie " + labelSuffix,
+            "°/s",
+            progress,
+            "single"
+        );
     }
-
-    render("cAcc", data, "a" + axis, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", data, "g" + axis, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
-
 
 /* ============================================================
    PLAY / PAUSE
