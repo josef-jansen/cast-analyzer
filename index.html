@@ -856,7 +856,7 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render(canvasId, data, axisName, color, title, unit, progress, type) {
+function render(canvasId, data, axisName, color, title, unit, progress) {
     const c = document.getElementById(canvasId);
     const ctx = c.getContext("2d");
 
@@ -878,11 +878,10 @@ function render(canvasId, data, axisName, color, title, unit, progress, type) {
     // TIJD RANGE
     const { tMin, tMax } = getTimeRange();
 
-    // X-POSITIES OP BASIS VAN TIJD
+    // X POSITIES
     const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
 
-    // Y-WAARDEN OPHALEN
-    // XYZ MODE
+    // Y-WAARDEN
     let values;
 
     if (axisName === "axyz") {
@@ -893,6 +892,12 @@ function render(canvasId, data, axisName, color, title, unit, progress, type) {
     }
     else {
         values = data.map(d => d[axisName]);
+    }
+
+    // Als values undefined bevat → grafiek leeg → fallback
+    if (!values || values.some(v => v === undefined || isNaN(v))) {
+        console.warn("AxisName mismatch:", axisName);
+        return;
     }
 
     const minVal = Math.min(...values);
@@ -909,7 +914,7 @@ function render(canvasId, data, axisName, color, title, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // LIJN TEKENEN
+    // LIJN
     ctx.strokeStyle = color;
     ctx.lineWidth = 2 * dpr;
     ctx.beginPath();
@@ -1089,9 +1094,7 @@ function draw() {
         ? elBack.currentTime / elBack.duration
         : 0;
 
-    // ------------------------------------------------------------
-    // MULTI-MODE (XYZ3) — werkt nog op index, doen we later
-    // ------------------------------------------------------------
+    // MULTI-MODE (oude index-based)
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
@@ -1114,69 +1117,16 @@ function draw() {
         return;
     }
 
-    // ------------------------------------------------------------
-    // SINGLE AXIS OF XYZ TOTAL (TIJD-GEBASEERD)
-    // ------------------------------------------------------------
-
-    let labelSuffix;
-
+    // XYZ totaal
     if (axis === 'xyz') {
-        // XYZ totaal
-        labelSuffix = "Totaal";
-
-        // ACC XYZ
-        render(
-            "cAcc",
-            data,
-            "axyz",
-            "#00bfff",
-            "Versnelling Totaal",
-            "m/s²",
-            progress,
-            "xyz"
-        );
-
-        // GYRO XYZ
-        render(
-            "cGyro",
-            data,
-            "gxyz",
-            "#ff4500",
-            "Rotatie Totaal",
-            "°/s",
-            progress,
-            "xyz"
-        );
+        render("cAcc", data, "axyz", "#00bfff", "Versnelling Totaal", "m/s²", progress);
+        render("cGyro", data, "gxyz", "#ff4500", "Rotatie Totaal", "°/s", progress);
+        return;
     }
 
-    else {
-        // X, Y of Z
-        labelSuffix = axis.toUpperCase();
-
-        // ACC X/Y/Z
-        render(
-            "cAcc",
-            data,
-            "a" + axis,
-            "#00bfff",
-            "Versnelling " + labelSuffix,
-            "m/s²",
-            progress,
-            "single"
-        );
-
-        // GYRO X/Y/Z
-        render(
-            "cGyro",
-            data,
-            "g" + axis,
-            "#ff4500",
-            "Rotatie " + labelSuffix,
-            "°/s",
-            progress,
-            "single"
-        );
-    }
+    // X/Y/Z
+    render("cAcc", data, "a" + axis, "#00bfff", "Versnelling " + axis.toUpperCase(), "m/s²", progress);
+    render("cGyro", data, "g" + axis, "#ff4500", "Rotatie " + axis.toUpperCase(), "°/s", progress);
 }
 
 /* ============================================================
