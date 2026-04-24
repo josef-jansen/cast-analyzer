@@ -859,6 +859,9 @@ function render(canvasId, data, axisName, color, title, unit, progress) {
     const c = document.getElementById(canvasId);
     const ctx = c.getContext("2d");
 
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
+
     /* test of canvas zichtbaar is */
     c.style.background = "rgba(255,0,0,0.2)";
 
