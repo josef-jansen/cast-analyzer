@@ -617,6 +617,14 @@ document.getElementById('btnConnect').onclick = async () => {
                 gz: v.getInt16(10, true)
             });
 
+            if (data.length === 3) {
+                showMessage(
+                    "t0=" + data[0].t.toFixed(1) + " ms\n" +
+                    "t1=" + data[1].t.toFixed(1) + " ms\n" +
+                    "t2=" + data[2].t.toFixed(1) + " ms"
+                );
+            }
+
         elCount.innerText = data.length;
         });
 
