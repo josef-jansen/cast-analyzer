@@ -617,17 +617,8 @@ document.getElementById('btnConnect').onclick = async () => {
                 gz: v.getInt16(10, true)
             });
 
-            if (data.length === 3) {
-                showMessage(
-                    "t0=" + data[0].t.toFixed(1) + " ms\n" +
-                    "t1=" + data[1].t.toFixed(1) + " ms\n" +
-                    "t2=" + data[2].t.toFixed(1) + " ms"
-                );
-            }
-
         elCount.innerText = data.length;
         });
-
 
         // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
@@ -865,71 +856,66 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render(id, points, color, label, unit, progress, type) {
-    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
-    c.width = c.clientWidth * dpr;
-    c.height = c.clientHeight * dpr;
+function render(canvasId, points, color, title, unit, progress, type) {
+    const c = document.getElementById(canvasId);
+    const ctx = c.getContext("2d");
 
-    const w = c.width, h = c.height;
-    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
-    const gW = w - pL - pR, gH = h - pT - pB;
+    const w = c.width;
+    const h = c.height;
+
+    const pL = 50 * dpr;
+    const pR = 20 * dpr;
+    const pT = 20 * dpr;
+    const pB = 30 * dpr;
+
+    const gW = w - pL - pR;
+    const gH = h - pT - pB;
 
     ctx.clearRect(0, 0, w, h);
 
-    const scale = computeScale(points, type);
-    const { min, max, labels } = scale;
+    if (points.length < 2) return;
 
-    const scaleY = (type === "xyz")
-        ? gH / max
-        : (gH / 2) / max;
+    // TIJD RANGE
+    const { tMin, tMax } = getTimeRange();
 
-    ctx.fillStyle = "#fff";
-    ctx.font = (14 * dpr) + "px Arial";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
+    // X-POSITIES OP BASIS VAN TIJD
+    const xPositions = computeXPositions(data, tMin, tMax, gW, pL);
 
-    labels.forEach(val => {
-        const y = (type === "xyz")
-            ? (h - pB) - (val * scaleY)
-            : (h / 2) - (val * scaleY);
+    // Y RANGE
+    const minVal = Math.min(...points);
+    const maxVal = Math.max(...points);
+    const range = maxVal - minVal || 1;
 
-        ctx.fillText(val, pL - 8 * dpr, y);
+    // GRID
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1 * dpr;
 
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.beginPath();
-        ctx.moveTo(pL, y);
-        ctx.lineTo(w - pR, y);
-        ctx.stroke();
-    });
-
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    ctx.beginPath();
+    // LIJN TEKENEN
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5 * dpr;
+    ctx.lineWidth = 2 * dpr;
+    ctx.beginPath();
 
-    points.forEach((p, i) => {
-        const x = pL + (i / (points.length - 1)) * gW;
-        const y = (type === "xyz")
-            ? (h - pB) - (p * scaleY)
-            : (h / 2) - (p * scaleY);
+    points.forEach((v, i) => {
+        const x = xPositions[i];
+        const y = pT + gH - ((v - minVal) / range) * gH;
 
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     });
 
     ctx.stroke();
 
+    // CURSOR
     if (progress > 0) {
-        const cursorX = pL + (progress * gW);
+        const cursorTime = progress * tMax;
+        const cursorX = pL + ((cursorTime - tMin) / (tMax - tMin)) * gW;
+
         ctx.strokeStyle = "#ff9500";
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
@@ -937,11 +923,11 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     }
 
+    // TITEL
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
-    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
-
 
 /* ============================================================
    RENDER MULTI GRAPH
@@ -1047,7 +1033,38 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     });
 }
 
+/* ============================================================
+   TIME RANGE (voor tijd-gebaseerde grafiek)
+   ============================================================ */
 
+function getTimeRange() {
+    if (data.length < 2) {
+        return { tMin: 0, tMax: 0 };
+    }
+
+    const tMin = data[0].t;
+    const tMax = data[data.length - 1].t;
+
+    return { tMin, tMax };
+}
+
+/* ============================================================
+   X-POSITIES OP BASIS VAN TIJD
+   ============================================================ */
+
+function computeXPositions(points, tMin, tMax, gW, pL) {
+    if (tMax <= tMin) {
+        // alle samples op dezelfde tijd → zet alles op links
+        return points.map(() => pL);
+    }
+
+    return points.map(p => {
+        const t = p.t;
+        const ratio = (t - tMin) / (tMax - tMin);
+        return pL + ratio * gW;
+    });
+}
+    
 /* ============================================================
    DRAW
    ============================================================ */
