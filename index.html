@@ -910,6 +910,9 @@ function render(id, points, color, label, unit, currentTime, totalTime, type) {
    RENDER MULTI GRAPH
    ============================================================ */
 
+/* ============================================================
+   RENDER MULTI GRAPH — MET LEGENDA EN TIJD-CURSOR
+   ============================================================ */
 function renderMulti(id, series, title, unit, currentTime, totalTime, type = "multi") {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
@@ -921,12 +924,13 @@ function renderMulti(id, series, title, unit, currentTime, totalTime, type = "mu
 
     ctx.clearRect(0, 0, w, h);
 
+    // 1. SCHAAL BEREKENEN
     const all = series.flatMap(s => s.points);
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
     const scaleY = (type === "xyz") ? gH / max : (gH / 2) / max;
 
-    // Assen en labels tekenen
+    // 2. ASSEN EN GRID TEKENEN
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -939,7 +943,7 @@ function renderMulti(id, series, title, unit, currentTime, totalTime, type = "mu
         ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
     });
 
-    // Series tekenen
+    // 3. DE DATALIJNEN (X, Y, Z) TEKENEN
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
@@ -952,7 +956,7 @@ function renderMulti(id, series, title, unit, currentTime, totalTime, type = "mu
         ctx.stroke();
     });
 
-    // ORANJE CURSOR OP BASIS VAN TIJD
+    // 4. ORANJE CURSOR (TIJD-GEBASEERD)
     if (totalTime > 0) {
         const progress = currentTime / totalTime;
         const cursorX = pL + (progress * gW);
@@ -961,9 +965,30 @@ function renderMulti(id, series, title, unit, currentTime, totalTime, type = "mu
         ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
 
+    // 5. TITEL EN EENHEID
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+
+    // 6. LEGENDA (Kleurblokjes met X, Y, Z)
+    let legendX = w - pR - 150 * dpr;
+    let legendY = pT + 18 * dpr;
+    series.forEach(s => {
+        const boxW = 20 * dpr;
+        const boxH = 10 * dpr;
+        
+        // Kleurvakje
+        ctx.fillStyle = s.color;
+        ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
+        
+        // Label (X, Y of Z)
+        ctx.fillStyle = "#fff";
+        ctx.font = (14 * dpr) + "px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
+        
+        legendX += 70 * dpr; // Ruimte tussen de legenda items
+    });
 }
 
 /* ============================================================
@@ -973,10 +998,11 @@ function renderMulti(id, series, title, unit, currentTime, totalTime, type = "mu
 function draw() {
     if (data.length < 2) return;
 
-    // We gebruiken de currentTime van de video en de totale duur van de DATA
-    // Dit zorgt dat de oranje lijn altijd synchroon loopt met de video-tijd
     const curT = elBack.currentTime;
-    const totalT = data[data.length - 1].t; // De tijdstempel van de allerlaatste meting
+    
+    // FALLBACK VOOR OUDE DATA: als .t niet bestaat, gokken we op 100Hz (0.01s per punt)
+    const lastPoint = data[data.length - 1];
+    const totalT = (lastPoint.t !== undefined) ? lastPoint.t : (data.length * 0.01);
 
     if (axis === 'xyz3') {
         renderMulti("cAcc",
@@ -1134,8 +1160,13 @@ document.getElementById("btnExport").onclick = async () => {
             showMessage("Fout bij delen.");
         }
 
+        // STATUS UPDATE IN DB EN UI
         session.status = "e";
-        store.put(session);
+        const updateReq = store.put(session);
+        updateReq.onsuccess = () => {
+            selectedDisplay.textContent = applySuffix(session.baseName, "e");
+            loadArchiveList(); 
+        };
     };
 
     tx.oncomplete = () => { loadArchiveList(); };
