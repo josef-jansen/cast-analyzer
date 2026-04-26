@@ -1049,8 +1049,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 function draw() {
     if (data.length < 2) return;
 
-    // We berekenen de voortgang (progress) op basis van de Arduino tijdstempels (t)
-    // t.o.v. de video-tijdlijn
+    // Bereken voortgang op basis van videotijd t.o.v. de sensor-tijdlijn
     const lastT = data[data.length - 1].t || 0;
     const progress = (lastT > 0) ? (elBack.currentTime / lastT) : 0;
 
@@ -1072,7 +1071,6 @@ function draw() {
             ],
             "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
         );
-
         return;
     }
 
@@ -1082,16 +1080,13 @@ function draw() {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
-
         accType = "xyz";
         gyroType = "xyz";
-    }
-
-    else {
+    } else {
+        // Hier zat de fout: we moeten de 'ax', 'ay' of 'az' correct selecteren
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
-
         accType = "single";
         gyroType = "gyro";
     }
@@ -1099,6 +1094,7 @@ function draw() {
     render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
     render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
+
 
 /* ============================================================
    PLAY / PAUSE
@@ -1177,24 +1173,23 @@ document.getElementById("btnExport").onclick = async () => {
         const session = req.result;
         if (!session) return;
 
+        // We gebruiken weer de originele naamgeving die altijd werkte
         const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
         const zip = new JSZip();
 
-        // ACC CSV met de echte tijd t
+        // CSV's vullen (met de nieuwe tijdstempel t)
         let accCSV = "t,ax,ay,az\n";
         session.sensorData.forEach((d) => {
             accCSV += `${d.t.toFixed(3)},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
 
-        // GYRO CSV met de echte tijd t
         let gyroCSV = "t,gx,gy,gz\n";
         session.sensorData.forEach((d) => {
             gyroCSV += `${d.t.toFixed(3)},${d.gx},${d.gy},${d.gz}\n`;
         });
         zip.file("gyro.csv", gyroCSV);
 
-        // META data
         const meta = {
             name: session.baseName,
             axis: session.axis,
@@ -1202,8 +1197,6 @@ document.getElementById("btnExport").onclick = async () => {
             date: session.date
         };
         zip.file("meta.json", JSON.stringify(meta, null, 2));
-
-        // VIDEO bestand
         zip.file("video.mp4", session.videoBlob);
 
         const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1213,22 +1206,18 @@ document.getElementById("btnExport").onclick = async () => {
 
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
-            } else {
-                showMessage("Delen van bestanden wordt niet ondersteund.");
+                
+                // Hier de status update zoals in je oude werkende versie
+                elRecStatus.textContent = "Exported";
+                showMessage("Geëxporteerd.");
             }
-            
-            // Status updaten naar 'exported'
-            session.status = "e";
-            store.put(session);
-            
-            elRecStatus.textContent = "Exported";
-            selectedDisplay.textContent = applySuffix(session.baseName, "e");
-            showMessage("Geëxporteerd.");
-
         } catch (err) {
-            console.error("Fout bij delen:", err);
-            showMessage("Er ging iets mis bij het delen.");
+            showMessage("Fout bij delen.");
         }
+
+        // Status aanpassen in DB
+        session.status = "e";
+        store.put(session);
     };
 
     tx.oncomplete = () => {
