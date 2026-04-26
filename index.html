@@ -593,15 +593,16 @@ document.getElementById('btnConnect').onclick = async () => {
             if (startTime === null) startTime = now;
             const t = (now - startTime) / 1000; // seconden sinds start recording
 
-            data.push({
-                t,
-                ax: v.getInt16(0, true) / 100,
-                ay: v.getInt16(2, true) / 100,
-                az: v.getInt16(4, true) / 100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
-            });
+        data.push({
+            t: t,
+            ax: v.getInt16(0, true) / 100,
+            ay: v.getInt16(2, true) / 100,
+            az: v.getInt16(4, true) / 100,
+            gx: v.getInt16(6, true),
+            gy: v.getInt16(8, true),
+            gz: v.getInt16(10, true)
+        });
+
             elCount.innerText = data.length;
         });
 
@@ -1215,6 +1216,7 @@ document.getElementById('btnExport').onclick = async () => {
 
         session.status = 'e';
         store.put(session);
+        loadArchiveList();
     };
 
     tx.oncomplete = () => {
