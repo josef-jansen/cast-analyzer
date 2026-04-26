@@ -586,25 +586,36 @@ document.getElementById('btnConnect').onclick = async () => {
             elLive.style.display = 'block';
         };
 
+        // ⭐⭐⭐ HIER IS HET VOLLEDIGE BLOK MET DEBUG ⭐⭐⭐
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
 
             const now = performance.now();
             if (startTime === null) startTime = now;
-            const t = (now - startTime) / 1000; // seconden sinds start recording
+            const t = (now - startTime) / 1000;
 
-        data.push({
-            t: t,
-            ax: Number(v.getInt16(0, true)) / 100,
-            ay: Number(v.getInt16(2, true)) / 100,
-            az: Number(v.getInt16(4, true)) / 100,
-            gx: v.getInt16(6, true),
-            gy: v.getInt16(8, true),
-            gz: v.getInt16(10, true)
-        });
+            data.push({
+                t: t,
+                ax: Number(v.getInt16(0, true)) / 100,
+                ay: Number(v.getInt16(2, true)) / 100,
+                az: Number(v.getInt16(4, true)) / 100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
+                gz: v.getInt16(10, true)
+            });
+
+            // 🔥 DEBUG: laat de ruwe sensorwaarden zien (10 keer)
+            if (data.length <= 10) {
+                alert(
+                    "AX=" + (Number(v.getInt16(0, true)) / 100) +
+                    " AY=" + (Number(v.getInt16(2, true)) / 100) +
+                    " AZ=" + (Number(v.getInt16(4, true)) / 100)
+                );
+            }
 
             elCount.innerText = data.length;
         });
+        // ⭐⭐⭐ EINDE VOLLEDIG BLOK ⭐⭐⭐
 
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnStart').disabled = false;
@@ -613,7 +624,6 @@ document.getElementById('btnConnect').onclick = async () => {
         alert(e);
     }
 };
-
 
 /* ============================================================
    START RECORDING
