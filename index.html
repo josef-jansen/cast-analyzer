@@ -751,25 +751,27 @@ function setAxis(a) {
 
 
 /* ============================================================
-   UI UPDATE
+   UI UPDATE & SLIDER LOGICA
    ============================================================ */
 
 slider.oninput = () => {
     if (elBack.duration > 0) {
+        // Slider (0-1000) omzetten naar videotijd
         elBack.currentTime = (slider.value / 1000) * elBack.duration;
         updateUI();
     }
 };
 
 elBack.ontimeupdate = () => {
+    // Alleen slider updaten als we niet aan het opnemen zijn
     if (!recorder || recorder.state !== "recording") {
-        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        if (elBack.duration > 0) {
+            slider.value = (elBack.currentTime / elBack.duration) * 1000;
+        } else {
+            slider.value = 0;
+        }
         updateUI();
     }
-};
-
-elBack.onended = () => {
-    playPauseBtn.textContent = "▶︎";
 };
 
 function updateUI() {
@@ -779,10 +781,15 @@ function updateUI() {
             elBack.duration.toFixed(2) + "s";
     }
 
+    // Teken de grafieken (de oranje loper wordt binnen draw() berekend)
     draw();
-
-    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
+
+elBack.onended = () => {
+    playPauseBtn.textContent = "▶︎";
+    updateUI(); 
+};
+
 
 /* ============================================================
    SCHAALBEREKENING
