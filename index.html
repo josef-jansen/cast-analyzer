@@ -564,14 +564,13 @@ function clearGraphs() {
 
 
 /* ============================================================
-   BLUETOOTH CONNECTIE
+   BLUETOOTH CONNECTIE — VERVANGEN VOOR 16-BYTE TIMESTAMP SUPPORT
    ============================================================ */
-
-let char, stream, recorder;
+let arduinoStartTime = 0; // Nulpunt voor de Arduino klok
 
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        // 1. BLE CONNECTIE (originele, werkende flow)
+        // 1. BLE CONNECTIE
         const device = await navigator.bluetooth.requestDevice({
             filters: [{ name: "Cast-Analyzer" }],
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
@@ -581,60 +580,69 @@ document.getElementById('btnConnect').onclick = async () => {
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
 
-        // 2. CAMERA OPENEN (pas NA BLE)
+        // 2. CAMERA OPENEN
         stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" },
             audio: false
         });
 
-        // 3. VIDEO KOPPELEN MAAR NOG NIET TONEN
         elLive.style.display = "none";
         elLive.srcObject = stream;
 
-        // 4. BLUEFY FIX: pas tonen als metadata geladen is
         elLive.onloadedmetadata = () => {
-        centerVideo(elLive);
+            centerVideo(elLive);
             elLive.play();
             elLive.style.display = "block";
         };
 
-
-        // 5. SENSOR DATA HANDLER (originele code)
+        // 3. SENSOR DATA HANDLER (Aangepast voor 16 bytes met timestamp)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
+            if (v.byteLength < 16) return; // Beveiliging
+
+            // Lees Arduino klok (bytes 0-3 als uint32)
+            const arduinoTime = v.getUint32(0, true);
+            
+            // Als dit het eerste pakketje is na Start, zet dan het nulpunt
+            if (arduinoStartTime === 0) arduinoStartTime = arduinoTime;
+            
+            // Bereken relatieve tijd in seconden t.o.v. de start
+            const relativeTime = (arduinoTime - arduinoStartTime) / 1000;
+
             data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
+                t: relativeTime, // De cruciale tijdstempel!
+                ax: v.getInt16(4, true) / 100,
+                ay: v.getInt16(6, true) / 100,
+                az: v.getInt16(8, true) / 100,
+                gx: v.getInt16(10, true),
+                gy: v.getInt16(12, true),
+                gz: v.getInt16(14, true)
             });
             elCount.innerText = data.length;
         });
 
-        // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnStart').disabled = false;
 
     } catch (e) {
-        alert(e);
+        alert("Connectie fout: " + e);
     }
 };
 
 
 /* ============================================================
-   START RECORDING
+   START RECORDING — VERVANGEN VOOR TIMESTAMP SYNC
    ============================================================ */
-
 document.getElementById('btnStart').onclick = async () => {
     data = [];
     chunks = [];
+    arduinoStartTime = 0; // Reset nulpunt voor de nieuwe opname
     elCount.innerText = "0";
     slider.disabled = true;
 
     elRecStatus.textContent = "Recording";
 
+    // Start de datastroom vanaf de Arduino
     await char.startNotifications();
 
     recorder = new MediaRecorder(stream);
@@ -651,9 +659,7 @@ document.getElementById('btnStart').onclick = async () => {
         document.getElementById('btnSave').disabled = false;
         slider.disabled = false;
 
-        // Na opname automatisch Y-as tonen
         setAxis('y');
-
         setTimeout(updateUI, 1000);
     };
 
@@ -665,7 +671,6 @@ document.getElementById('btnStart').onclick = async () => {
     document.getElementById('btnStart').disabled = true;
     document.getElementById('btnStop').disabled = false;
 };
-
 
 /* ============================================================
    STOP RECORDING
@@ -847,7 +852,7 @@ function computeScale(points, type) {
    RENDER SINGLE GRAPH
    ============================================================ */
 
-function render(id, points, color, label, unit, progress, type) {
+function render(id, points, color, label, unit, currentTime, totalTime, type) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -860,63 +865,39 @@ function render(id, points, color, label, unit, progress, type) {
 
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
+    const scaleY = (type === "xyz") ? gH / max : (gH / 2) / max;
 
-    const scaleY = (type === "xyz")
-        ? gH / max
-        : (gH / 2) / max;
-
+    // Assen en labels tekenen
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (type === "xyz")
-            ? (h - pB) - (val * scaleY)
-            : (h / 2) - (val * scaleY);
-
+        const y = (type === "xyz") ? (h - pB) - (val * scaleY) : (h / 2) - (val * scaleY);
         ctx.fillText(val, pL - 8 * dpr, y);
-
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.beginPath();
-        ctx.moveTo(pL, y);
-        ctx.lineTo(w - pR, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
     });
 
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
-    ctx.beginPath();
-    ctx.moveTo(pL, pT);
-    ctx.lineTo(pL, h - pB);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(w - pR, pT);
-    ctx.lineTo(w - pR, h - pB);
-    ctx.stroke();
-
+    // Lijn tekenen
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
-
     points.forEach((p, i) => {
         const x = pL + (i / (points.length - 1)) * gW;
-        const y = (type === "xyz")
-            ? (h - pB) - (p * scaleY)
-            : (h / 2) - (p * scaleY);
-
+        const y = (type === "xyz") ? (h - pB) - (p * scaleY) : (h / 2) - (p * scaleY);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-
     ctx.stroke();
 
-    if (progress > 0) {
+    // ORANJE CURSOR OP BASIS VAN TIJD
+    if (totalTime > 0) {
+        const progress = currentTime / totalTime;
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
-        ctx.beginPath();
-        ctx.moveTo(cursorX, pT);
-        ctx.lineTo(cursorX, h - pB);
-        ctx.stroke();
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
 
     ctx.fillStyle = "#fff";
@@ -929,7 +910,7 @@ function render(id, points, color, label, unit, progress, type) {
    RENDER MULTI GRAPH
    ============================================================ */
 
-function renderMulti(id, series, title, unit, progress, type = "multi") {
+function renderMulti(id, series, title, unit, currentTime, totalTime, type = "multi") {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -943,92 +924,47 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     const all = series.flatMap(s => s.points);
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
+    const scaleY = (type === "xyz") ? gH / max : (gH / 2) / max;
 
-    const scaleY = (type === "xyz")
-        ? gH / max
-        : (gH / 2) / max;
-
+    // Assen en labels tekenen
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (type === "xyz")
-            ? (h - pB) - (val * scaleY)
-            : (h / 2) - (val * scaleY);
-
+        const y = (type === "xyz") ? (h - pB) - (val * scaleY) : (h / 2) - (val * scaleY);
         ctx.fillText(val, pL - 8 * dpr, y);
-
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.beginPath();
-        ctx.moveTo(pL, y);
-        ctx.lineTo(w - pR, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pL, y); ctx.lineTo(w - pR, y); ctx.stroke();
     });
 
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
-    ctx.beginPath();
-    ctx.moveTo(pL, pT);
-    ctx.lineTo(pL, h - pB);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(w - pR, pT);
-    ctx.lineTo(w - pR, h - pB);
-    ctx.stroke();
-    
+    // Series tekenen
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 1.5 * dpr;
-
         s.points.forEach((p, i) => {
             const x = pL + (i / (s.points.length - 1)) * gW;
-            const y = (type === "xyz")
-                ? (h - pB) - (p * scaleY)
-                : (h / 2) - (p * scaleY);
-
+            const y = (type === "xyz") ? (h - pB) - (p * scaleY) : (h / 2) - (p * scaleY);
             i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         });
-
         ctx.stroke();
     });
 
-    if (progress > 0) {
+    // ORANJE CURSOR OP BASIS VAN TIJD
+    if (totalTime > 0) {
+        const progress = currentTime / totalTime;
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
-        ctx.beginPath();
-        ctx.moveTo(cursorX, pT);
-        ctx.lineTo(cursorX, h - pB);
-        ctx.stroke();
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath(); ctx.moveTo(cursorX, pT); ctx.lineTo(cursorX, h - pB); ctx.stroke();
     }
 
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
-
-    // LEGEND
-    let legendX = w - pR - 150 * dpr;
-    let legendY = pT + 18 * dpr;
-
-    series.forEach(s => {
-        const boxW = 20 * dpr;
-        const boxH = 10 * dpr;
-
-        ctx.fillStyle = s.color;
-        ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
-
-        ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
-
-        legendX += 70 * dpr;
-    });
 }
-
 
 /* ============================================================
    DRAW
@@ -1037,9 +973,10 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 function draw() {
     if (data.length < 2) return;
 
-    const progress = (elBack.duration > 0)
-        ? elBack.currentTime / elBack.duration
-        : 0;
+    // We gebruiken de currentTime van de video en de totale duur van de DATA
+    // Dit zorgt dat de oranje lijn altijd synchroon loopt met de video-tijd
+    const curT = elBack.currentTime;
+    const totalT = data[data.length - 1].t; // De tijdstempel van de allerlaatste meting
 
     if (axis === 'xyz3') {
         renderMulti("cAcc",
@@ -1048,7 +985,7 @@ function draw() {
                 { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
+            "Versnelling X‑Y‑Z", "m/s²", curT, totalT, "multi"
         );
 
         renderMulti("cGyro",
@@ -1057,36 +994,27 @@ function draw() {
                 { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
+            "Rotatie X‑Y‑Z", "°/s", curT, totalT, "gyro"
         );
-
         return;
     }
 
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
-
     if (axis === 'xyz') {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
-
-        accType = "xyz";
-        gyroType = "xyz";
-    }
-
-    else {
+        accType = "xyz"; gyroType = "xyz";
+    } else {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
-
-        accType = "single";
-        gyroType = "gyro";
+        accType = "single"; gyroType = "gyro";
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", curT, totalT, accType);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", curT, totalT, gyroType);
 }
-
 
 /* ============================================================
    PLAY / PAUSE
@@ -1166,24 +1094,22 @@ document.getElementById("btnExport").onclick = async () => {
         if (!session) return;
 
         const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
-
         const zip = new JSZip();
 
-        // ACC CSV
+        // ACC CSV met echte tijd t
         let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d, i) => {
-            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+        session.sensorData.forEach((d) => {
+            accCSV += `${d.t.toFixed(3)},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
 
-        // GYRO CSV
+        // GYRO CSV met echte tijd t
         let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d, i) => {
-            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        session.sensorData.forEach((d) => {
+            gyroCSV += `${d.t.toFixed(3)},${d.gx},${d.gy},${d.gz}\n`;
         });
         zip.file("gyro.csv", gyroCSV);
 
-        // META
         const meta = {
             name: session.baseName,
             axis: session.axis,
@@ -1191,37 +1117,28 @@ document.getElementById("btnExport").onclick = async () => {
             date: session.date
         };
         zip.file("meta.json", JSON.stringify(meta, null, 2));
-
-        // VIDEO
         zip.file("video.mp4", session.videoBlob);
 
         const zipBlob = await zip.generateAsync({ type: "blob" });
 
         try {
             const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
-
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
             } else {
-                showMessage("Delen van bestanden wordt niet ondersteund in deze browser.");
+                showMessage("Delen niet ondersteund.");
             }
-            // Pas NA het delen → correcte timing in Bluefy/iOS
             elRecStatus.textContent = "Exported";
             showMessage("Geëxporteerd.");
-
         } catch (err) {
-            console.error("Fout bij delen:", err);
-            showMessage("Er ging iets mis bij het delen van de ZIP.");
+            showMessage("Fout bij delen.");
         }
 
-        // STATUS → "e"
         session.status = "e";
         store.put(session);
     };
 
-    tx.oncomplete = () => {
-        loadArchiveList();
-    };
+    tx.oncomplete = () => { loadArchiveList(); };
 };
 
 /* ============================================================
@@ -1247,7 +1164,6 @@ fileInput.onchange = async (event) => {
 };
 
 async function importSessionFromZip(file) {
-
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
 
@@ -1272,7 +1188,7 @@ async function importSessionFromZip(file) {
         return lines.slice(1).map(line => {
             const values = line.split(",");
             const obj = {};
-            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
+            headers.forEach((h, i) => obj[h.trim()] = parseFloat(values[i]));
             return obj;
         });
     }
@@ -1280,38 +1196,36 @@ async function importSessionFromZip(file) {
     const accData  = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    const combined = accData.map((d, i) => ({
-        ax: d.ax,
-        ay: d.ay,
-        az: d.az,
-        gx: gyroData[i].gx,
-        gy: gyroData[i].gy,
-        gz: gyroData[i].gz
-    }));
+    const combined = accData.map((d, i) => {
+        // We proberen de 't' uit de CSV te halen, anders index/100 als fallback
+        const timeVal = (d.t !== undefined && !isNaN(d.t)) ? d.t : (i / 100);
+        
+        return {
+            t: timeVal,
+            ax: d.ax,
+            ay: d.ay,
+            az: d.az,
+            gx: gyroData[i] ? gyroData[i].gx : 0,
+            gy: gyroData[i] ? gyroData[i].gy : 0,
+            gz: gyroData[i] ? gyroData[i].gz : 0
+        };
+    });
 
     const baseName = stripSuffix(meta.name || "Imported Session");
     const status   = "i";
 
-    // ---------------------------------------------------------
-    // 1) CHECK OF SESSIE AL BESTAAT  (ANTI-DUPLICAAT)
-    // ---------------------------------------------------------
     const txCheck = db.transaction("sessions", "readonly");
     const storeCheck = txCheck.objectStore("sessions");
     const getAllReq = storeCheck.getAll();
 
     getAllReq.onsuccess = () => {
         const all = getAllReq.result;
-
         const exists = all.some(s => s.baseName === baseName);
 
         if (exists) {
             showMessage("Sessie bestaat al.\nImport gestopt.");
-            return; // STOP → NIET importeren
+            return;
         }
-
-        // ---------------------------------------------------------
-        // 2) SESSIE BESTAAT NIET → NORMALE IMPORT
-        // ---------------------------------------------------------
 
         const session = {
             baseName,
@@ -1322,7 +1236,6 @@ async function importSessionFromZip(file) {
             date: meta.date || new Date().toISOString()
         };
 
-        // Axis direct instellen in UI
         setAxis(session.axis || "x");
 
         const tx = db.transaction("sessions", "readwrite");
@@ -1331,20 +1244,14 @@ async function importSessionFromZip(file) {
 
         addReq.onsuccess = () => {
             const newId = addReq.result;
-
             loadArchiveList();
             selectSession(newId, baseName, status);
-
             elRecStatus.textContent = "Imported";
         };
 
         addReq.onerror = () => {
-            showMessage("Kon sessie niet opslaan in IndexedDB.");
+            showMessage("Kon sessie niet opslaan.");
         };
-    };
-
-    getAllReq.onerror = () => {
-        showMessage("Kon sessies niet controleren in IndexedDB.");
     };
 }
 
