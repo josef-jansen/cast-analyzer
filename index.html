@@ -1044,6 +1044,7 @@ function renderMulti(id, series, times, title, unit, progress, type = 'multi') {
 function draw() {
     if (data.length < 2) return;
 
+    // Tijd-as
     const times = data.map((d, i) => (typeof d.t === 'number' ? d.t : i * 0.02));
     const tMin = times[0];
     const tMax = times[times.length - 1] || (tMin + 0.0001);
@@ -1053,6 +1054,7 @@ function draw() {
         ? Math.min(Math.max(elBack.currentTime / span, 0), 1)
         : 0;
 
+    // MULTI-MODE (XYZ3)
     if (axis === 'xyz3') {
         renderMulti('cAcc',
             [
@@ -1061,7 +1063,7 @@ function draw() {
                 { points: data.map(d => d.az), color: '#007aff', label: 'Z' }
             ],
             times,
-            'Versnelling X‑Y‑Z', 'm/s²', progress, 'multi'
+            'Versnelling X‑Y‑Z', 'm/s²', progress, 'xyz'
         );
 
         renderMulti('cGyro',
@@ -1071,34 +1073,57 @@ function draw() {
                 { points: data.map(d => d.gz), color: '#007aff', label: 'Z' }
             ],
             times,
-            'Rotatie X‑Y‑Z', '°/s', progress, 'gyro'
+            'Rotatie X‑Y‑Z', '°/s', progress, 'xyz'
         );
 
         return;
     }
 
+    // SINGLE / XYZ MAGNITUDE
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
     if (axis === 'xyz') {
-        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        accPoints = data.map(d => Math.sqrt(d.ax*d.ax + d.ay*d.ay + d.az*d.az));
+        gyroPoints = data.map(d => Math.sqrt(d.gx*d.gx + d.gy*d.gy + d.gz*d.gz));
         labelSuffix = 'Totaal';
-
         accType = 'xyz';
         gyroType = 'xyz';
     } else {
-        accPoints = data.map(d => d['a' + axis.toLowerCase()]);
-        gyroPoints = data.map(d => d['g' + axis.toLowerCase()]);
-        labelSuffix = axis.toUpperCase();
+        const axName = 'a' + axis.toLowerCase();
+        const gxName = 'g' + axis.toLowerCase();
 
+        accPoints = data.map(d => Number(d[axName]));
+        gyroPoints = data.map(d => Number(d[gxName]));
+
+        labelSuffix = axis.toUpperCase();
         accType = 'single';
         gyroType = 'gyro';
     }
 
-    render('cAcc', accPoints, times, '#00bfff', 'Versnelling ' + labelSuffix, 'm/s²', progress, accType);
-    render('cGyro', gyroPoints, times, '#ff4500', 'Rotatie ' + labelSuffix, '°/s', progress, gyroType);
-}
+    // ACC
+    render(
+        'cAcc',
+        accPoints,
+        times,
+        '#00bfff',
+        'Versnelling ' + labelSuffix,
+        'm/s²',
+        progress,
+        accType
+    );
 
+    // GYRO
+    render(
+        'cGyro',
+        gyroPoints,
+        times,
+        '#ff4500',
+        'Rotatie ' + labelSuffix,
+        '°/s',
+        progress,
+        gyroType
+    );
+}
 
 /* ============================================================
    PLAY / PAUSE
