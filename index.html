@@ -595,9 +595,9 @@ document.getElementById('btnConnect').onclick = async () => {
 
         data.push({
             t: t,
-            ax: v.getInt16(0, true) / 100,
-            ay: v.getInt16(2, true) / 100,
-            az: v.getInt16(4, true) / 100,
+            ax: Number(v.getInt16(0, true)) / 100,
+            ay: Number(v.getInt16(2, true)) / 100,
+            az: Number(v.getInt16(4, true)) / 100,
             gx: v.getInt16(6, true),
             gy: v.getInt16(8, true),
             gz: v.getInt16(10, true)
