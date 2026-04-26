@@ -1077,8 +1077,8 @@ function draw() {
         accType = 'xyz';
         gyroType = 'xyz';
     } else {
-        accPoints = data.map(d => d['a' + axis]);
-        gyroPoints = data.map(d => d['g' + axis]);
+        accPoints = data.map(d => d['a' + axis.toLowerCase()]);
+        gyroPoints = data.map(d => d['g' + axis.toLowerCase()]);
         labelSuffix = axis.toUpperCase();
 
         accType = 'single';
