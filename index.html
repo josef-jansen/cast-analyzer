@@ -586,7 +586,7 @@ document.getElementById('btnConnect').onclick = async () => {
             elLive.style.display = 'block';
         };
 
-        // ⭐⭐⭐ HIER IS HET VOLLEDIGE BLOK MET DEBUG ⭐⭐⭐
+        // ⭐ BLE‑DATA HANDLER — SCHOON EN STABIEL ⭐
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
 
@@ -604,18 +604,8 @@ document.getElementById('btnConnect').onclick = async () => {
                 gz: v.getInt16(10, true)
             });
 
-            // 🔥 DEBUG: laat de ruwe sensorwaarden zien (10 keer)
-            if (data.length <= 10) {
-                alert(
-                    "AX=" + (Number(v.getInt16(0, true)) / 100) +
-                    " AY=" + (Number(v.getInt16(2, true)) / 100) +
-                    " AZ=" + (Number(v.getInt16(4, true)) / 100)
-                );
-            }
-
             elCount.innerText = data.length;
         });
-        // ⭐⭐⭐ EINDE VOLLEDIG BLOK ⭐⭐⭐
 
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnStart').disabled = false;
