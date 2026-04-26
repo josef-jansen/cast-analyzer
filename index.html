@@ -139,27 +139,25 @@
 
         .video-card {
             position: relative;
-            background: #1c1c1e;                 /* zelfde als grafiek */
-            border-radius: 8px;                  /* zelfde ronding */
-            padding: 5px;                        /* zelfde padding */
-            margin: 8px;                         /* zelfde marge */
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);  /* zelfde shadow */
-            width: calc(100% - 16px);            /* zelfde breedte als grafiek */
+            background: #1c1c1e;
+            border-radius: 8px;
+            padding: 5px;
+            margin: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            width: calc(100% - 16px);
             height: calc(var(--content-h) - 16px);
-            overflow: hidden;                    /* belangrijk voor crop */
+            overflow: hidden;
         }
 
-        /* Beide video’s exact over elkaar, groter dan de container,
-        zodat je het MIDDEN van het beeld ziet (top/bottom gecropt) */
         .video-card video {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 100%;           /* breedte volgt container */
+            width: 100%;
             height: auto;
-            min-height: 120%;      /* iets hoger dan container → middenband zichtbaar */
-            object-fit: cover;     /* vult zonder zwarte balken */
+            min-height: 120%;
+            object-fit: cover;
         }
 
         #msgBox {
@@ -170,15 +168,15 @@
             min-width: 260px;
             max-width: 80%;
             padding: 24px 28px;
-            background: #ffffff;          /* WIT */
-            color: #000000;               /* ZWARTE TEKST */
-            font-size: 20px;              /* GROTER EN LEESBAAR */
+            background: #ffffff;
+            color: #000000;
+            font-size: 20px;
             text-align: center;
             border-radius: 12px;
-            border: 2px solid #00000022;  /* subtiel randje */
+            border: 2px solid #00000022;
             opacity: 0;
             pointer-events: none;
-            transition: none;             /* geen fade */
+            transition: none;
             white-space: pre-line;
             z-index: 9999;
         }
@@ -190,7 +188,7 @@
             padding: 0;
         }
         
-</style>
+    </style>
 </head>
 
 <body>
@@ -274,7 +272,7 @@
    ============================================================ */
 
 function stripSuffix(name) {
-    return name.replace(/\s*\([sei]\)$/, "").trim();
+    return name.replace(/\s*\([sei]\)$/, '').trim();
 }
 
 function applySuffix(baseName, status) {
@@ -288,8 +286,9 @@ function applySuffix(baseName, status) {
 let db;
 let data = [];
 let chunks = [];
-let axis = "x";
+let axis = 'x';
 let currentVideoBlob = null;
+let startTime = null; // tijdreferentie voor sensordata (sinds start recording)
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
@@ -301,42 +300,37 @@ const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
 function centerVideo(el) {
-    // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
-    // Daarom wachten we tot metadata echt beschikbaar is.
     if (!el.videoWidth || !el.videoHeight) {
         el.addEventListener('loadedmetadata', () => centerVideo(el), { once: true });
         return;
     }
 
-    // We centreren altijd op het midden van de video.
     el.style.top = '50%';
     el.style.left = '50%';
     el.style.transform = 'translate(-50%, -50%)';
 
-    // Zorg dat de video altijd groter is dan de container
     el.style.width = '100%';
     el.style.height = 'auto';
     el.style.minHeight = '120%';
     el.style.objectFit = 'cover';
 }
 
-// OPEN/CLOSE DROPDOWN  ← FIX
+// OPEN/CLOSE DROPDOWN
 selectedDisplay.onclick = () => {
     optionsList.style.display =
-        optionsList.style.display === "none" ? "block" : "none";
+        optionsList.style.display === 'none' ? 'block' : 'none';
 };
 
-const dbRequest = indexedDB.open("CastAnalyzerDB", 2);
+const dbRequest = indexedDB.open('CastAnalyzerDB', 2);
 
 dbRequest.onupgradeneeded = (e) => {
     const db = e.target.result;
 
-    if (!db.objectStoreNames.contains("sessions")) {
-        db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
+    if (!db.objectStoreNames.contains('sessions')) {
+        db.createObjectStore('sessions', { keyPath: 'id', autoIncrement: true });
     } else {
-        const store = e.target.transaction.objectStore("sessions");
+        const store = e.target.transaction.objectStore('sessions');
 
-        // MIGRATIE: oude sessies met "name" → omzetten naar baseName + status
         store.openCursor().onsuccess = (ev) => {
             const cursor = ev.target.result;
             if (!cursor) return;
@@ -345,7 +339,7 @@ dbRequest.onupgradeneeded = (e) => {
 
             if (v.name && !v.baseName) {
                 const clean = stripSuffix(v.name);
-                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : "s";
+                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : 's';
 
                 v.baseName = clean;
                 v.status = status;
@@ -370,11 +364,11 @@ dbRequest.onsuccess = (e) => {
    ============================================================ */
 
 function loadArchiveList() {
-    const list = document.getElementById("optionsList");
-    list.innerHTML = "";
+    const list = document.getElementById('optionsList');
+    list.innerHTML = '';
 
-    const tx = db.transaction("sessions", "readonly");
-    const store = tx.objectStore("sessions");
+    const tx = db.transaction('sessions', 'readonly');
+    const store = tx.objectStore('sessions');
 
     const sessions = [];
 
@@ -384,26 +378,25 @@ function loadArchiveList() {
             sessions.push(cursor.value);
             cursor.continue();
         } else {
-            // Sorteer op datum (nieuwste boven)
             sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             sessions.forEach(s => {
                 const fullName = applySuffix(s.baseName, s.status);
 
-                const item = document.createElement("div");
-                item.style.padding = "12px 10px";
-                item.style.borderBottom = "1px solid #eee";
-                item.style.fontSize = "16px";
-                item.style.whiteSpace = "nowrap";
-                item.style.overflow = "hidden";
-                item.style.textOverflow = "ellipsis";
-                item.style.textAlign = "left";   // ← FIX: links uitlijnen
+                const item = document.createElement('div');
+                item.style.padding = '12px 10px';
+                item.style.borderBottom = '1px solid #eee';
+                item.style.fontSize = '16px';
+                item.style.whiteSpace = 'nowrap';
+                item.style.overflow = 'hidden';
+                item.style.textOverflow = 'ellipsis';
+                item.style.textAlign = 'left';
 
                 item.textContent = fullName;
 
                 item.onclick = () => {
                     selectSession(s.id, s.baseName, s.status);
-                    list.style.display = "none";
+                    list.style.display = 'none';
                 };
 
                 list.appendChild(item);
@@ -421,23 +414,31 @@ function selectSession(id, baseName, status) {
     const fullName = applySuffix(baseName, status);
 
     elRecStatus.textContent =
-        (status === "i") ? "Imported" :
-        (status === "e") ? "Exported" :
-        (status === "s") ? "Saved" :
-        "Stopped";
+        (status === 'i') ? 'Imported' :
+        (status === 'e') ? 'Exported' :
+        (status === 's') ? 'Saved' :
+        'Stopped';
 
     selectedDisplay.textContent = fullName;
     selectedDisplay.dataset.id = id;
     
-    // Dropdown altijd sluiten na selectie
-    optionsList.style.display = "none";
+    optionsList.style.display = 'none';
 
-    const tx = db.transaction("sessions", "readonly");
-    tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+    const tx = db.transaction('sessions', 'readonly');
+    tx.objectStore('sessions').get(Number(id)).onsuccess = (e) => {
         const s = e.target.result;
         if (!s) return;
 
-        data = s.sensorData;
+        data = s.sensorData || [];
+
+        // Zorg dat elke sample een tijdstempel heeft (fallback voor oude sessies)
+        if (data.length > 0 && typeof data[0].t !== 'number') {
+            const dt = 0.02; // 50 Hz → 20ms
+            data.forEach((d, i) => {
+                d.t = i * dt;
+            });
+        }
+
         currentVideoBlob = s.videoBlob;
 
         elBack.src = URL.createObjectURL(currentVideoBlob);
@@ -446,10 +447,10 @@ function selectSession(id, baseName, status) {
         elBack.currentTime = 0;
         elBack.pause();
 
-        setAxis(s.axis || "x");
+        setAxis(s.axis || 'x');
 
-        elLive.style.display = "none";
-        elBack.style.display = "block";
+        elLive.style.display = 'none';
+        elBack.style.display = 'block';
         slider.disabled = false;
 
         updateUI();
@@ -470,36 +471,28 @@ document.getElementById('btnDel').onclick = () => {
     tx.objectStore('sessions').delete(Number(id));
 
     tx.oncomplete = () => {
-        // --- UI SELECTIE RESET ---
         selectedDisplay.textContent = '-- Worp Selecteren --';
         delete selectedDisplay.dataset.id;
 
-        // --- VIDEO RESET ---
         const v = elBack;
         v.pause();
         v.removeAttribute('src');
         v.src = '';
-        v.load(); // metadata + duration + currentTime reset
+        v.load();
 
-        // --- TIJD + SLIDER + PLAYBUTTON RESET ---
         timeLabel.textContent = '0.00s / 0.00s';
         slider.value = 0;
         slider.disabled = true;
         playPauseBtn.textContent = '▶︎';
 
-        // --- VIDEO ZICHTBAARHEID ---
         elBack.style.display = 'none';
         elLive.style.display = 'block';
 
-        // --- DATA RESET ---
         data = [];
         chunks = [];
         elCount.textContent = '0';
 
-        // --- GRAFIEKEN RESET ---
         clearGraphs();
-
-        // --- ARCHIEFLIJST OPNIEUW LADEN ---
         loadArchiveList();
     };
 };
@@ -511,26 +504,26 @@ document.getElementById('btnDel').onclick = () => {
 document.getElementById('btnSave').onclick = () => {
     const nu = new Date();
     const datumString =
-        nu.getFullYear() + "-" +
-        String(nu.getMonth() + 1).padStart(2, '0') + "-" +
-        String(nu.getDate()).padStart(2, '0') + " " +
-        String(nu.getHours()).padStart(2, '0') + ":" +
+        nu.getFullYear() + '-' +
+        String(nu.getMonth() + 1).padStart(2, '0') + '-' +
+        String(nu.getDate()).padStart(2, '0') + ' ' +
+        String(nu.getHours()).padStart(2, '0') + ':' +
         String(nu.getMinutes()).padStart(2, '0');
 
-    const inputNaam = prompt("Naam van de worp:", "Worp");
+    const inputNaam = prompt('Naam van de worp:', 'Worp');
     if (!inputNaam) return;
 
     const baseName = `${datumString} - ${stripSuffix(inputNaam)}`;
-    const status = "s";
+    const status = 's';
 
-    const tx = db.transaction("sessions", "readwrite");
-    const store = tx.objectStore("sessions");
+    const tx = db.transaction('sessions', 'readwrite');
+    const store = tx.objectStore('sessions');
 
     const addReq = store.add({
         baseName,
         status,
         sensorData: data,
-        videoBlob: new Blob(chunks, { type: "video/mp4" }),
+        videoBlob: new Blob(chunks, { type: 'video/mp4' }),
         axis,
         date: nu.toISOString()
     });
@@ -538,13 +531,12 @@ document.getElementById('btnSave').onclick = () => {
     addReq.onsuccess = () => {
         const newId = addReq.result;
 
-        // DIRECT selecteren → FIX voor export-probleem
         selectSession(newId, baseName, status);
 
-        elRecStatus.textContent = "Saved";
+        elRecStatus.textContent = 'Saved';
 
         loadArchiveList();
-        showMessage("Opgeslagen.");
+        showMessage('Opgeslagen.');
     };
 };
 
@@ -554,10 +546,10 @@ document.getElementById('btnSave').onclick = () => {
    ============================================================ */
 
 function clearGraphs() {
-    const ids = ["cAcc", "cGyro"];
+    const ids = ['cAcc', 'cGyro'];
     ids.forEach(id => {
         const c = document.getElementById(id);
-        const ctx = c.getContext("2d");
+        const ctx = c.getContext('2d');
         ctx.clearRect(0, 0, c.width, c.height);
     });
 }
@@ -571,9 +563,8 @@ let char, stream, recorder;
 
 document.getElementById('btnConnect').onclick = async () => {
     try {
-        // 1. BLE CONNECTIE (originele, werkende flow)
         const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: "Cast-Analyzer" }],
+            filters: [{ name: 'Cast-Analyzer' }],
             optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
         });
 
@@ -581,31 +572,32 @@ document.getElementById('btnConnect').onclick = async () => {
         const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
         char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
 
-        // 2. CAMERA OPENEN (pas NA BLE)
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
+            video: { facingMode: 'environment' },
             audio: false
         });
 
-        // 3. VIDEO KOPPELEN MAAR NOG NIET TONEN
-        elLive.style.display = "none";
+        elLive.style.display = 'none';
         elLive.srcObject = stream;
 
-        // 4. BLUEFY FIX: pas tonen als metadata geladen is
         elLive.onloadedmetadata = () => {
-        centerVideo(elLive);
+            centerVideo(elLive);
             elLive.play();
-            elLive.style.display = "block";
+            elLive.style.display = 'block';
         };
 
-
-        // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
+
+            const now = performance.now();
+            if (startTime === null) startTime = now;
+            const t = (now - startTime) / 1000; // seconden sinds start recording
+
             data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
+                t,
+                ax: v.getInt16(0, true) / 100,
+                ay: v.getInt16(2, true) / 100,
+                az: v.getInt16(4, true) / 100,
                 gx: v.getInt16(6, true),
                 gy: v.getInt16(8, true),
                 gz: v.getInt16(10, true)
@@ -613,7 +605,6 @@ document.getElementById('btnConnect').onclick = async () => {
             elCount.innerText = data.length;
         });
 
-        // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnStart').disabled = false;
 
@@ -630,10 +621,11 @@ document.getElementById('btnConnect').onclick = async () => {
 document.getElementById('btnStart').onclick = async () => {
     data = [];
     chunks = [];
-    elCount.innerText = "0";
+    startTime = null;
+    elCount.innerText = '0';
     slider.disabled = true;
 
-    elRecStatus.textContent = "Recording";
+    elRecStatus.textContent = 'Recording';
 
     await char.startNotifications();
 
@@ -641,17 +633,16 @@ document.getElementById('btnStart').onclick = async () => {
     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
     recorder.onstop = () => {
-        elLive.style.display = "none";
-        elBack.style.display = "block";
+        elLive.style.display = 'none';
+        elBack.style.display = 'block';
 
-        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        currentVideoBlob = new Blob(chunks, { type: 'video/mp4' });
         elBack.src = URL.createObjectURL(currentVideoBlob);
         centerVideo(elBack);
 
         document.getElementById('btnSave').disabled = false;
         slider.disabled = false;
 
-        // Na opname automatisch Y-as tonen
         setAxis('y');
 
         setTimeout(updateUI, 1000);
@@ -659,8 +650,8 @@ document.getElementById('btnStart').onclick = async () => {
 
     recorder.start();
 
-    elBack.style.display = "none";
-    elLive.style.display = "block";
+    elBack.style.display = 'none';
+    elLive.style.display = 'block';
 
     document.getElementById('btnStart').disabled = true;
     document.getElementById('btnStop').disabled = false;
@@ -676,7 +667,7 @@ document.getElementById('btnStop').onclick = async () => {
 
     recorder.stop();
 
-    elRecStatus.textContent = "Stopped";
+    elRecStatus.textContent = 'Stopped';
 
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnStart').disabled = false;
@@ -690,41 +681,34 @@ document.getElementById('btnStop').onclick = async () => {
 document.getElementById('btnReset').onclick = async () => {
 
     try { if (char) await char.stopNotifications(); } catch (e) {}
-    try { if (recorder && recorder.state !== "inactive") recorder.stop(); } catch (e) {}
+    try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
 
-    // Video terug naar live
     elBack.pause();
-    elBack.src = "";
-    elBack.removeAttribute("src");   // ← BELANGRIJK
-    elBack.load();                   // ← BELANGRIJK
-    elBack.style.display = "none";
-    elLive.style.display = "block";
+    elBack.src = '';
+    elBack.removeAttribute('src');
+    elBack.load();
+    elBack.style.display = 'none';
+    elLive.style.display = 'block';
 
-    // Tijdlabel resetten
-    timeLabel.textContent = "0.00s / 0.00s";
+    timeLabel.textContent = '0.00s / 0.00s';
 
-    // Status terug naar beginstand
-    elRecStatus.textContent = "Idle";
+    elRecStatus.textContent = 'Idle';
 
-    // Data leegmaken
     data = [];
     chunks = [];
-    elCount.innerText = "0";
+    startTime = null;
+    elCount.innerText = '0';
 
-    // Sessie deselecteren
-    selectedDisplay.textContent = "-- Worp Selecteren --";
-    selectedDisplay.dataset.id = "";
+    selectedDisplay.textContent = '-- Worp Selecteren --';
+    selectedDisplay.dataset.id = '';
 
-    // Slider resetten
     slider.value = 0;
     slider.disabled = true;
 
-    // Knoppen terug naar begin
     document.getElementById('btnStart').disabled = false;
     document.getElementById('btnStop').disabled = true;
     document.getElementById('btnSave').disabled = true;
 
-    // Grafieken leegmaken
     clearGraphs();
 };
 
@@ -757,27 +741,28 @@ slider.oninput = () => {
 };
 
 elBack.ontimeupdate = () => {
-    if (!recorder || recorder.state !== "recording") {
+    if (!recorder || recorder.state !== 'recording') {
         slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
         updateUI();
     }
 };
 
 elBack.onended = () => {
-    playPauseBtn.textContent = "▶︎";
+    playPauseBtn.textContent = '▶︎';
 };
 
 function updateUI() {
     if (elBack.duration > 0) {
         timeLabel.innerText =
-            elBack.currentTime.toFixed(2) + "s / " +
-            elBack.duration.toFixed(2) + "s";
+            elBack.currentTime.toFixed(2) + 's / ' +
+            elBack.duration.toFixed(2) + 's';
     }
 
     draw();
 
     slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
+
 
 /* ============================================================
    SCHAALBEREKENING
@@ -789,7 +774,7 @@ function computeScale(points, type) {
 
     const isGyro = maxAbs > 20;
 
-    if (type === "xyz" && isGyro) {
+    if (type === 'xyz' && isGyro) {
         const nice = [50,100,200,500,1000];
         let max = nice.find(n => n >= maxPos) || 1000;
 
@@ -810,7 +795,7 @@ function computeScale(points, type) {
         };
     }
 
-    if (type === "xyz") {
+    if (type === 'xyz') {
         let max;
         if (maxPos <= 1) max = 1;
         else if (maxPos <= 2) max = 2;
@@ -844,10 +829,10 @@ function computeScale(points, type) {
 
 
 /* ============================================================
-   RENDER SINGLE GRAPH
+   RENDER SINGLE GRAPH — TIJDAS
    ============================================================ */
 
-function render(id, points, color, label, unit, progress, type) {
+function render(id, points, times, color, label, unit, progress, type) {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -858,33 +843,39 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.clearRect(0, 0, w, h);
 
+    if (!points || points.length < 2) return;
+
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === "xyz")
+    const scaleY = (type === 'xyz')
         ? gH / max
         : (gH / 2) / max;
 
-    ctx.fillStyle = "#fff";
-    ctx.font = (14 * dpr) + "px Arial";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
+    const tMin = times[0];
+    const tMax = times[times.length - 1] || (tMin + 0.0001);
+    const span = (tMax - tMin) || 0.0001;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = (14 * dpr) + 'px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
 
     labels.forEach(val => {
-        const y = (type === "xyz")
+        const y = (type === 'xyz')
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
         ctx.fillText(val, pL - 8 * dpr, y);
 
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
@@ -900,8 +891,8 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineWidth = 1.5 * dpr;
 
     points.forEach((p, i) => {
-        const x = pL + (i / (points.length - 1)) * gW;
-        const y = (type === "xyz")
+        const x = pL + ((times[i] - tMin) / span) * gW;
+        const y = (type === 'xyz')
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
 
@@ -912,24 +903,24 @@ function render(id, points, color, label, unit, progress, type) {
 
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = "#ff9500";
+        ctx.strokeStyle = '#ff9500';
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "left";
-    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(label + ' (' + unit + ')', pL + 10 * dpr, pT + 18 * dpr);
 }
 
 
 /* ============================================================
-   RENDER MULTI GRAPH
+   RENDER MULTI GRAPH — TIJDAS
    ============================================================ */
 
-function renderMulti(id, series, title, unit, progress, type = "multi") {
+function renderMulti(id, series, times, title, unit, progress, type = 'multi') {
     const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
@@ -940,34 +931,40 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
     ctx.clearRect(0, 0, w, h);
 
+    if (!series || series.length === 0 || !series[0].points || series[0].points.length < 2) return;
+
     const all = series.flatMap(s => s.points);
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === "xyz")
+    const scaleY = (type === 'xyz')
         ? gH / max
         : (gH / 2) / max;
 
-    ctx.fillStyle = "#fff";
-    ctx.font = (14 * dpr) + "px Arial";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
+    const tMin = times[0];
+    const tMax = times[times.length - 1] || (tMin + 0.0001);
+    const span = (tMax - tMin) || 0.0001;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = (14 * dpr) + 'px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
 
     labels.forEach(val => {
-        const y = (type === "xyz")
+        const y = (type === 'xyz')
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
         ctx.fillText(val, pL - 8 * dpr, y);
 
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
         ctx.beginPath();
         ctx.moveTo(pL, y);
         ctx.lineTo(w - pR, y);
         ctx.stroke();
     });
 
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
     ctx.moveTo(pL, pT);
     ctx.lineTo(pL, h - pB);
@@ -984,8 +981,8 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.lineWidth = 1.5 * dpr;
 
         s.points.forEach((p, i) => {
-            const x = pL + (i / (s.points.length - 1)) * gW;
-            const y = (type === "xyz")
+            const x = pL + ((times[i] - tMin) / span) * gW;
+            const y = (type === 'xyz')
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
 
@@ -997,18 +994,17 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
-        ctx.strokeStyle = "#ff9500";
+        ctx.strokeStyle = '#ff9500';
         ctx.beginPath();
         ctx.moveTo(cursorX, pT);
         ctx.lineTo(cursorX, h - pB);
         ctx.stroke();
     }
 
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "left";
-    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(title + ' (' + unit + ')', pL + 10 * dpr, pT + 18 * dpr);
 
-    // LEGEND
     let legendX = w - pR - 150 * dpr;
     let legendY = pT + 18 * dpr;
 
@@ -1019,10 +1015,10 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.fillStyle = s.color;
         ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
 
-        ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
+        ctx.fillStyle = '#fff';
+        ctx.font = (14 * dpr) + 'px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
         ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
         legendX += 70 * dpr;
@@ -1031,33 +1027,40 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
 
 /* ============================================================
-   DRAW
+   DRAW — TIJDAS + CURSOR OP TIJD
    ============================================================ */
 
 function draw() {
     if (data.length < 2) return;
 
-    const progress = (elBack.duration > 0)
-        ? elBack.currentTime / elBack.duration
+    const times = data.map((d, i) => (typeof d.t === 'number' ? d.t : i * 0.02));
+    const tMin = times[0];
+    const tMax = times[times.length - 1] || (tMin + 0.0001);
+    const span = (tMax - tMin) || 0.0001;
+
+    const progress = span > 0
+        ? Math.min(Math.max(elBack.currentTime / span, 0), 1)
         : 0;
 
     if (axis === 'xyz3') {
-        renderMulti("cAcc",
+        renderMulti('cAcc',
             [
-                { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
-                { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
-                { points: data.map(d => d.az), color: "#007aff", label: "Z" }
+                { points: data.map(d => d.ax), color: '#ff3b30', label: 'X' },
+                { points: data.map(d => d.ay), color: '#34c759', label: 'Y' },
+                { points: data.map(d => d.az), color: '#007aff', label: 'Z' }
             ],
-            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
+            times,
+            'Versnelling X‑Y‑Z', 'm/s²', progress, 'multi'
         );
 
-        renderMulti("cGyro",
+        renderMulti('cGyro',
             [
-                { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
-                { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
-                { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
+                { points: data.map(d => d.gx), color: '#ff3b30', label: 'X' },
+                { points: data.map(d => d.gy), color: '#34c759', label: 'Y' },
+                { points: data.map(d => d.gz), color: '#007aff', label: 'Z' }
             ],
-            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
+            times,
+            'Rotatie X‑Y‑Z', '°/s', progress, 'gyro'
         );
 
         return;
@@ -1068,23 +1071,21 @@ function draw() {
     if (axis === 'xyz') {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
-        labelSuffix = "Totaal";
+        labelSuffix = 'Totaal';
 
-        accType = "xyz";
-        gyroType = "xyz";
-    }
-
-    else {
+        accType = 'xyz';
+        gyroType = 'xyz';
+    } else {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
 
-        accType = "single";
-        gyroType = "gyro";
+        accType = 'single';
+        gyroType = 'gyro';
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+    render('cAcc', accPoints, times, '#00bfff', 'Versnelling ' + labelSuffix, 'm/s²', progress, accType);
+    render('cGyro', gyroPoints, times, '#ff4500', 'Rotatie ' + labelSuffix, '°/s', progress, gyroType);
 }
 
 
@@ -1092,16 +1093,16 @@ function draw() {
    PLAY / PAUSE
    ============================================================ */
 
-const playPauseBtn = document.getElementById("playPauseBtn");
-const speedButtons = document.querySelectorAll(".speedBtn");
+const playPauseBtn = document.getElementById('playPauseBtn');
+const speedButtons = document.querySelectorAll('.speedBtn');
 
-playPauseBtn.addEventListener("click", () => {
+playPauseBtn.addEventListener('click', () => {
     if (elBack.paused) {
         elBack.play();
-        playPauseBtn.textContent = "⏸";
+        playPauseBtn.textContent = '⏸';
     } else {
         elBack.pause();
-        playPauseBtn.textContent = "▶︎";
+        playPauseBtn.textContent = '▶︎';
     }
 });
 
@@ -1111,16 +1112,16 @@ playPauseBtn.addEventListener("click", () => {
    ============================================================ */
 
 speedButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener('click', () => {
         const speed = parseFloat(btn.dataset.speed);
         elBack.playbackRate = speed;
 
-        speedButtons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
+        speedButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
     });
 });
  
-document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+document.querySelector('.speedBtn[data-speed="1"]').classList.add('active');
 
 
 /* ============================================================
@@ -1128,36 +1129,33 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
    ============================================================ */
 
 window.onclick = (e) => {
-    // Niet sluiten wanneer je op de display klikt
     if (e.target === selectedDisplay) return;
-
-    // Niet sluiten wanneer je op een item in de lijst klikt
     if (e.target.closest('#optionsList')) return;
 
-    // Buiten dropdown → sluiten
     if (!e.target.closest('#customDropdown')) {
-        optionsList.style.display = "none";
+        optionsList.style.display = 'none';
     }
 };
 
+
 /* ============================================================
-   EXPORT — NIEUW (status = "e")
+   EXPORT — NIEUW (status = "e") — MET TIJDAS
    ============================================================ */
 
-document.getElementById("btnExport").onclick = async () => {
+document.getElementById('btnExport').onclick = async () => {
     if (!data || data.length === 0) {
-        showMessage("Geen data om te exporteren.");
+        showMessage('Geen data om te exporteren.');
         return;
     }
 
     const id = selectedDisplay.dataset.id;
     if (!id) {
-        showMessage("Geen sessie geselecteerd.");
+        showMessage('Geen sessie geselecteerd.');
         return;
     }
 
-    const tx = db.transaction("sessions", "readwrite");
-    const store = tx.objectStore("sessions");
+    const tx = db.transaction('sessions', 'readwrite');
+    const store = tx.objectStore('sessions');
 
     const req = store.get(Number(id));
 
@@ -1165,57 +1163,57 @@ document.getElementById("btnExport").onclick = async () => {
         const session = req.result;
         if (!session) return;
 
-        const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
+        const zipName = session.baseName.replace(/:/g, '-').replace(/\s+/g, '_') + '.zip';
 
         const zip = new JSZip();
 
-        // ACC CSV
-        let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d, i) => {
-            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
-        });
-        zip.file("acc.csv", accCSV);
+        const sensorData = session.sensorData || [];
+        const dtFallback = 0.02;
 
-        // GYRO CSV
-        let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d, i) => {
-            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        let accCSV = 't,ax,ay,az\n';
+        sensorData.forEach((d, i) => {
+            const t = (typeof d.t === 'number') ? d.t : i * dtFallback;
+            accCSV += `${t.toFixed(3)},${d.ax},${d.ay},${d.az}\n`;
         });
-        zip.file("gyro.csv", gyroCSV);
+        zip.file('acc.csv', accCSV);
 
-        // META
+        let gyroCSV = 't,gx,gy,gz\n';
+        sensorData.forEach((d, i) => {
+            const t = (typeof d.t === 'number') ? d.t : i * dtFallback;
+            gyroCSV += `${t.toFixed(3)},${d.gx},${d.gy},${d.gz}\n`;
+        });
+        zip.file('gyro.csv', gyroCSV);
+
         const meta = {
             name: session.baseName,
             axis: session.axis,
-            samples: session.sensorData.length,
+            samples: sensorData.length,
             date: session.date
         };
-        zip.file("meta.json", JSON.stringify(meta, null, 2));
+        zip.file('meta.json', JSON.stringify(meta, null, 2));
 
-        // VIDEO
-        zip.file("video.mp4", session.videoBlob);
+        zip.file('video.mp4', session.videoBlob);
 
-        const zipBlob = await zip.generateAsync({ type: "blob" });
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
 
         try {
-            const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
+            const zipFile = new File([zipBlob], zipName, { type: 'application/zip' });
 
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
             } else {
-                showMessage("Delen van bestanden wordt niet ondersteund in deze browser.");
+                showMessage('Delen van bestanden wordt niet ondersteund in deze browser.');
             }
-            // Pas NA het delen → correcte timing in Bluefy/iOS
-            elRecStatus.textContent = "Exported";
-            showMessage("Geëxporteerd.");
+
+            elRecStatus.textContent = 'Exported';
+            showMessage('Geëxporteerd.');
 
         } catch (err) {
-            console.error("Fout bij delen:", err);
-            showMessage("Er ging iets mis bij het delen van de ZIP.");
+            console.error('Fout bij delen:', err);
+            showMessage('Er ging iets mis bij het delen van de ZIP.');
         }
 
-        // STATUS → "e"
-        session.status = "e";
+        session.status = 'e';
         store.put(session);
     };
 
@@ -1224,12 +1222,13 @@ document.getElementById("btnExport").onclick = async () => {
     };
 };
 
+
 /* ============================================================
-   IMPORT — NIEUW (status = "i")
+   IMPORT — NIEUW (status = "i") — LEEST TIJDAS
    ============================================================ */
 
-const fileInput = document.getElementById("fileImport");
-const btnImport = document.getElementById("btnImport");
+const fileInput = document.getElementById('fileImport');
+const btnImport = document.getElementById('btnImport');
 
 btnImport.onclick = () => fileInput.click();
 
@@ -1237,13 +1236,13 @@ fileInput.onchange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".zip")) {
-        showMessage("Kies een ZIP-bestand van een Cast Analyzer sessie.");
+    if (!file.name.endsWith('.zip')) {
+        showMessage('Kies een ZIP-bestand van een Cast Analyzer sessie.');
         return;
     }
 
     await importSessionFromZip(file);
-    fileInput.value = "";
+    fileInput.value = '';
 };
 
 async function importSessionFromZip(file) {
@@ -1251,26 +1250,26 @@ async function importSessionFromZip(file) {
     const jszip = new JSZip();
     const zip = await jszip.loadAsync(file);
 
-    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    const required = ['acc.csv', 'gyro.csv', 'meta.json', 'video.mp4'];
     for (const f of required) {
         if (!zip.file(f)) {
-            showMessage("ZIP mist bestand: " + f);
+            showMessage('ZIP mist bestand: ' + f);
             return;
         }
     }
 
-    const accText   = await zip.file("acc.csv").async("string");
-    const gyroText  = await zip.file("gyro.csv").async("string");
-    const metaText  = await zip.file("meta.json").async("string");
-    const videoBlob = await zip.file("video.mp4").async("blob");
+    const accText   = await zip.file('acc.csv').async('string');
+    const gyroText  = await zip.file('gyro.csv').async('string');
+    const metaText  = await zip.file('meta.json').async('string');
+    const videoBlob = await zip.file('video.mp4').async('blob');
 
     const meta = JSON.parse(metaText);
 
     function parseCSV(text) {
-        const lines   = text.trim().split("\n");
-        const headers = lines[0].split(",");
+        const lines   = text.trim().split('\n');
+        const headers = lines[0].split(',');
         return lines.slice(1).map(line => {
-            const values = line.split(",");
+            const values = line.split(',');
             const obj = {};
             headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
             return obj;
@@ -1281,6 +1280,7 @@ async function importSessionFromZip(file) {
     const gyroData = parseCSV(gyroText);
 
     const combined = accData.map((d, i) => ({
+        t: (typeof d.t === 'number' && !Number.isNaN(d.t)) ? d.t : i * 0.02,
         ax: d.ax,
         ay: d.ay,
         az: d.az,
@@ -1289,14 +1289,11 @@ async function importSessionFromZip(file) {
         gz: gyroData[i].gz
     }));
 
-    const baseName = stripSuffix(meta.name || "Imported Session");
-    const status   = "i";
+    const baseName = stripSuffix(meta.name || 'Imported Session');
+    const status   = 'i';
 
-    // ---------------------------------------------------------
-    // 1) CHECK OF SESSIE AL BESTAAT  (ANTI-DUPLICAAT)
-    // ---------------------------------------------------------
-    const txCheck = db.transaction("sessions", "readonly");
-    const storeCheck = txCheck.objectStore("sessions");
+    const txCheck = db.transaction('sessions', 'readonly');
+    const storeCheck = txCheck.objectStore('sessions');
     const getAllReq = storeCheck.getAll();
 
     getAllReq.onsuccess = () => {
@@ -1305,28 +1302,23 @@ async function importSessionFromZip(file) {
         const exists = all.some(s => s.baseName === baseName);
 
         if (exists) {
-            showMessage("Sessie bestaat al.\nImport gestopt.");
-            return; // STOP → NIET importeren
+            showMessage('Sessie bestaat al.\nImport gestopt.');
+            return;
         }
-
-        // ---------------------------------------------------------
-        // 2) SESSIE BESTAAT NIET → NORMALE IMPORT
-        // ---------------------------------------------------------
 
         const session = {
             baseName,
             status,
             sensorData: combined,
-            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
-            axis: meta.axis || "x",
+            videoBlob: new Blob([videoBlob], { type: 'video/mp4' }),
+            axis: meta.axis || 'x',
             date: meta.date || new Date().toISOString()
         };
 
-        // Axis direct instellen in UI
-        setAxis(session.axis || "x");
+        setAxis(session.axis || 'x');
 
-        const tx = db.transaction("sessions", "readwrite");
-        const store = tx.objectStore("sessions");
+        const tx = db.transaction('sessions', 'readwrite');
+        const store = tx.objectStore('sessions');
         const addReq = store.add(session);
 
         addReq.onsuccess = () => {
@@ -1335,16 +1327,16 @@ async function importSessionFromZip(file) {
             loadArchiveList();
             selectSession(newId, baseName, status);
 
-            elRecStatus.textContent = "Imported";
+            elRecStatus.textContent = 'Imported';
         };
 
         addReq.onerror = () => {
-            showMessage("Kon sessie niet opslaan in IndexedDB.");
+            showMessage('Kon sessie niet opslaan in IndexedDB.');
         };
     };
 
     getAllReq.onerror = () => {
-        showMessage("Kon sessies niet controleren in IndexedDB.");
+        showMessage('Kon sessies niet controleren in IndexedDB.');
     };
 }
 
@@ -1352,10 +1344,8 @@ function showMessage(text) {
     const box = document.getElementById('msgBox');
     box.textContent = text;
 
-    // direct zichtbaar
     box.style.opacity = '1';
 
-    // na 2 seconden direct weg
     setTimeout(() => {
         box.style.opacity = '0';
     }, 2000);
@@ -1363,11 +1353,9 @@ function showMessage(text) {
 
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-        // Forceer fullscreen redraw
         document.documentElement.style.height = '100%';
         document.body.style.height = '100%';
 
-        // Forceer reflow
         setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
         }, 50);
@@ -1379,4 +1367,4 @@ document.addEventListener('visibilitychange', () => {
 <div id="msgBox"></div>
     
 </body>
-</html> 
+</html>
