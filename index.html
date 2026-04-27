@@ -822,3 +822,247 @@ elBack.onloadedmetadata = () => {
 
     updateGraphs(0);
 };
+
+/* ============================================================
+   AXIS SWITCHER
+   ============================================================ */
+
+function setAxis(a) {
+    axis = a;
+
+    // UI update
+    document.querySelectorAll(".axisBtn").forEach(btn => btn.classList.remove("active"));
+    document.getElementById("b" + a.toUpperCase()).classList.add("active");
+
+    // Grafieken opnieuw tekenen
+    updateGraphs(slider.value / 1000);
+}
+
+/* ============================================================
+   DROPDOWN ENGINE — SESSIE SELECTIE
+   ============================================================ */
+
+function stripSuffix(name) {
+    return name.replace(/\s*\(i\)$|\s*\(r\)$/i, "");
+}
+
+/* ------------------------------------------------------------
+   DROPDOWN OPENEN / SLUITEN
+   ------------------------------------------------------------ */
+
+selectedDisplay.onclick = () => {
+    if (optionsList.style.display === "none") {
+        optionsList.style.display = "block";
+    } else {
+        optionsList.style.display = "none";
+    }
+};
+
+/* ------------------------------------------------------------
+   DROPDOWN OPTIES VULLEN
+   ------------------------------------------------------------ */
+
+function populateDropdown(sessions) {
+    optionsList.innerHTML = "";
+
+    sessions.forEach(sess => {
+        const div = document.createElement("div");
+        div.textContent = sess.baseName + " (" + sess.status + ")";
+        div.style.padding = "10px";
+        div.style.borderBottom = "1px solid #eee";
+        div.style.cursor = "pointer";
+
+        div.onclick = () => {
+            selectSession(sess.id, sess.baseName, sess.status);
+            optionsList.style.display = "none";
+        };
+
+        optionsList.appendChild(div);
+    });
+}
+
+/* ------------------------------------------------------------
+   SESSIE LADEN UIT INDEXEDDB
+   ------------------------------------------------------------ */
+
+async function selectSession(id, baseName, status) {
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+    const req = store.get(id);
+
+    req.onsuccess = () => {
+        const sess = req.result;
+        if (!sess) return;
+
+        selectedDisplay.textContent = baseName + " (" + status + ")";
+
+        // Data laden
+        data = sess.sensorData;
+        elCount.innerText = data.length;
+
+        // Video laden
+        currentVideoBlob = sess.videoBlob;
+        elBack.src = URL.createObjectURL(sess.videoBlob);
+
+        elBack.onloadedmetadata = () => {
+            centerVideo(elBack);
+            computeTimeRange();
+            slider.disabled = false;
+            slider.value = 0;
+            timeLabel.textContent = "0.00s / " + durationSensor.toFixed(2) + "s";
+            updateGraphs(0);
+        };
+
+        axis = sess.axis || "x";
+        document.querySelectorAll(".axisBtn").forEach(btn => btn.classList.remove("active"));
+        document.getElementById("b" + axis.toUpperCase()).classList.add("active");
+    };
+}
+
+/* ------------------------------------------------------------
+   DROPDOWN VERVERSEN
+   ------------------------------------------------------------ */
+
+function loadArchiveList() {
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+        const sessions = req.result || [];
+
+        // Sorteer op datum (nieuwste bovenaan)
+        sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        populateDropdown(sessions);
+    };
+}
+
+/* ============================================================
+   INDEXEDDB — DATABASE & OBJECTSTORE
+   ============================================================ */
+
+let db;
+
+(function initDB() {
+    const req = indexedDB.open("castAnalyzerDB", 1);
+
+    req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("sessions")) {
+            const store = db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
+            store.createIndex("date", "date", { unique: false });
+        }
+    };
+
+    req.onsuccess = (e) => {
+        db = e.target.result;
+        loadArchiveList();
+    };
+
+    req.onerror = () => {
+        alert("Kon IndexedDB niet openen.");
+    };
+})();
+
+
+/* ============================================================
+   SESSIE OPSLAAN
+   ============================================================ */
+
+document.getElementById("btnSave").onclick = () => {
+    if (!data || data.length === 0 || !currentVideoBlob) {
+        alert("Geen data of video om op te slaan.");
+        return;
+    }
+
+    const baseName = prompt("Naam voor deze worp:", "Nieuwe worp");
+    if (!baseName) return;
+
+    const status = "r"; // recorded
+
+    const session = {
+        baseName: stripSuffix(baseName),
+        status,
+        sensorData: data,
+        videoBlob: currentVideoBlob,
+        axis: axis || "x",
+        date: new Date().toISOString()
+    };
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add(session);
+
+    addReq.onsuccess = () => {
+        loadArchiveList();
+        elRecStatus.textContent = "Saved";
+    };
+
+    addReq.onerror = () => {
+        alert("Kon sessie niet opslaan in IndexedDB.");
+    };
+};
+
+
+/* ============================================================
+   SESSIE VERWIJDEREN
+   ============================================================ */
+
+document.getElementById("btnDel").onclick = () => {
+    const label = selectedDisplay.textContent.trim();
+    if (!label || label === "-- Worp Selecteren --") {
+        alert("Geen sessie geselecteerd.");
+        return;
+    }
+
+    const base = stripSuffix(label.replace(/\s*\(.\)$/, ""));
+    const confirmDel = confirm(`Verwijder sessie: "${base}"?`);
+    if (!confirmDel) return;
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+        const sessions = req.result || [];
+        const match = sessions.find(s => stripSuffix(s.baseName) === base);
+
+        if (!match) {
+            alert("Sessie niet gevonden.");
+            return;
+        }
+
+        const delReq = store.delete(match.id);
+        delReq.onsuccess = () => {
+            selectedDisplay.textContent = "-- Worp Selecteren --";
+            data = [];
+            currentVideoBlob = null;
+            elBack.src = "";
+            elCount.innerText = "0";
+            timeLabel.textContent = "0.00s / 0.00s";
+            slider.value = 0;
+            slider.disabled = true;
+            updateGraphs(0);
+            loadArchiveList();
+        };
+    };
+};
+
+
+/* ============================================================
+   INITIELE UI-STATUS
+   ============================================================ */
+
+window.addEventListener("load", () => {
+    document.getElementById("playPauseBtn").textContent = "▶︎";
+    document.querySelectorAll(".speedBtn").forEach(b => b.classList.remove("active"));
+    document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+    slider.disabled = true;
+    slider.value = 0;
+    timeLabel.textContent = "0.00s / 0.00s";
+});
+</script>
+</body>
+</html>
