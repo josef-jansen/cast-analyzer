@@ -340,8 +340,8 @@ document.getElementById("btnStart").onclick = async () => {
         elBack.src = URL.createObjectURL(currentVideoBlob);
         elBack.onloadedmetadata = () => {
             centerVideo(elBack);
+        };
     };
-};
 
     recorder.start();
 
@@ -349,7 +349,6 @@ document.getElementById("btnStart").onclick = async () => {
     document.getElementById("btnStop").disabled = false;
     document.getElementById("btnSave").disabled = true;
 };
-
 
 /* ============================================================
    RECORDING STOPPEN
