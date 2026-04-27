@@ -114,7 +114,7 @@
 
         #btnDel {
             background: #ff3b30;
-            height: 44px;
+            height: 36px;
             line-height: 36px;
             padding: 0 14px;
             border-radius: 8px;
@@ -162,34 +162,6 @@
             object-fit: cover;     /* vult zonder zwarte balken */
         }
 
-        #msgBox {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            min-width: 260px;
-            max-width: 80%;
-            padding: 24px 28px;
-            background: #ffffff;          /* WIT */
-            color: #000000;               /* ZWARTE TEKST */
-            font-size: 20px;              /* GROTER EN LEESBAAR */
-            text-align: center;
-            border-radius: 12px;
-            border: 2px solid #00000022;  /* subtiel randje */
-            opacity: 0;
-            pointer-events: none;
-            transition: none;             /* geen fade */
-            white-space: pre-line;
-            z-index: 9999;
-        }
-
-        html, body {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        
 </style>
 </head>
 
@@ -428,9 +400,6 @@ function selectSession(id, baseName, status) {
 
     selectedDisplay.textContent = fullName;
     selectedDisplay.dataset.id = id;
-    
-    // Dropdown altijd sluiten na selectie
-    optionsList.style.display = "none";
 
     const tx = db.transaction("sessions", "readonly");
     tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
@@ -461,48 +430,31 @@ function selectSession(id, baseName, status) {
    DELETE SESSION — NIEUW
    ============================================================ */
 
-document.getElementById('btnDel').onclick = () => {
+document.getElementById("btnDel").onclick = () => {
     const id = selectedDisplay.dataset.id;
     if (!id) return;
-    if (!confirm('Verwijderen?')) return;
+    if (!confirm("Verwijderen?")) return;
 
-    const tx = db.transaction('sessions', 'readwrite');
-    tx.objectStore('sessions').delete(Number(id));
+    const tx = db.transaction("sessions", "readwrite");
+    tx.objectStore("sessions").delete(Number(id));
 
     tx.oncomplete = () => {
-        // --- UI SELECTIE RESET ---
-        selectedDisplay.textContent = '-- Worp Selecteren --';
+        selectedDisplay.textContent = "-- Worp Selecteren --";
         delete selectedDisplay.dataset.id;
 
-        // --- VIDEO RESET ---
-        const v = elBack;
-        v.pause();
-        v.removeAttribute('src');
-        v.src = '';
-        v.load(); // metadata + duration + currentTime reset
+        elBack.src = "";
+        elBack.style.display = "none";
+        elLive.style.display = "block";
 
-        // --- TIJD + SLIDER + PLAYBUTTON RESET ---
-        timeLabel.textContent = '0.00s / 0.00s';
-        slider.value = 0;
-        slider.disabled = true;
-        playPauseBtn.textContent = '▶︎';
-
-        // --- VIDEO ZICHTBAARHEID ---
-        elBack.style.display = 'none';
-        elLive.style.display = 'block';
-
-        // --- DATA RESET ---
         data = [];
         chunks = [];
-        elCount.textContent = '0';
+        elCount.textContent = "0";
 
-        // --- GRAFIEKEN RESET ---
         clearGraphs();
-
-        // --- ARCHIEFLIJST OPNIEUW LADEN ---
         loadArchiveList();
     };
 };
+
 
 /* ============================================================
    SAVE — NIEUW (status = "s")
@@ -544,7 +496,7 @@ document.getElementById('btnSave').onclick = () => {
         elRecStatus.textContent = "Saved";
 
         loadArchiveList();
-        showMessage("Opgeslagen.");
+        alert("Opgeslagen!");
     };
 };
 
@@ -712,7 +664,7 @@ document.getElementById('btnReset').onclick = async () => {
     elCount.innerText = "0";
 
     // Sessie deselecteren
-    selectedDisplay.textContent = "-- Worp Selecteren --";
+    selectedDisplay.textContent = "";
     selectedDisplay.dataset.id = "";
 
     // Slider resetten
@@ -1119,7 +1071,13 @@ speedButtons.forEach(btn => {
         btn.classList.add("active");
     });
 });
- 
+
+// OPEN/CLOSE DROPDOWN  ← FIX
+selectedDisplay.onclick = () => {
+    optionsList.style.display =
+        optionsList.style.display === "none" ? "block" : "none";
+};
+    
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
 
@@ -1128,15 +1086,8 @@ document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
    ============================================================ */
 
 window.onclick = (e) => {
-    // Niet sluiten wanneer je op de display klikt
-    if (e.target === selectedDisplay) return;
-
-    // Niet sluiten wanneer je op een item in de lijst klikt
-    if (e.target.closest('#optionsList')) return;
-
-    // Buiten dropdown → sluiten
     if (!e.target.closest('#customDropdown')) {
-        optionsList.style.display = "none";
+        document.getElementById("optionsList").style.display = "none";
     }
 };
 
@@ -1146,13 +1097,13 @@ window.onclick = (e) => {
 
 document.getElementById("btnExport").onclick = async () => {
     if (!data || data.length === 0) {
-        showMessage("Geen data om te exporteren.");
+        alert("Geen data om te exporteren.");
         return;
     }
 
     const id = selectedDisplay.dataset.id;
     if (!id) {
-        showMessage("Geen sessie geselecteerd.");
+        alert("Geen sessie geselecteerd.");
         return;
     }
 
@@ -1203,15 +1154,15 @@ document.getElementById("btnExport").onclick = async () => {
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
             } else {
-                showMessage("Delen van bestanden wordt niet ondersteund in deze browser.");
+                alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
             // Pas NA het delen → correcte timing in Bluefy/iOS
             elRecStatus.textContent = "Exported";
-            showMessage("Geëxporteerd.");
+            alert("Geëxporteerd!");
 
         } catch (err) {
             console.error("Fout bij delen:", err);
-            showMessage("Er ging iets mis bij het delen van de ZIP.");
+            alert("Er ging iets mis bij het delen van de ZIP.");
         }
 
         // STATUS → "e"
@@ -1238,7 +1189,7 @@ fileInput.onchange = async (event) => {
     if (!file) return;
 
     if (!file.name.endsWith(".zip")) {
-        showMessage("Kies een ZIP-bestand van een Cast Analyzer sessie.");
+        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
         return;
     }
 
@@ -1254,20 +1205,20 @@ async function importSessionFromZip(file) {
     const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
     for (const f of required) {
         if (!zip.file(f)) {
-            showMessage("ZIP mist bestand: " + f);
+            alert("ZIP mist bestand: " + f);
             return;
         }
     }
 
-    const accText   = await zip.file("acc.csv").async("string");
-    const gyroText  = await zip.file("gyro.csv").async("string");
-    const metaText  = await zip.file("meta.json").async("string");
+    const accText = await zip.file("acc.csv").async("string");
+    const gyroText = await zip.file("gyro.csv").async("string");
+    const metaText = await zip.file("meta.json").async("string");
     const videoBlob = await zip.file("video.mp4").async("blob");
 
     const meta = JSON.parse(metaText);
 
     function parseCSV(text) {
-        const lines   = text.trim().split("\n");
+        const lines = text.trim().split("\n");
         const headers = lines[0].split(",");
         return lines.slice(1).map(line => {
             const values = line.split(",");
@@ -1277,7 +1228,7 @@ async function importSessionFromZip(file) {
         });
     }
 
-    const accData  = parseCSV(accText);
+    const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
     const combined = accData.map((d, i) => ({
@@ -1290,93 +1241,38 @@ async function importSessionFromZip(file) {
     }));
 
     const baseName = stripSuffix(meta.name || "Imported Session");
-    const status   = "i";
+    const status = "i";
 
-    // ---------------------------------------------------------
-    // 1) CHECK OF SESSIE AL BESTAAT  (ANTI-DUPLICAAT)
-    // ---------------------------------------------------------
-    const txCheck = db.transaction("sessions", "readonly");
-    const storeCheck = txCheck.objectStore("sessions");
-    const getAllReq = storeCheck.getAll();
-
-    getAllReq.onsuccess = () => {
-        const all = getAllReq.result;
-
-        const exists = all.some(s => s.baseName === baseName);
-
-        if (exists) {
-            showMessage("Sessie bestaat al.\nImport gestopt.");
-            return; // STOP → NIET importeren
-        }
-
-        // ---------------------------------------------------------
-        // 2) SESSIE BESTAAT NIET → NORMALE IMPORT
-        // ---------------------------------------------------------
-
-        const session = {
-            baseName,
-            status,
-            sensorData: combined,
-            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
-            axis: meta.axis || "x",
-            date: meta.date || new Date().toISOString()
-        };
-
-        // Axis direct instellen in UI
-        setAxis(session.axis || "x");
-
-        const tx = db.transaction("sessions", "readwrite");
-        const store = tx.objectStore("sessions");
-        const addReq = store.add(session);
-
-        addReq.onsuccess = () => {
-            const newId = addReq.result;
-
-            loadArchiveList();
-            selectSession(newId, baseName, status);
-
-            elRecStatus.textContent = "Imported";
-        };
-
-        addReq.onerror = () => {
-            showMessage("Kon sessie niet opslaan in IndexedDB.");
-        };
+    const session = {
+        baseName,
+        status,
+        sensorData: combined,
+        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+        axis: meta.axis || "x",
+        date: meta.date || new Date().toISOString()
     };
 
-    getAllReq.onerror = () => {
-        showMessage("Kon sessies niet controleren in IndexedDB.");
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+    const addReq = store.add(session);
+
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+
+        loadArchiveList();
+
+        selectSession(newId, baseName, status);
+    };
+
+    elRecStatus.textContent = "Imported";
+
+    addReq.onerror = () => {
+        alert("Kon sessie niet opslaan in IndexedDB.");
     };
 }
 
-function showMessage(text) {
-    const box = document.getElementById('msgBox');
-    box.textContent = text;
-
-    // direct zichtbaar
-    box.style.opacity = '1';
-
-    // na 2 seconden direct weg
-    setTimeout(() => {
-        box.style.opacity = '0';
-    }, 2000);
-}
-
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        // Forceer fullscreen redraw
-        document.documentElement.style.height = '100%';
-        document.body.style.height = '100%';
-
-        // Forceer reflow
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-        }, 50);
-    }
-});    
-    
 </script>
-
-<div id="msgBox"></div>
-    
 </body>
-</html> 
+</html>
+
+     
