@@ -155,9 +155,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             width: 100%;
-            height: auto;
-            min-height: 120%;
-            object-fit: cover;
+            height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -306,6 +305,7 @@ document.getElementById('btnConnect').onclick = async () => {
 
             data.push({ t, ax, ay, az, gx, gy, gz });
             elCount.innerText = data.length;
+            updateGraphs(0);
         });
 
         // UI UPDATES
@@ -329,19 +329,19 @@ document.getElementById("btnStart").onclick = async () => {
 
     await char.startNotifications();
 
-    recorder = new MediaRecorder(stream, { mimeType: "video/mp4" });
+    recorder = new MediaRecorder(stream);
 
     recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
     };
 
     recorder.onstop = () => {
-        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        currentVideoBlob = new Blob(chunks, { type: "video/webm" });
         elBack.src = URL.createObjectURL(currentVideoBlob);
         elBack.onloadedmetadata = () => {
             centerVideo(elBack);
-        };
     };
+};
 
     recorder.start();
 
@@ -691,19 +691,25 @@ document.getElementById("fileImport").onchange = async (e) => {
 
     elCount.innerText = data.length;
 
-    // Video tonen
-    currentVideoBlob = videoBlob;
-    elBack.src = URL.createObjectURL(videoBlob);
-    elBack.onloadedmetadata = () => {
-        centerVideo(elBack);
-    };
+// Video tonen
+currentVideoBlob = videoBlob;
+elBack.src = URL.createObjectURL(videoBlob);
 
+elBack.onloadedmetadata = () => {
+    centerVideo(elBack);
+
+    // TIJD‑SYNC FIX
+    computeTimeRange();
     slider.disabled = false;
     slider.value = 0;
-    timeLabel.textContent = "0.00s / 0.00s";
 
-    elRecStatus.textContent = "Imported";
+    timeLabel.textContent =
+        "0.00s / " + durationSensor.toFixed(2) + "s";
+
+    // GRAFIEKEN DIRECT TEKENEN
+    updateGraphs(0);
 };
+
 
 /* ============================================================
    TIJD‑SYNC ENGINE — SENSOR TIJD KOPPELEN AAN VIDEO
