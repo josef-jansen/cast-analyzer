@@ -1,77 +1,1382 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#007aff">
-    <title>Cast Analyzer</title>
-
-    <!-- Main Styles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cast-Analyzer</title>
     <style>
-        :root {
-            --primary-color: #007aff;
-            --danger-color: #ff3b30;
-            --safe-color: #34c759;
-            --secondary-color: #5856d6;
-            --neutral-color: #8e8e93;
-            --background-color: #f2f2f7;
-            --font-color: #000;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
+        
+        .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
+        
+        :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
+        
+        .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
+        .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
+
+        .bottom-area {
+            min-height: var(--bottom-area);
+            height: auto;
+            width: 100%;
+            background: #f2f2f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 6px 20px 12px 20px;
+            gap: 8px;
+            border-top: 1px solid #ddd;
         }
 
-        *, *::before, *::after {
+        #syncSlider { 
+            -webkit-appearance: none; width: 90%; height: 12px; 
+            background: #d1d1d6; border-radius: 6px; outline: none; margin: 20px 0; 
+        }
+        
+        #syncSlider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
+            background: #007aff; border: 3px solid #fff; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
+        }
+        
+        #timeLabel { 
+            font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; 
+            color: #007aff; background: #fff; padding: 4px 12px;
+            border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        canvas { width: 100% !important; height: 100% !important; display: block; }
+
+        button {
+            padding: 0 16px;
+            height: 44px;
+            line-height: 44px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #fff;
+            background: #666;
+            min-width: 90px; 
+            margin: 4px;
             box-sizing: border-box;
         }
 
-        body, html {
+        #btnConnect { background: #007aff; }
+        #btnStart   { background: #34c759; }
+        #btnStop    { background: #ff3b30; }
+        #btnSave    { background: #5856d6; }
+        #btnReset   { background: #8e8e93; }
+
+        .axisBtn {
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
+            border: 1px solid #007aff;
+            border-radius: 6px;
+            background: #fff;
+            color: #007aff;
+            font-size: 14px;
+            margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+        }
+
+        .axisBtn.active {
+            background: #007aff;
+            color: #fff;
+        }
+
+        #playPauseBtn {
+            height: 32px;
+            line-height: 30px;
+            padding: 0 14px;
+        }
+
+        .speedBtn {
+            padding: 0 14px;
+            height: 32px;
+            line-height: 30px;
+            border: 1px solid #007aff;
+            border-radius: 6px;
+            background: #fff;
+            color: #007aff;
+            font-size: 14px;
+            margin: 0 3px;
+            min-width: 44px;
+            box-sizing: border-box;
+        }
+
+        .speedBtn.active {
+            background: #007aff;
+            color: #fff;
+        }
+
+        #btnDel {
+            background: #ff3b30;
+            height: 44px;
+            line-height: 36px;
+            padding: 0 14px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            border: none;
+        }
+
+        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
+
+        .graph-container {
+            background: #1c1c1e;
+            border-radius: 8px;
+            padding: 5px;
+            margin: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            height: calc(var(--content-h) - 16px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-card {
+            position: relative;
+            background: #1c1c1e;                 /* zelfde als grafiek */
+            border-radius: 8px;                  /* zelfde ronding */
+            padding: 5px;                        /* zelfde padding */
+            margin: 8px;                         /* zelfde marge */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);  /* zelfde shadow */
+            width: calc(100% - 16px);            /* zelfde breedte als grafiek */
+            height: calc(var(--content-h) - 16px);
+            overflow: hidden;                    /* belangrijk voor crop */
+        }
+
+        /* Beide video’s exact over elkaar, groter dan de container,
+        zodat je het MIDDEN van het beeld ziet (top/bottom gecropt) */
+        .video-card video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;           /* breedte volgt container */
+            height: auto;
+            min-height: 120%;      /* iets hoger dan container → middenband zichtbaar */
+            object-fit: cover;     /* vult zonder zwarte balken */
+        }
+
+        #msgBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 260px;
+            max-width: 80%;
+            padding: 24px 28px;
+            background: #ffffff;          /* WIT */
+            color: #000000;               /* ZWARTE TEKST */
+            font-size: 20px;              /* GROTER EN LEESBAAR */
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid #00000022;  /* subtiel randje */
+            opacity: 0;
+            pointer-events: none;
+            transition: none;             /* geen fade */
+            white-space: pre-line;
+            z-index: 9999;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
             margin: 0;
             padding: 0;
-            font-family: "Arial", sans-serif;
-            background-color: var(--background-color);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
         }
-
-        #app {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .header {
-            flex: 0 0 145px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            background-color: #fff;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .header .controls {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-        button {
-            all: unset;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 10px 15px;
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-    </style>
+        
+</style>
 </head>
+
 <body>
-  <div id="app">
-    <div class="header">
-      <p>Cast analyzer Tracker</p>
-      <div class="controls"><button>Sync</button></div>
-      </div>
-  </div>
+
+    <div class="controls">
+        <button id="btnConnect">Connect</button>
+        <button id="btnStart" disabled>Start</button>
+        <button id="btnStop" disabled>Stop</button>
+        <button id="btnSave" disabled>Save</button>
+        <button id="btnReset">Reset</button>
+        <button id="btnExport">Export</button>
+
+        <input type="file" id="fileImport" accept=".zip" style="display:none" />
+        <button id="btnImport">Import</button>
+
+        <div class="status-text">
+            Status: <span id="recStatus">Idle</span> |
+            Data: <span id="dataCount">0</span>
+        </div>
+
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:10px;">
+            <div id="customDropdown" style="width:80%; position:relative;">
+                <div id="selectedDisplay"
+                     style="height:44px; line-height:42px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:0 10px; font-size:16px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    -- Worp Selecteren --
+                </div>
+
+                <div id="optionsList"
+                     style="display:none; position:absolute; top:48px; left:0; width:100%; background:#fff; border:1px solid #ccc; border-radius:8px; z-index:1000; max-height:300px; overflow-y:auto; box-shadow:0 4px 10px rgba(0,0,0,0.2);">
+                </div>
+            </div>
+
+            <button id="btnDel">Del</button>
+        </div>
+
+        <div style="margin-top:10px;">
+            <button id="bX" class="axisBtn active" onclick="setAxis('x')">X</button>
+            <button id="bY" class="axisBtn" onclick="setAxis('y')">Y</button>
+            <button id="bZ" class="axisBtn" onclick="setAxis('z')">Z</button>
+            <button id="bXYZ" class="axisBtn" onclick="setAxis('xyz')">XYZ</button>
+            <button id="bxyz3" class="axisBtn" onclick="setAxis('xyz3')">X‑Y‑Z</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="graph-container">
+            <canvas id="cAcc"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="graph-container">
+            <canvas id="cGyro"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="video-card">
+            <video id="vLive" playsinline muted autoplay></video>
+            <video id="vBack" playsinline></video>
+        </div>
+    </div>
+
+    <div class="bottom-area">
+        <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
+            <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
+            <button id="playPauseBtn">▶︎</button>
+            <button class="speedBtn" data-speed="0.25">0.25x</button>
+            <button class="speedBtn" data-speed="0.5">0.5x</button>
+            <button class="speedBtn" data-speed="1">1x</button>
+        </div>
+
+        <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+/* ============================================================
+   SUFFIX ENGINE — NIEUW
+   ============================================================ */
+
+function stripSuffix(name) {
+    return name.replace(/\s*\([sei]\)$/, "").trim();
+}
+
+function applySuffix(baseName, status) {
+    return `${baseName} (${status})`;
+}
+
+/* ============================================================
+   INDEXEDDB — NIEUWE STRUCTUUR (baseName + status)
+   ============================================================ */
+
+let db;
+let data = [];
+let chunks = [];
+let axis = "x";
+let currentVideoBlob = null;
+
+const elRecStatus = document.getElementById('recStatus');
+const elLive = document.getElementById('vLive');
+const elBack = document.getElementById('vBack');
+const elCount = document.getElementById('dataCount');
+const slider = document.getElementById('syncSlider');
+const timeLabel = document.getElementById('timeLabel');
+const optionsList = document.getElementById('optionsList');
+const selectedDisplay = document.getElementById('selectedDisplay');
+
+function centerVideo(el) {
+    // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
+    // Daarom wachten we tot metadata echt beschikbaar is.
+    if (!el.videoWidth || !el.videoHeight) {
+        el.addEventListener('loadedmetadata', () => centerVideo(el), { once: true });
+        return;
+    }
+
+    // We centreren altijd op het midden van de video.
+    el.style.top = '50%';
+    el.style.left = '50%';
+    el.style.transform = 'translate(-50%, -50%)';
+
+    // Zorg dat de video altijd groter is dan de container
+    el.style.width = '100%';
+    el.style.height = 'auto';
+    el.style.minHeight = '120%';
+    el.style.objectFit = 'cover';
+}
+
+// OPEN/CLOSE DROPDOWN  ← FIX
+selectedDisplay.onclick = () => {
+    optionsList.style.display =
+        optionsList.style.display === "none" ? "block" : "none";
+};
+
+const dbRequest = indexedDB.open("CastAnalyzerDB", 2);
+
+dbRequest.onupgradeneeded = (e) => {
+    const db = e.target.result;
+
+    if (!db.objectStoreNames.contains("sessions")) {
+        db.createObjectStore("sessions", { keyPath: "id", autoIncrement: true });
+    } else {
+        const store = e.target.transaction.objectStore("sessions");
+
+        // MIGRATIE: oude sessies met "name" → omzetten naar baseName + status
+        store.openCursor().onsuccess = (ev) => {
+            const cursor = ev.target.result;
+            if (!cursor) return;
+
+            const v = cursor.value;
+
+            if (v.name && !v.baseName) {
+                const clean = stripSuffix(v.name);
+                const status = (/\([sei]\)$/.test(v.name)) ? v.name.slice(-2, -1) : "s";
+
+                v.baseName = clean;
+                v.status = status;
+
+                delete v.name;
+                cursor.update(v);
+            }
+
+            cursor.continue();
+        };
+    }
+};
+
+dbRequest.onsuccess = (e) => {
+    db = e.target.result;
+    loadArchiveList();
+};
+
+
+/* ============================================================
+   ARCHIVE LIST — NIEUW (baseName + status)
+   ============================================================ */
+
+function loadArchiveList() {
+    const list = document.getElementById("optionsList");
+    list.innerHTML = "";
+
+    const tx = db.transaction("sessions", "readonly");
+    const store = tx.objectStore("sessions");
+
+    const sessions = [];
+
+    store.openCursor().onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+            sessions.push(cursor.value);
+            cursor.continue();
+        } else {
+            // Sorteer op datum (nieuwste boven)
+            sessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sessions.forEach(s => {
+                const fullName = applySuffix(s.baseName, s.status);
+
+                const item = document.createElement("div");
+                item.style.padding = "12px 10px";
+                item.style.borderBottom = "1px solid #eee";
+                item.style.fontSize = "16px";
+                item.style.whiteSpace = "nowrap";
+                item.style.overflow = "hidden";
+                item.style.textOverflow = "ellipsis";
+                item.style.textAlign = "left";   // ← FIX: links uitlijnen
+
+                item.textContent = fullName;
+
+                item.onclick = () => {
+                    selectSession(s.id, s.baseName, s.status);
+                    list.style.display = "none";
+                };
+
+                list.appendChild(item);
+            });
+        }
+    };
+}
+
+
+/* ============================================================
+   SELECT SESSION — NIEUW (suffix zichtbaar)
+   ============================================================ */
+
+function selectSession(id, baseName, status) {
+    const fullName = applySuffix(baseName, status);
+
+    elRecStatus.textContent =
+        (status === "i") ? "Imported" :
+        (status === "e") ? "Exported" :
+        (status === "s") ? "Saved" :
+        "Stopped";
+
+    selectedDisplay.textContent = fullName;
+    selectedDisplay.dataset.id = id;
+    
+    // Dropdown altijd sluiten na selectie
+    optionsList.style.display = "none";
+
+    const tx = db.transaction("sessions", "readonly");
+    tx.objectStore("sessions").get(Number(id)).onsuccess = (e) => {
+        const s = e.target.result;
+        if (!s) return;
+
+        data = s.sensorData;
+        currentVideoBlob = s.videoBlob;
+
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        centerVideo(elBack);
+
+        elBack.currentTime = 0;
+        elBack.pause();
+
+        setAxis(s.axis || "x");
+
+        elLive.style.display = "none";
+        elBack.style.display = "block";
+        slider.disabled = false;
+
+        updateUI();
+    };
+}
+
+
+/* ============================================================
+   DELETE SESSION — NIEUW
+   ============================================================ */
+
+document.getElementById('btnDel').onclick = () => {
+    const id = selectedDisplay.dataset.id;
+    if (!id) return;
+    if (!confirm('Verwijderen?')) return;
+
+    const tx = db.transaction('sessions', 'readwrite');
+    tx.objectStore('sessions').delete(Number(id));
+
+    tx.oncomplete = () => {
+        // --- UI SELECTIE RESET ---
+        selectedDisplay.textContent = '-- Worp Selecteren --';
+        delete selectedDisplay.dataset.id;
+
+        // --- VIDEO RESET ---
+        const v = elBack;
+        v.pause();
+        v.removeAttribute('src');
+        v.src = '';
+        v.load(); // metadata + duration + currentTime reset
+
+        // --- TIJD + SLIDER + PLAYBUTTON RESET ---
+        timeLabel.textContent = '0.00s / 0.00s';
+        slider.value = 0;
+        slider.disabled = true;
+        playPauseBtn.textContent = '▶︎';
+
+        // --- VIDEO ZICHTBAARHEID ---
+        elBack.style.display = 'none';
+        elLive.style.display = 'block';
+
+        // --- DATA RESET ---
+        data = [];
+        chunks = [];
+        elCount.textContent = '0';
+
+        // --- GRAFIEKEN RESET ---
+        clearGraphs();
+
+        // --- ARCHIEFLIJST OPNIEUW LADEN ---
+        loadArchiveList();
+    };
+};
+
+/* ============================================================
+   SAVE — NIEUW (status = "s")
+   ============================================================ */
+
+document.getElementById('btnSave').onclick = () => {
+    const nu = new Date();
+    const datumString =
+        nu.getFullYear() + "-" +
+        String(nu.getMonth() + 1).padStart(2, '0') + "-" +
+        String(nu.getDate()).padStart(2, '0') + " " +
+        String(nu.getHours()).padStart(2, '0') + ":" +
+        String(nu.getMinutes()).padStart(2, '0');
+
+    const inputNaam = prompt("Naam van de worp:", "Worp");
+    if (!inputNaam) return;
+
+    const baseName = `${datumString} - ${stripSuffix(inputNaam)}`;
+    const status = "s";
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+
+    const addReq = store.add({
+        baseName,
+        status,
+        sensorData: data,
+        videoBlob: new Blob(chunks, { type: "video/mp4" }),
+        axis,
+        date: nu.toISOString()
+    });
+
+    addReq.onsuccess = () => {
+        const newId = addReq.result;
+
+        // DIRECT selecteren → FIX voor export-probleem
+        selectSession(newId, baseName, status);
+
+        elRecStatus.textContent = "Saved";
+
+        loadArchiveList();
+        showMessage("Opgeslagen.");
+    };
+};
+
+    
+/* ============================================================
+   CLEAR GRAPHS
+   ============================================================ */
+
+function clearGraphs() {
+    const ids = ["cAcc", "cGyro"];
+    ids.forEach(id => {
+        const c = document.getElementById(id);
+        const ctx = c.getContext("2d");
+        ctx.clearRect(0, 0, c.width, c.height);
+    });
+}
+
+
+/* ============================================================
+   BLUETOOTH CONNECTIE
+   ============================================================ */
+
+let char, stream, recorder;
+
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        // 1. BLE CONNECTIE (originele, werkende flow)
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: "Cast-Analyzer" }],
+            optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+        });
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+        char = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+
+        // 2. CAMERA OPENEN (pas NA BLE)
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+        });
+
+        // 3. VIDEO KOPPELEN MAAR NOG NIET TONEN
+        elLive.style.display = "none";
+        elLive.srcObject = stream;
+
+        // 4. BLUEFY FIX: pas tonen als metadata geladen is
+        elLive.onloadedmetadata = () => {
+        centerVideo(elLive);
+            elLive.play();
+            elLive.style.display = "block";
+        };
+
+
+        // 5. SENSOR DATA HANDLER (originele code)
+        char.addEventListener('characteristicvaluechanged', (e) => {
+            const v = e.target.value;
+            data.push({
+                ax: v.getInt16(0, true)/100,
+                ay: v.getInt16(2, true)/100,
+                az: v.getInt16(4, true)/100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
+                gz: v.getInt16(10, true)
+            });
+            elCount.innerText = data.length;
+        });
+
+        // 6. UI UPDATES
+        document.getElementById('btnConnect').disabled = true;
+        document.getElementById('btnStart').disabled = false;
+
+    } catch (e) {
+        alert(e);
+    }
+};
+
+
+/* ============================================================
+   START RECORDING
+   ============================================================ */
+
+document.getElementById('btnStart').onclick = async () => {
+    data = [];
+    chunks = [];
+    elCount.innerText = "0";
+    slider.disabled = true;
+
+    elRecStatus.textContent = "Recording";
+
+    await char.startNotifications();
+
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = () => {
+        elLive.style.display = "none";
+        elBack.style.display = "block";
+
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        centerVideo(elBack);
+
+        document.getElementById('btnSave').disabled = false;
+        slider.disabled = false;
+
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
+
+        setTimeout(updateUI, 1000);
+    };
+
+    recorder.start();
+
+    elBack.style.display = "none";
+    elLive.style.display = "block";
+
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStop').disabled = false;
+};
+
+
+/* ============================================================
+   STOP RECORDING
+   ============================================================ */
+
+document.getElementById('btnStop').onclick = async () => {
+    try { await char.stopNotifications(); } catch (e) {}
+
+    recorder.stop();
+
+    elRecStatus.textContent = "Stopped";
+
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnStart').disabled = false;
+};
+
+
+/* ============================================================
+   RESET
+   ============================================================ */
+
+document.getElementById('btnReset').onclick = async () => {
+
+    try { if (char) await char.stopNotifications(); } catch (e) {}
+    try { if (recorder && recorder.state !== "inactive") recorder.stop(); } catch (e) {}
+
+    // Video terug naar live
+    elBack.pause();
+    elBack.src = "";
+    elBack.removeAttribute("src");   // ← BELANGRIJK
+    elBack.load();                   // ← BELANGRIJK
+    elBack.style.display = "none";
+    elLive.style.display = "block";
+
+    // Tijdlabel resetten
+    timeLabel.textContent = "0.00s / 0.00s";
+
+    // Status terug naar beginstand
+    elRecStatus.textContent = "Idle";
+
+    // Data leegmaken
+    data = [];
+    chunks = [];
+    elCount.innerText = "0";
+
+    // Sessie deselecteren
+    selectedDisplay.textContent = "-- Worp Selecteren --";
+    selectedDisplay.dataset.id = "";
+
+    // Slider resetten
+    slider.value = 0;
+    slider.disabled = true;
+
+    // Knoppen terug naar begin
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').disabled = true;
+    document.getElementById('btnSave').disabled = true;
+
+    // Grafieken leegmaken
+    clearGraphs();
+};
+
+/* ============================================================
+   AXIS SELECTIE
+   ============================================================ */
+
+function setAxis(a) {
+    axis = a.toLowerCase();
+
+    document.querySelectorAll('.axisBtn').forEach(b => {
+        const bid = b.id.toLowerCase();
+        const target = 'b' + axis;
+        b.classList.toggle('active', bid === target);
+    });
+
+    updateUI();
+}
+
+
+/* ============================================================
+   UI UPDATE
+   ============================================================ */
+
+slider.oninput = () => {
+    if (elBack.duration > 0) {
+        elBack.currentTime = (slider.value / 1000) * elBack.duration;
+        updateUI();
+    }
+};
+
+elBack.ontimeupdate = () => {
+    if (!recorder || recorder.state !== "recording") {
+        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        updateUI();
+    }
+};
+
+elBack.onended = () => {
+    playPauseBtn.textContent = "▶︎";
+};
+
+function updateUI() {
+    if (elBack.duration > 0) {
+        timeLabel.innerText =
+            elBack.currentTime.toFixed(2) + "s / " +
+            elBack.duration.toFixed(2) + "s";
+    }
+
+    draw();
+
+    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+}
+
+/* ============================================================
+   SCHAALBEREKENING
+   ============================================================ */
+
+function computeScale(points, type) {
+    const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
+    const maxPos = Math.max(...points, 0.0001);
+
+    const isGyro = maxAbs > 20;
+
+    if (type === "xyz" && isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxPos) || 1000;
+
+        let labels = [];
+        for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
+
+        return { min: 0, max, labels };
+    }
+
+    if (isGyro) {
+        const nice = [50,100,200,500,1000];
+        let max = nice.find(n => n >= maxAbs) || 1000;
+
+        return { 
+            min: -max, 
+            max, 
+            labels: [-max, -max/2, 0, max/2, max] 
+        };
+    }
+
+    if (type === "xyz") {
+        let max;
+        if (maxPos <= 1) max = 1;
+        else if (maxPos <= 2) max = 2;
+        else if (maxPos <= 3) max = 3;
+        else if (maxPos <= 4) max = 4;
+        else max = 5;
+
+        let labels;
+        if (max === 1) labels = [0, 0.5, 1];
+        else labels = Array.from({length: max + 1}, (_, i) => i);
+
+        return { min: 0, max, labels };
+    }
+
+    let max;
+    if (maxAbs <= 1) max = 1;
+    else if (maxAbs <= 2) max = 2;
+    else if (maxAbs <= 3) max = 3;
+    else if (maxAbs <= 4) max = 4;
+    else max = 5;
+
+    let labels;
+    if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
+    else if (max === 2) labels = [-2, -1, 0, 1, 2];
+    else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
+    else if (max === 4) labels = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    else labels = [-5, -2.5, 0, 2.5, 5];
+
+    return { min: -max, max, labels };
+}
+
+
+/* ============================================================
+   RENDER SINGLE GRAPH
+   ============================================================ */
+
+function render(id, points, color, label, unit, progress, type) {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
+
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const scale = computeScale(points, type);
+    const { min, max, labels } = scale;
+
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
+
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    labels.forEach(val => {
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
+
+        ctx.fillText(val, pL - 8 * dpr, y);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
+        ctx.stroke();
+    });
+
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5 * dpr;
+
+    points.forEach((p, i) => {
+        const x = pL + (i / (points.length - 1)) * gW;
+        const y = (type === "xyz")
+            ? (h - pB) - (p * scaleY)
+            : (h / 2) - (p * scaleY);
+
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+}
+
+
+/* ============================================================
+   RENDER MULTI GRAPH
+   ============================================================ */
+
+function renderMulti(id, series, title, unit, progress, type = "multi") {
+    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    c.width = c.clientWidth * dpr;
+    c.height = c.clientHeight * dpr;
+
+    const w = c.width, h = c.height;
+    const pL = w * 0.1, pR = w * 0.1, pT = h * 0.1, pB = h * 0.1;
+    const gW = w - pL - pR, gH = h - pT - pB;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const all = series.flatMap(s => s.points);
+    const scale = computeScale(all, type);
+    const { min, max, labels } = scale;
+
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
+
+    ctx.fillStyle = "#fff";
+    ctx.font = (14 * dpr) + "px Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    labels.forEach(val => {
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
+
+        ctx.fillText(val, pL - 8 * dpr, y);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ctx.moveTo(pL, y);
+        ctx.lineTo(w - pR, y);
+        ctx.stroke();
+    });
+
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(pL, pT);
+    ctx.lineTo(pL, h - pB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(w - pR, pT);
+    ctx.lineTo(w - pR, h - pB);
+    ctx.stroke();
+    
+    series.forEach(s => {
+        ctx.beginPath();
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 1.5 * dpr;
+
+        s.points.forEach((p, i) => {
+            const x = pL + (i / (s.points.length - 1)) * gW;
+            const y = (type === "xyz")
+                ? (h - pB) - (p * scaleY)
+                : (h / 2) - (p * scaleY);
+
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+    });
+
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+
+    // LEGEND
+    let legendX = w - pR - 150 * dpr;
+    let legendY = pT + 18 * dpr;
+
+    series.forEach(s => {
+        const boxW = 20 * dpr;
+        const boxH = 10 * dpr;
+
+        ctx.fillStyle = s.color;
+        ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = (14 * dpr) + "px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
+
+        legendX += 70 * dpr;
+    });
+}
+
+
+/* ============================================================
+   DRAW
+   ============================================================ */
+
+function draw() {
+    if (data.length < 2) return;
+
+    const progress = (elBack.duration > 0)
+        ? elBack.currentTime / elBack.duration
+        : 0;
+
+    if (axis === 'xyz3') {
+        renderMulti("cAcc",
+            [
+                { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.az), color: "#007aff", label: "Z" }
+            ],
+            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
+        );
+
+        renderMulti("cGyro",
+            [
+                { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
+                { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
+                { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
+            ],
+            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
+        );
+
+        return;
+    }
+
+    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
+
+    if (axis === 'xyz') {
+        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        labelSuffix = "Totaal";
+
+        accType = "xyz";
+        gyroType = "xyz";
+    }
+
+    else {
+        accPoints = data.map(d => d['a' + axis]);
+        gyroPoints = data.map(d => d['g' + axis]);
+        labelSuffix = axis.toUpperCase();
+
+        accType = "single";
+        gyroType = "gyro";
+    }
+
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+}
+
+
+/* ============================================================
+   PLAY / PAUSE
+   ============================================================ */
+
+const playPauseBtn = document.getElementById("playPauseBtn");
+const speedButtons = document.querySelectorAll(".speedBtn");
+
+playPauseBtn.addEventListener("click", () => {
+    if (elBack.paused) {
+        elBack.play();
+        playPauseBtn.textContent = "⏸";
+    } else {
+        elBack.pause();
+        playPauseBtn.textContent = "▶︎";
+    }
+});
+
+
+/* ============================================================
+   SPEED BUTTONS
+   ============================================================ */
+
+speedButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const speed = parseFloat(btn.dataset.speed);
+        elBack.playbackRate = speed;
+
+        speedButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+    });
+});
+ 
+document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+
+
+/* ============================================================
+   DROPDOWN CLOSE
+   ============================================================ */
+
+window.onclick = (e) => {
+    // Niet sluiten wanneer je op de display klikt
+    if (e.target === selectedDisplay) return;
+
+    // Niet sluiten wanneer je op een item in de lijst klikt
+    if (e.target.closest('#optionsList')) return;
+
+    // Buiten dropdown → sluiten
+    if (!e.target.closest('#customDropdown')) {
+        optionsList.style.display = "none";
+    }
+};
+
+/* ============================================================
+   EXPORT — NIEUW (status = "e")
+   ============================================================ */
+
+document.getElementById("btnExport").onclick = async () => {
+    if (!data || data.length === 0) {
+        showMessage("Geen data om te exporteren.");
+        return;
+    }
+
+    const id = selectedDisplay.dataset.id;
+    if (!id) {
+        showMessage("Geen sessie geselecteerd.");
+        return;
+    }
+
+    const tx = db.transaction("sessions", "readwrite");
+    const store = tx.objectStore("sessions");
+
+    const req = store.get(Number(id));
+
+    req.onsuccess = async () => {
+        const session = req.result;
+        if (!session) return;
+
+        const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
+
+        const zip = new JSZip();
+
+        // ACC CSV
+        let accCSV = "t,ax,ay,az\n";
+        session.sensorData.forEach((d, i) => {
+            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+        });
+        zip.file("acc.csv", accCSV);
+
+        // GYRO CSV
+        let gyroCSV = "t,gx,gy,gz\n";
+        session.sensorData.forEach((d, i) => {
+            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        });
+        zip.file("gyro.csv", gyroCSV);
+
+        // META
+        const meta = {
+            name: session.baseName,
+            axis: session.axis,
+            samples: session.sensorData.length,
+            date: session.date
+        };
+        zip.file("meta.json", JSON.stringify(meta, null, 2));
+
+        // VIDEO
+        zip.file("video.mp4", session.videoBlob);
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+
+        try {
+            const zipFile = new File([zipBlob], zipName, { type: "application/zip" });
+
+            if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
+                await navigator.share({ files: [zipFile] });
+            } else {
+                showMessage("Delen van bestanden wordt niet ondersteund in deze browser.");
+            }
+            // Pas NA het delen → correcte timing in Bluefy/iOS
+            elRecStatus.textContent = "Exported";
+            showMessage("Geëxporteerd.");
+
+        } catch (err) {
+            console.error("Fout bij delen:", err);
+            showMessage("Er ging iets mis bij het delen van de ZIP.");
+        }
+
+        // STATUS → "e"
+        session.status = "e";
+        store.put(session);
+    };
+
+    tx.oncomplete = () => {
+        loadArchiveList();
+    };
+};
+
+/* ============================================================
+   IMPORT — NIEUW (status = "i")
+   ============================================================ */
+
+const fileInput = document.getElementById("fileImport");
+const btnImport = document.getElementById("btnImport");
+
+btnImport.onclick = () => fileInput.click();
+
+fileInput.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".zip")) {
+        showMessage("Kies een ZIP-bestand van een Cast Analyzer sessie.");
+        return;
+    }
+
+    await importSessionFromZip(file);
+    fileInput.value = "";
+};
+
+async function importSessionFromZip(file) {
+
+    const jszip = new JSZip();
+    const zip = await jszip.loadAsync(file);
+
+    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+    for (const f of required) {
+        if (!zip.file(f)) {
+            showMessage("ZIP mist bestand: " + f);
+            return;
+        }
+    }
+
+    const accText   = await zip.file("acc.csv").async("string");
+    const gyroText  = await zip.file("gyro.csv").async("string");
+    const metaText  = await zip.file("meta.json").async("string");
+    const videoBlob = await zip.file("video.mp4").async("blob");
+
+    const meta = JSON.parse(metaText);
+
+    function parseCSV(text) {
+        const lines   = text.trim().split("\n");
+        const headers = lines[0].split(",");
+        return lines.slice(1).map(line => {
+            const values = line.split(",");
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
+            return obj;
+        });
+    }
+
+    const accData  = parseCSV(accText);
+    const gyroData = parseCSV(gyroText);
+
+    const combined = accData.map((d, i) => ({
+        ax: d.ax,
+        ay: d.ay,
+        az: d.az,
+        gx: gyroData[i].gx,
+        gy: gyroData[i].gy,
+        gz: gyroData[i].gz
+    }));
+
+    const baseName = stripSuffix(meta.name || "Imported Session");
+    const status   = "i";
+
+    // ---------------------------------------------------------
+    // 1) CHECK OF SESSIE AL BESTAAT  (ANTI-DUPLICAAT)
+    // ---------------------------------------------------------
+    const txCheck = db.transaction("sessions", "readonly");
+    const storeCheck = txCheck.objectStore("sessions");
+    const getAllReq = storeCheck.getAll();
+
+    getAllReq.onsuccess = () => {
+        const all = getAllReq.result;
+
+        const exists = all.some(s => s.baseName === baseName);
+
+        if (exists) {
+            showMessage("Sessie bestaat al.\nImport gestopt.");
+            return; // STOP → NIET importeren
+        }
+
+        // ---------------------------------------------------------
+        // 2) SESSIE BESTAAT NIET → NORMALE IMPORT
+        // ---------------------------------------------------------
+
+        const session = {
+            baseName,
+            status,
+            sensorData: combined,
+            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+            axis: meta.axis || "x",
+            date: meta.date || new Date().toISOString()
+        };
+
+        // Axis direct instellen in UI
+        setAxis(session.axis || "x");
+
+        const tx = db.transaction("sessions", "readwrite");
+        const store = tx.objectStore("sessions");
+        const addReq = store.add(session);
+
+        addReq.onsuccess = () => {
+            const newId = addReq.result;
+
+            loadArchiveList();
+            selectSession(newId, baseName, status);
+
+            elRecStatus.textContent = "Imported";
+        };
+
+        addReq.onerror = () => {
+            showMessage("Kon sessie niet opslaan in IndexedDB.");
+        };
+    };
+
+    getAllReq.onerror = () => {
+        showMessage("Kon sessies niet controleren in IndexedDB.");
+    };
+}
+
+function showMessage(text) {
+    const box = document.getElementById('msgBox');
+    box.textContent = text;
+
+    // direct zichtbaar
+    box.style.opacity = '1';
+
+    // na 2 seconden direct weg
+    setTimeout(() => {
+        box.style.opacity = '0';
+    }, 2000);
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        // Forceer fullscreen redraw
+        document.documentElement.style.height = '100%';
+        document.body.style.height = '100%';
+
+        // Forceer reflow
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
+    }
+});    
+    
+</script>
+
+<div id="msgBox"></div>
+    
 </body>
+</html> 
