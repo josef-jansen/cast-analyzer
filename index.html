@@ -554,34 +554,17 @@ document.getElementById('btnConnect').onclick = async () => {
         // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-
-            const t =
-                v.getUint8(0) |
-                (v.getUint8(1) << 8) |
-                (v.getUint8(2) << 16) |
-                (v.getUint8(3) << 24);
-
-            const ax = v.getInt16(4, true) / 100;
-            const ay = v.getInt16(6, true) / 100;
-            const az = v.getInt16(8, true) / 100;
-
-            const gx = v.getInt16(10, true);
-            const gy = v.getInt16(12, true);
-            const gz = v.getInt16(14, true);
-
-            data.push({ t, ax, ay, az, gx, gy, gz });
+            data.push({
+                ax: v.getInt16(0, true)/100,
+                ay: v.getInt16(2, true)/100,
+                az: v.getInt16(4, true)/100,
+                gx: v.getInt16(6, true),
+                gy: v.getInt16(8, true),
+                gz: v.getInt16(10, true)
+            });
             elCount.innerText = data.length;
-
-            // ⭐ LIVE UPDATE FIX ⭐
-            slider.max = t;
-            slider.value = t;
-            currentTime = t;
-
-            render();
-            renderMulti();
         });
 
-        
         // 6. UI UPDATES
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnStart').disabled = false;
@@ -609,29 +592,22 @@ document.getElementById('btnStart').onclick = async () => {
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-/* ============================================================
-   RECORDING STOP — SLIDER MAX OP ECHTE TIJD
-   ============================================================ */
+    recorder.onstop = () => {
+        elLive.style.display = "none";
+        elBack.style.display = "block";
 
-recorder.onstop = () => {
-    elLive.style.display = "none";
-    elBack.style.display = "block";
+        currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
+        elBack.src = URL.createObjectURL(currentVideoBlob);
+        centerVideo(elBack);
 
-    currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
-    elBack.src = URL.createObjectURL(currentVideoBlob);
-    centerVideo(elBack);
+        document.getElementById('btnSave').disabled = false;
+        slider.disabled = false;
 
-    document.getElementById('btnSave').disabled = false;
+        // Na opname automatisch Y-as tonen
+        setAxis('y');
 
-    // SLIDER MAX = LAATSTE SENSOR-TIJD
-    slider.max = data[data.length - 1].t;
-    slider.disabled = false;
-
-    // Na opname automatisch Y-as tonen
-    setAxis('y');
-
-    setTimeout(updateUI, 1000);
-};
+        setTimeout(updateUI, 1000);
+    };
 
     recorder.start();
 
@@ -725,43 +701,34 @@ function setAxis(a) {
    UI UPDATE
    ============================================================ */
 
-/* ============================================================
-   SLIDER + VIDEO — ECHTE TIJD
-   ============================================================ */
-
 slider.oninput = () => {
-    if (data.length < 2) return;
-
-    const t = parseFloat(slider.value);
-    elBack.currentTime = t;
-
-    updateUI();
+    if (elBack.duration > 0) {
+        elBack.currentTime = (slider.value / 1000) * elBack.duration;
+        updateUI();
+    }
 };
 
 elBack.ontimeupdate = () => {
-    if (data.length < 2) return;
-
-    slider.value = elBack.currentTime;
-
-    updateUI();
+    if (!recorder || recorder.state !== "recording") {
+        slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
+        updateUI();
+    }
 };
 
 elBack.onended = () => {
     playPauseBtn.textContent = "▶︎";
 };
 
-/* ============================================================
-   UPDATE UI — ECHTE TIJD
-   ============================================================ */
-
 function updateUI() {
-    if (data.length < 2) return;
+    if (elBack.duration > 0) {
+        timeLabel.innerText =
+            elBack.currentTime.toFixed(2) + "s / " +
+            elBack.duration.toFixed(2) + "s";
+    }
 
-    timeLabel.innerText =
-        elBack.currentTime.toFixed(2) + "s / " +
-        elBack.duration.toFixed(2) + "s";
+    draw();
 
-    draw(); // enige juiste plek
+    slider.value = (elBack.currentTime / elBack.duration) * 1000 || 0;
 }
 
 /* ============================================================
@@ -829,11 +796,7 @@ function computeScale(points, type) {
 
 
 /* ============================================================
-   RENDER SINGLE GRAPH — TIJDAS (tMin → tMax)
-   ============================================================ */
-
-/* ============================================================
-   RENDER SINGLE GRAPH — ECHTE TIJDAS
+   RENDER SINGLE GRAPH
    ============================================================ */
 
 function render(id, points, color, label, unit, progress, type) {
@@ -847,15 +810,12 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.clearRect(0, 0, w, h);
 
-    const tMin = data[0].t;
-    const tMax = data[data.length - 1].t;
-    const tRange = Math.max(tMax - tMin, 0.0001);
+    const scale = computeScale(points, type);
+    const { min, max, labels } = scale;
 
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const labels = [min, (min + max) / 2, max];
-
-    const scaleY = gH / (max - min || 1);
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
 
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
@@ -863,9 +823,11 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (h - pB) - ((val - min) * scaleY);
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
 
-        ctx.fillText(val.toFixed(2), pL - 8 * dpr, y);
+        ctx.fillText(val, pL - 8 * dpr, y);
 
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
@@ -890,34 +852,33 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineWidth = 1.5 * dpr;
 
     points.forEach((p, i) => {
-        const t = data[i].t;
-        const x = pL + ((t - tMin) / tRange) * gW;
-        const y = (h - pB) - ((p - min) * scaleY);
+        const x = pL + (i / (points.length - 1)) * gW;
+        const y = (type === "xyz")
+            ? (h - pB) - (p * scaleY)
+            : (h / 2) - (p * scaleY);
 
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
 
     ctx.stroke();
 
-    const cursorX = pL + ((elBack.currentTime - tMin) / tRange) * gW;
-
-    ctx.strokeStyle = "#ff9500";
-    ctx.beginPath();
-    ctx.moveTo(cursorX, pT);
-    ctx.lineTo(cursorX, h - pB);
-    ctx.stroke();
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
+    }
 
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
 
-/* ============================================================
-   RENDER MULTI GRAPH — TIJDAS (tMin → tMax)
-   ============================================================ */
 
 /* ============================================================
-   RENDER MULTI GRAPH — ECHTE TIJDAS
+   RENDER MULTI GRAPH
    ============================================================ */
 
 function renderMulti(id, series, title, unit, progress, type = "multi") {
@@ -931,16 +892,13 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
     ctx.clearRect(0, 0, w, h);
 
-    const tMin = data[0].t;
-    const tMax = data[data.length - 1].t;
-    const tRange = Math.max(tMax - tMin, 0.0001);
-
     const all = series.flatMap(s => s.points);
-    const min = Math.min(...all);
-    const max = Math.max(...all);
-    const labels = [min, (min + max) / 2, max];
+    const scale = computeScale(all, type);
+    const { min, max, labels } = scale;
 
-    const scaleY = gH / (max - min || 1);
+    const scaleY = (type === "xyz")
+        ? gH / max
+        : (gH / 2) / max;
 
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
@@ -948,9 +906,11 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (h - pB) - ((val - min) * scaleY);
+        const y = (type === "xyz")
+            ? (h - pB) - (val * scaleY)
+            : (h / 2) - (val * scaleY);
 
-        ctx.fillText(val.toFixed(2), pL - 8 * dpr, y);
+        ctx.fillText(val, pL - 8 * dpr, y);
 
         ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.beginPath();
@@ -969,16 +929,17 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
-
+    
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 1.5 * dpr;
 
         s.points.forEach((p, i) => {
-            const t = data[i].t;
-            const x = pL + ((t - tMin) / tRange) * gW;
-            const y = (h - pB) - ((p - min) * scaleY);
+            const x = pL + (i / (s.points.length - 1)) * gW;
+            const y = (type === "xyz")
+                ? (h - pB) - (p * scaleY)
+                : (h / 2) - (p * scaleY);
 
             i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         });
@@ -986,31 +947,52 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
-    const cursorX = pL + ((elBack.currentTime - tMin) / tRange) * gW;
-
-    ctx.strokeStyle = "#ff9500";
-    ctx.beginPath();
-    ctx.moveTo(cursorX, pT);
-    ctx.lineTo(cursorX, h - pB);
-    ctx.stroke();
+    if (progress > 0) {
+        const cursorX = pL + (progress * gW);
+        ctx.strokeStyle = "#ff9500";
+        ctx.beginPath();
+        ctx.moveTo(cursorX, pT);
+        ctx.lineTo(cursorX, h - pB);
+        ctx.stroke();
+    }
 
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
+
+    // LEGEND
+    let legendX = w - pR - 150 * dpr;
+    let legendY = pT + 18 * dpr;
+
+    series.forEach(s => {
+        const boxW = 20 * dpr;
+        const boxH = 10 * dpr;
+
+        ctx.fillStyle = s.color;
+        ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = (14 * dpr) + "px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
+
+        legendX += 70 * dpr;
+    });
 }
 
+
 /* ============================================================
-   DRAW — KIEST JUISTE GRAPH MODE EN TEKENT MET ECHTE TIJD
+   DRAW
    ============================================================ */
 
 function draw() {
     if (data.length < 2) return;
 
-    const tMin = data[0].t;
-    const tMax = data[data.length - 1].t;
-    const tRange = Math.max(tMax - tMin, 0.0001);
+    const progress = (elBack.duration > 0)
+        ? elBack.currentTime / elBack.duration
+        : 0;
 
-    // Versnelling XYZ (drie lijnen)
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
@@ -1018,7 +1000,7 @@ function draw() {
                 { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            "Versnelling X‑Y‑Z", "m/s²"
+            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
         );
 
         renderMulti("cGyro",
@@ -1027,46 +1009,36 @@ function draw() {
                 { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
                 { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            "Rotatie X‑Y‑Z", "°/s"
+            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
         );
 
         return;
     }
 
-    let accPoints, gyroPoints, labelSuffix;
+    let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
-    // XYZ magnitude
     if (axis === 'xyz') {
         accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
         gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
+
+        accType = "xyz";
+        gyroType = "xyz";
     }
 
-    // Single axis (X, Y, Z)
     else {
         accPoints = data.map(d => d['a' + axis]);
         gyroPoints = data.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
+
+        accType = "single";
+        gyroType = "gyro";
     }
 
-    // Versnelling
-    render(
-        "cAcc",
-        accPoints,
-        "#00bfff",
-        "Versnelling " + labelSuffix,
-        "m/s²"
-    );
-
-    // Rotatie
-    render(
-        "cGyro",
-        gyroPoints,
-        "#ff4500",
-        "Rotatie " + labelSuffix,
-        "°/s"
-    );
+    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
+
 
 /* ============================================================
    PLAY / PAUSE
@@ -1120,7 +1092,7 @@ window.onclick = (e) => {
 };
 
 /* ============================================================
-   EXPORT — ECHTE TIJD (status = "e")
+   EXPORT — NIEUW (status = "e")
    ============================================================ */
 
 document.getElementById("btnExport").onclick = async () => {
@@ -1148,17 +1120,17 @@ document.getElementById("btnExport").onclick = async () => {
 
         const zip = new JSZip();
 
-        // ACC CSV — MET ECHTE TIJD
+        // ACC CSV
         let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d) => {
-            accCSV += `${d.t},${d.ax},${d.ay},${d.az}\n`;
+        session.sensorData.forEach((d, i) => {
+            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
 
-        // GYRO CSV — MET ECHTE TIJD
+        // GYRO CSV
         let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d) => {
-            gyroCSV += `${d.t},${d.gx},${d.gy},${d.gz}\n`;
+        session.sensorData.forEach((d, i) => {
+            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
         });
         zip.file("gyro.csv", gyroCSV);
 
@@ -1167,8 +1139,7 @@ document.getElementById("btnExport").onclick = async () => {
             name: session.baseName,
             axis: session.axis,
             samples: session.sensorData.length,
-            date: session.date,
-            startTime: session.sensorData[0].t
+            date: session.date
         };
         zip.file("meta.json", JSON.stringify(meta, null, 2));
 
@@ -1185,7 +1156,7 @@ document.getElementById("btnExport").onclick = async () => {
             } else {
                 alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
-
+            // Pas NA het delen → correcte timing in Bluefy/iOS
             elRecStatus.textContent = "Exported";
             alert("Geëxporteerd!");
 
@@ -1194,6 +1165,7 @@ document.getElementById("btnExport").onclick = async () => {
             alert("Er ging iets mis bij het delen van de ZIP.");
         }
 
+        // STATUS → "e"
         session.status = "e";
         store.put(session);
     };
@@ -1203,9 +1175,8 @@ document.getElementById("btnExport").onclick = async () => {
     };
 };
 
-
 /* ============================================================
-   IMPORT — ECHTE TIJD (status = "i")
+   IMPORT — NIEUW (status = "i")
    ============================================================ */
 
 const fileInput = document.getElementById("fileImport");
@@ -1260,9 +1231,7 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
-    // COMBINE MET ECHTE TIJD
     const combined = accData.map((d, i) => ({
-        t: d.t,
         ax: d.ax,
         ay: d.ay,
         az: d.az,
@@ -1291,6 +1260,7 @@ async function importSessionFromZip(file) {
         const newId = addReq.result;
 
         loadArchiveList();
+
         selectSession(newId, baseName, status);
     };
 
