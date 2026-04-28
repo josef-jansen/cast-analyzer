@@ -554,14 +554,26 @@ document.getElementById('btnConnect').onclick = async () => {
         // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-            data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
-            });
+
+            // Tijd (4 bytes, uint32, little endian)
+            const t =
+                v.getUint8(0) |
+                (v.getUint8(1) << 8) |
+                (v.getUint8(2) << 16) |
+                (v.getUint8(3) << 24);
+
+            // Acceleratie ×100
+            const ax = v.getInt16(4, true) / 100;
+            const ay = v.getInt16(6, true) / 100;
+            const az = v.getInt16(8, true) / 100;
+
+            // Gyro
+            const gx = v.getInt16(10, true);
+            const gy = v.getInt16(12, true);
+            const gz = v.getInt16(14, true);
+
+            data.push({ t, ax, ay, az, gx, gy, gz });
+
             elCount.innerText = data.length;
         });
 
