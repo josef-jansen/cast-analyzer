@@ -859,14 +859,16 @@ function render(id, points, color, label, unit, progress, type) {
     // 🔥 TIJD-BASED X-AS
     // =========================
     const valid = data.filter(d => d && d.t !== undefined);
-    const lastT = valid.length ? valid[valid.length - 1].t : 1;
+
+    const t0 = valid.length ? valid[0].t : 0;
+    const lastT = valid.length ? (valid[valid.length - 1].t - t0) : 1;
 
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
 
     valid.forEach((d, i) => {
-        const normT = d.t / lastT;          // 0 → 1
+        const normT = (d.t - t0) / lastT;         // 0 → 1
         const x = pL + normT * gW;
         const p = points[i];
 
