@@ -823,6 +823,7 @@ function render(id, points, color, label, unit, progress, type) {
         ? gH / max
         : (gH / 2) / max;
 
+    // Y labels + grid
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -842,6 +843,7 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     });
 
+    // assen
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -853,12 +855,21 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
+    // =========================
+    // 🔥 TIJD-BASED X-AS
+    // =========================
+    const valid = data.filter(d => d && d.t !== undefined);
+    const lastT = valid.length ? valid[valid.length - 1].t : 1;
+
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5 * dpr;
 
-    points.forEach((p, i) => {
-        const x = pL + (i / (points.length - 1)) * gW;
+    valid.forEach((d, i) => {
+        const normT = d.t / lastT;          // 0 → 1
+        const x = pL + normT * gW;
+        const p = points[i];
+
         const y = (type === "xyz")
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
@@ -868,6 +879,7 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.stroke();
 
+    // cursor blijft op video progress
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -877,11 +889,11 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     }
 
+    // label
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 }
-
 
 /* ============================================================
    RENDER MULTI GRAPH
