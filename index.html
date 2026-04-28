@@ -993,7 +993,12 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
    ============================================================ */
 
 function draw() {
-    if (data.length < 2) return;
+    if (!data || data.length < 2) return;
+
+    // 👉 FIX: filter alleen geldige data
+    const valid = data.filter(d => d && d.ax !== undefined);
+
+    if (valid.length < 2) return;
 
     const progress = (elBack.duration > 0)
         ? elBack.currentTime / elBack.duration
@@ -1002,20 +1007,20 @@ function draw() {
     if (axis === 'xyz3') {
         renderMulti("cAcc",
             [
-                { points: data.map(d => d.ax), color: "#ff3b30", label: "X" },
-                { points: data.map(d => d.ay), color: "#34c759", label: "Y" },
-                { points: data.map(d => d.az), color: "#007aff", label: "Z" }
+                { points: valid.map(d => d.ax), color: "#ff3b30", label: "X" },
+                { points: valid.map(d => d.ay), color: "#34c759", label: "Y" },
+                { points: valid.map(d => d.az), color: "#007aff", label: "Z" }
             ],
-            "Versnelling X‑Y‑Z", "m/s²", progress, "multi"
+            "Versnelling X-Y-Z", "m/s²", progress, "multi"
         );
 
         renderMulti("cGyro",
             [
-                { points: data.map(d => d.gx), color: "#ff3b30", label: "X" },
-                { points: data.map(d => d.gy), color: "#34c759", label: "Y" },
-                { points: data.map(d => d.gz), color: "#007aff", label: "Z" }
+                { points: valid.map(d => d.gx), color: "#ff3b30", label: "X" },
+                { points: valid.map(d => d.gy), color: "#34c759", label: "Y" },
+                { points: valid.map(d => d.gz), color: "#007aff", label: "Z" }
             ],
-            "Rotatie X‑Y‑Z", "°/s", progress, "gyro"
+            "Rotatie X-Y-Z", "°/s", progress, "gyro"
         );
 
         return;
@@ -1024,17 +1029,15 @@ function draw() {
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
     if (axis === 'xyz') {
-        accPoints = data.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-        gyroPoints = data.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+        accPoints = valid.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+        gyroPoints = valid.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
         labelSuffix = "Totaal";
 
         accType = "xyz";
         gyroType = "xyz";
-    }
-
-    else {
-        accPoints = data.map(d => d['a' + axis]);
-        gyroPoints = data.map(d => d['g' + axis]);
+    } else {
+        accPoints = valid.map(d => d['a' + axis]);
+        gyroPoints = valid.map(d => d['g' + axis]);
         labelSuffix = axis.toUpperCase();
 
         accType = "single";
@@ -1044,7 +1047,6 @@ function draw() {
     render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
     render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
-
 
 /* ============================================================
    PLAY / PAUSE
