@@ -554,14 +554,20 @@ document.getElementById('btnConnect').onclick = async () => {
         // 5. SENSOR DATA HANDLER (originele code)
         char.addEventListener('characteristicvaluechanged', (e) => {
             const v = e.target.value;
-            data.push({
-                ax: v.getInt16(0, true)/100,
-                ay: v.getInt16(2, true)/100,
-                az: v.getInt16(4, true)/100,
-                gx: v.getInt16(6, true),
-                gy: v.getInt16(8, true),
-                gz: v.getInt16(10, true)
-            });
+
+            // 16 bytes BLE packet
+            const t  = v.getUint32(0, true);
+
+            const ax = v.getInt16(4, true) / 100;
+            const ay = v.getInt16(6, true) / 100;
+            const az = v.getInt16(8, true) / 100;
+
+            const gx = v.getInt16(10, true);
+            const gy = v.getInt16(12, true);
+            const gz = v.getInt16(14, true);
+
+            data.push({ t, ax, ay, az, gx, gy, gz });
+
             elCount.innerText = data.length;
         });
 
@@ -1122,18 +1128,19 @@ document.getElementById("btnExport").onclick = async () => {
 
         // ACC CSV
         let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d, i) => {
-            accCSV += `${i},${d.ax},${d.ay},${d.az}\n`;
+        session.sensorData.forEach((d) => {
+            accCSV += `${d.t ?? 0},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
 
         // GYRO CSV
         let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d, i) => {
-            gyroCSV += `${i},${d.gx},${d.gy},${d.gz}\n`;
+        session.sensorData.forEach((d) => {
+            gyroCSV += `${d.t ?? 0},${d.gx},${d.gy},${d.gz}\n`;
         });
+        
         zip.file("gyro.csv", gyroCSV);
-
+        
         // META
         const meta = {
             name: session.baseName,
@@ -1232,6 +1239,7 @@ async function importSessionFromZip(file) {
     const gyroData = parseCSV(gyroText);
 
     const combined = accData.map((d, i) => ({
+        t: d.t ?? i,   // fallback voor oude exports
         ax: d.ax,
         ay: d.ay,
         az: d.az,
