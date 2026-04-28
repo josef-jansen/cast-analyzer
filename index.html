@@ -920,6 +920,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ? gH / max
         : (gH / 2) / max;
 
+    // Y labels + grid
     ctx.fillStyle = "#fff";
     ctx.font = (14 * dpr) + "px Arial";
     ctx.textAlign = "right";
@@ -939,6 +940,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // assen
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.beginPath();
     ctx.moveTo(pL, pT);
@@ -949,14 +951,26 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
-    
+
+    // =========================
+    // 🔥 TIJD-BASED X-AS
+    // =========================
+    const valid = data.filter(d => d && d.t !== undefined);
+
+    const t0 = valid.length ? valid[0].t : 0;
+    const lastT = valid.length ? (valid[valid.length - 1].t - t0) : 1;
+
+    // teken elke serie
     series.forEach(s => {
         ctx.beginPath();
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 1.5 * dpr;
 
-        s.points.forEach((p, i) => {
-            const x = pL + (i / (s.points.length - 1)) * gW;
+        valid.forEach((d, i) => {
+            const normT = (d.t - t0) / lastT;
+            const x = pL + normT * gW;
+            const p = s.points[i];
+
             const y = (type === "xyz")
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
@@ -967,6 +981,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     });
 
+    // cursor (blijft video-based)
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -976,11 +991,12 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.stroke();
     }
 
+    // titel
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(title + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
 
-    // LEGEND
+    // legend
     let legendX = w - pR - 150 * dpr;
     let legendY = pT + 18 * dpr;
 
@@ -992,15 +1008,12 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
         ctx.fillRect(legendX, legendY - boxH / 2, boxW, boxH);
 
         ctx.fillStyle = "#fff";
-        ctx.font = (14 * dpr) + "px Arial";
-        ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         ctx.fillText(s.label, legendX + boxW + 8 * dpr, legendY);
 
         legendX += 70 * dpr;
     });
 }
-
 
 /* ============================================================
    DRAW
@@ -1142,21 +1155,26 @@ document.getElementById("btnExport").onclick = async () => {
 
         const zip = new JSZip();
 
-        // ACC CSV
+        // =========================
+        // 🔥 ACC CSV (MET TIJD)
+        // =========================
         let accCSV = "t,ax,ay,az\n";
-        session.sensorData.forEach((d) => {
-            accCSV += `${d.t ?? 0},${d.ax},${d.ay},${d.az}\n`;
+        session.sensorData.forEach((d, i) => {
+            const t = (d.t !== undefined) ? d.t : i;   // fallback
+            accCSV += `${t},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
 
-        // GYRO CSV
+        // =========================
+        // 🔥 GYRO CSV (MET TIJD)
+        // =========================
         let gyroCSV = "t,gx,gy,gz\n";
-        session.sensorData.forEach((d) => {
-            gyroCSV += `${d.t ?? 0},${d.gx},${d.gy},${d.gz}\n`;
+        session.sensorData.forEach((d, i) => {
+            const t = (d.t !== undefined) ? d.t : i;
+            gyroCSV += `${t},${d.gx},${d.gy},${d.gz}\n`;
         });
-        
         zip.file("gyro.csv", gyroCSV);
-        
+
         // META
         const meta = {
             name: session.baseName,
@@ -1179,7 +1197,7 @@ document.getElementById("btnExport").onclick = async () => {
             } else {
                 alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
-            // Pas NA het delen → correcte timing in Bluefy/iOS
+
             elRecStatus.textContent = "Exported";
             alert("Geëxporteerd!");
 
@@ -1188,7 +1206,7 @@ document.getElementById("btnExport").onclick = async () => {
             alert("Er ging iets mis bij het delen van de ZIP.");
         }
 
-        // STATUS → "e"
+        // STATUS UPDATE
         session.status = "e";
         store.put(session);
     };
@@ -1201,24 +1219,6 @@ document.getElementById("btnExport").onclick = async () => {
 /* ============================================================
    IMPORT — NIEUW (status = "i")
    ============================================================ */
-
-const fileInput = document.getElementById("fileImport");
-const btnImport = document.getElementById("btnImport");
-
-btnImport.onclick = () => fileInput.click();
-
-fileInput.onchange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".zip")) {
-        alert("Kies een ZIP-bestand van een Cast Analyzer sessie.");
-        return;
-    }
-
-    await importSessionFromZip(file);
-    fileInput.value = "";
-};
 
 async function importSessionFromZip(file) {
 
@@ -1254,14 +1254,17 @@ async function importSessionFromZip(file) {
     const accData = parseCSV(accText);
     const gyroData = parseCSV(gyroText);
 
+    // =========================
+    // 🔥 COMBINEREN MET TIJD
+    // =========================
     const combined = accData.map((d, i) => ({
-        t: d.t ?? i,   // fallback voor oude exports
+        t: (d.t !== undefined && !isNaN(d.t)) ? d.t : i,  // 🔥 cruciaal
         ax: d.ax,
         ay: d.ay,
         az: d.az,
-        gx: gyroData[i].gx,
-        gy: gyroData[i].gy,
-        gz: gyroData[i].gz
+        gx: gyroData[i]?.gx ?? 0,
+        gy: gyroData[i]?.gy ?? 0,
+        gz: gyroData[i]?.gz ?? 0
     }));
 
     const baseName = stripSuffix(meta.name || "Imported Session");
@@ -1284,15 +1287,14 @@ async function importSessionFromZip(file) {
         const newId = addReq.result;
 
         loadArchiveList();
-
         selectSession(newId, baseName, status);
     };
-
-    elRecStatus.textContent = "Imported";
 
     addReq.onerror = () => {
         alert("Kon sessie niet opslaan in IndexedDB.");
     };
+
+    elRecStatus.textContent = "Imported";
 }
 
 </script>
