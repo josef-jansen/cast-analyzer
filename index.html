@@ -1211,7 +1211,11 @@ document.getElementById("btnExport").onclick = async () => {
         const session = req.result;
         if (!session) return;
 
-        const zipName = session.baseName.replace(/:/g, "-").replace(/\s+/g, "_") + ".zip";
+        const fullName = applySuffix(session.baseName, "e");
+
+        const zipName = fullName
+            .replace(/:/g, "-")
+            .replace(/\s+/g, "_") + ".zip";
 
         const zip = new JSZip();
 
@@ -1237,7 +1241,7 @@ document.getElementById("btnExport").onclick = async () => {
 
         // META
         const meta = {
-            name: session.baseName,
+            name: fullName,
             axis: session.axis,
             samples: session.sensorData.length,
             date: session.date
