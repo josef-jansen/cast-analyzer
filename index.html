@@ -1039,11 +1039,25 @@ function draw() {
 
         const videoTime = elBack.currentTime;
 
-        // 🔥 map video → sensor tijd
+        // video → sensor tijd
         const currentSensorTime = tStart + (videoTime / elBack.duration) * sensorDuration;
 
-        // 🔥 normaliseren voor render
-        progress = (currentSensorTime - tStart) / sensorDuration;
+        // 🔥 zoek dichtstbijzijnde sample
+        let closestIndex = 0;
+        let minDiff = Infinity;
+    
+        for (let i = 0; i < data.length; i++) {
+            const diff = Math.abs(data[i].t - currentSensorTime);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = i;
+            }
+        }
+
+        // 🔥 gebruik echte sample tijd
+        const snappedTime = data[closestIndex].t;
+
+        progress = (snappedTime - tStart) / sensorDuration;
     }
 
     if (axis === 'xyz3') {
