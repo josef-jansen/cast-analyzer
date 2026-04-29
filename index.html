@@ -184,7 +184,8 @@
 
         <div class="status-text">
             Status: <span id="recStatus">Idle</span> |
-            Data: <span id="dataCount">0</span>
+            Data: <span id="dataCount">0</span> |
+            <span id="appVersion"></span>
         </div>
 
         <div style="display:flex; justify-content:center; align-items:flex-start; gap:10px; margin-top:10px;">
@@ -277,6 +278,12 @@ const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
+/* ================================================================
+   VERSIE NUMMER VAN DE INDEX.HTML
+   ================================================================*/
+
+const APP_VERSION = "v2.0";
+    
 function centerVideo(el) {
     // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
     // Daarom wachten we tot metadata echt beschikbaar is.
@@ -1175,6 +1182,8 @@ selectedDisplay.onclick = () => {
     
 document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
+// versie tonen
+document.getElementById("appVersion").textContent = APP_VERSION;
 
 /* ============================================================
    DROPDOWN CLOSE
