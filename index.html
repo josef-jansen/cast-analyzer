@@ -837,7 +837,10 @@ function computeScale(points, type) {
    ============================================================ */
 
 function render(id, points, color, label, unit, progress, type) {
-    const c = document.getElementById(id), ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 2;
+    const c = document.getElementById(id),
+          ctx = c.getContext('2d'),
+          dpr = window.devicePixelRatio || 2;
+
     c.width = c.clientWidth * dpr;
     c.height = c.clientHeight * dpr;
 
@@ -847,10 +850,11 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.clearRect(0, 0, w, h);
 
-    const scale = computeScale(points, type);
-    const { min, max, labels } = scale;
+    const { min, max, labels } = computeScale(points, type);
 
-    const scaleY = (type === "xyz" || type === "gyro_pos")
+    const positive = (type === "xyz" || type === "gyro_pos");
+
+    const scaleY = positive
         ? gH / max
         : (gH / 2) / max;
 
@@ -861,7 +865,7 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.textBaseline = "middle";
 
     labels.forEach(val => {
-        const y = (type === "xyz")
+        const y = positive
             ? (h - pB) - (val * scaleY)
             : (h / 2) - (val * scaleY);
 
@@ -886,9 +890,7 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // =========================
-    // 🔥 TIJD-BASED X-AS
-    // =========================
+    // lijn (tijd-as)
     const valid = data.filter(d => d && d.t !== undefined);
 
     const t0 = valid.length ? valid[0].t : 0;
@@ -899,11 +901,11 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineWidth = 1.5 * dpr;
 
     valid.forEach((d, i) => {
-        const normT = (d.t - t0) / lastT;         // 0 → 1
+        const normT = (d.t - t0) / lastT;
         const x = pL + normT * gW;
         const p = points[i];
 
-        const y = (type === "xyz" || type === "gyro_pos")
+        const y = positive
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
 
@@ -912,7 +914,7 @@ function render(id, points, color, label, unit, progress, type) {
 
     ctx.stroke();
 
-    // cursor blijft op video progress
+    // cursor
     if (progress > 0) {
         const cursorX = pL + (progress * gW);
         ctx.strokeStyle = "#ff9500";
@@ -922,7 +924,7 @@ function render(id, points, color, label, unit, progress, type) {
         ctx.stroke();
     }
 
-    // label
+    // titel
     ctx.fillStyle = "#fff";
     ctx.textAlign = "left";
     ctx.fillText(label + " (" + unit + ")", pL + 10 * dpr, pT + 18 * dpr);
