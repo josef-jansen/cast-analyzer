@@ -1252,8 +1252,11 @@ document.getElementById("btnExport").onclick = async () => {
                 await navigator.share({ files: [zipFile] });
 
                 // ✅ ALLEEN HIER
+                const tx2 = db.transaction("sessions", "readwrite");
+                const store2 = tx2.objectStore("sessions");
+                
                 session.status = "e";
-                store.put(session);
+                store2.put(session);
 
                 loadArchiveList();
                 selectSession(id, session.baseName, "e");
