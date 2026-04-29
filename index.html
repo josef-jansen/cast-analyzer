@@ -752,7 +752,29 @@ function computeScale(points, type) {
     const maxPos = Math.max(...points, 0.0001);
 
     // =========================
-    // 🔥 GYRO (EXPLICIET)
+    // 🔥 GYRO POSITIEF (XYZ)
+    // =========================
+    if (type === "gyro_pos") {
+
+        const nice = [50, 100, 200, 500, 1000];
+
+        let max = nice.find(n => n >= maxPos);
+        if (!max) max = Math.ceil(maxPos / 100) * 100;
+
+        let labels = [];
+        for (let i = 0; i <= 5; i++) {
+            labels.push((max / 5) * i);
+        }
+
+        return {
+            min: 0,
+            max: max,
+            labels: labels
+        };
+    }
+
+    // =========================
+    // 🔥 GYRO (X/Y/Z)
     // =========================
     if (type === "gyro") {
 
@@ -769,7 +791,7 @@ function computeScale(points, type) {
     }
 
     // =========================
-    // 🔥 XYZ (ACC totaal)
+    // 🔥 ACC XYZ (positief)
     // =========================
     if (type === "xyz") {
 
@@ -789,7 +811,7 @@ function computeScale(points, type) {
     }
 
     // =========================
-    // 🔥 ACC (X/Y/Z)
+    // 🔥 ACC X/Y/Z
     // =========================
     let max;
 
@@ -1092,12 +1114,12 @@ function draw() {
     let accPoints, gyroPoints, labelSuffix, accType, gyroType;
 
     if (axis === 'xyz') {
-        accPoints = valid.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-        gyroPoints = valid.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
-        labelSuffix = "Totaal";
+    accPoints = valid.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
+    gyroPoints = valid.map(d => Math.sqrt(d.gx**2 + d.gy**2 + d.gz**2));
+    labelSuffix = "Totaal";
 
-        accType = "xyz";
-        gyroType = "gyro";
+    accType = "xyz";
+    gyroType = "gyro_pos";
     } else {
         accPoints = valid.map(d => d['a' + axis]);
         gyroPoints = valid.map(d => d['g' + axis]);
