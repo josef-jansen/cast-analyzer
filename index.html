@@ -1223,79 +1223,100 @@ document.getElementById("btnExport").onclick = async () => {
 
 async function importSessionFromZip(file) {
 
-    const jszip = new JSZip();
-    const zip = await jszip.loadAsync(file);
+    try {
 
-    const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
-    for (const f of required) {
-        if (!zip.file(f)) {
-            alert("ZIP mist bestand: " + f);
+        const jszip = new JSZip();
+        const zip = await jszip.loadAsync(file);
+
+        const required = ["acc.csv", "gyro.csv", "meta.json", "video.mp4"];
+        for (const f of required) {
+            if (!zip.file(f)) {
+                alert("ZIP mist bestand: " + f);
+                return;
+            }
+        }
+
+        const accText = await zip.file("acc.csv").async("string");
+        const gyroText = await zip.file("gyro.csv").async("string");
+        const metaText = await zip.file("meta.json").async("string");
+        const videoBlob = await zip.file("video.mp4").async("blob");
+
+        const meta = JSON.parse(metaText);
+
+        function parseCSV(text) {
+            const lines = text.trim().split("\n");
+            const headers = lines[0].split(",");
+
+            return lines.slice(1)
+                .filter(l => l.trim().length > 0) // 🔥 voorkomt lege regels
+                .map(line => {
+                    const values = line.split(",");
+                    const obj = {};
+                    headers.forEach((h, i) => {
+                        obj[h] = Number(values[i]); // 🔥 altijd number
+                    });
+                    return obj;
+                });
+        }
+
+        const accData = parseCSV(accText);
+        const gyroData = parseCSV(gyroText);
+
+        // 🔥 STABIELE COMBINE
+        const combined = accData.map((d, i) => {
+
+            const g = gyroData[i] || {};
+
+            return {
+                t: Number(d.t) || i,
+                ax: Number(d.ax) || 0,
+                ay: Number(d.ay) || 0,
+                az: Number(d.az) || 0,
+                gx: Number(g.gx) || 0,
+                gy: Number(g.gy) || 0,
+                gz: Number(g.gz) || 0
+            };
+        });
+
+        if (combined.length === 0) {
+            alert("Geen data gevonden in CSV");
             return;
         }
+
+        const baseName = stripSuffix(meta.name || "Imported Session");
+        const status = "i";
+
+        const session = {
+            baseName,
+            status,
+            sensorData: combined,
+            videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
+            axis: meta.axis || "x",
+            date: meta.date || new Date().toISOString()
+        };
+
+        const tx = db.transaction("sessions", "readwrite");
+        const store = tx.objectStore("sessions");
+        const addReq = store.add(session);
+
+        addReq.onsuccess = () => {
+            const newId = addReq.result;
+
+            loadArchiveList();
+            selectSession(newId, baseName, status);
+
+            alert("Import gelukt"); // 🔥 zichtbaar resultaat
+        };
+
+        addReq.onerror = () => {
+            alert("DB fout bij opslaan");
+        };
+
+        elRecStatus.textContent = "Imported";
+
+    } catch (e) {
+        alert("IMPORT ERROR: " + e.message);
     }
-
-    const accText = await zip.file("acc.csv").async("string");
-    const gyroText = await zip.file("gyro.csv").async("string");
-    const metaText = await zip.file("meta.json").async("string");
-    const videoBlob = await zip.file("video.mp4").async("blob");
-
-    const meta = JSON.parse(metaText);
-
-    function parseCSV(text) {
-        const lines = text.trim().split("\n");
-        const headers = lines[0].split(",");
-        return lines.slice(1).map(line => {
-            const values = line.split(",");
-            const obj = {};
-            headers.forEach((h, i) => obj[h] = parseFloat(values[i]));
-            return obj;
-        });
-    }
-
-    const accData = parseCSV(accText);
-    const gyroData = parseCSV(gyroText);
-
-    // =========================
-    // 🔥 COMBINEREN MET TIJD
-    // =========================
-    const combined = accData.map((d, i) => ({
-        t: (d.t !== undefined && !isNaN(d.t)) ? d.t : i,  // 🔥 cruciaal
-        ax: d.ax,
-        ay: d.ay,
-        az: d.az,
-        gx: gyroData[i]?.gx ?? 0,
-        gy: gyroData[i]?.gy ?? 0,
-        gz: gyroData[i]?.gz ?? 0
-    }));
-
-    const baseName = stripSuffix(meta.name || "Imported Session");
-    const status = "i";
-
-    const session = {
-        baseName,
-        status,
-        sensorData: combined,
-        videoBlob: new Blob([videoBlob], { type: "video/mp4" }),
-        axis: meta.axis || "x",
-        date: meta.date || new Date().toISOString()
-    };
-
-    const tx = db.transaction("sessions", "readwrite");
-    const store = tx.objectStore("sessions");
-    const addReq = store.add(session);
-
-    addReq.onsuccess = () => {
-        const newId = addReq.result;
-
-        loadArchiveList();
-        selectSession(newId, baseName, status);
-    };
-
-    addReq.onerror = () => {
-        alert("Kon sessie niet opslaan in IndexedDB.");
-    };
-
-    elRecStatus.textContent = "Imported";
 }
 
 </script>
