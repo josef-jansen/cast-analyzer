@@ -850,7 +850,7 @@ function render(id, points, color, label, unit, progress, type) {
     const scale = computeScale(points, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === "xyz")
+    const scaleY = (type === "xyz" || type === "gyro_pos")
         ? gH / max
         : (gH / 2) / max;
 
@@ -903,7 +903,7 @@ function render(id, points, color, label, unit, progress, type) {
         const x = pL + normT * gW;
         const p = points[i];
 
-        const y = (type === "xyz")
+        const y = (type === "xyz" || type === "gyro_pos")
             ? (h - pB) - (p * scaleY)
             : (h / 2) - (p * scaleY);
 
@@ -947,7 +947,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     const scale = computeScale(all, type);
     const { min, max, labels } = scale;
 
-    const scaleY = (type === "xyz")
+    const scaleY = (type === "xyz" || type === "gyro_pos")
         ? gH / max
         : (gH / 2) / max;
 
@@ -1002,7 +1002,7 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
             const x = pL + normT * gW;
             const p = s.points[i];
 
-            const y = (type === "xyz")
+            const y = (type === "xyz" || type === "gyro_pos")
                 ? (h - pB) - (p * scaleY)
                 : (h / 2) - (p * scaleY);
 
