@@ -243,8 +243,6 @@
 
 <script>
 
-alert("START");
-    
 /* ============================================================
    SUFFIX ENGINE — NIEUW
    ============================================================ */
@@ -1031,9 +1029,22 @@ function draw() {
 
     if (valid.length < 2) return;
 
-    const progress = (elBack.duration > 0)
-        ? elBack.currentTime / elBack.duration
-        : 0;
+    let progress = 0;
+
+    if (data.length > 1 && elBack.duration > 0) {
+
+        const tStart = data[0].t;
+        const tEnd   = data[data.length - 1].t;
+        const sensorDuration = tEnd - tStart;
+
+        const videoTime = elBack.currentTime;
+
+        // 🔥 map video → sensor tijd
+        const currentSensorTime = tStart + (videoTime / elBack.duration) * sensorDuration;
+
+        // 🔥 normaliseren voor render
+        progress = (currentSensorTime - tStart) / sensorDuration;
+    }
 
     if (axis === 'xyz3') {
         renderMulti("cAcc",
