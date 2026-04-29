@@ -114,13 +114,16 @@
 
         #btnDel {
             background: #ff3b30;
-            height: 36px;
-            line-height: 36px;
-            padding: 0 14px;
+            height: 44px;           /* 🔥 zelfde als andere knoppen */
+            line-height: 44px;      /* 🔥 tekst centreren */
+            padding: 0 16px;        /* 🔥 match met andere knoppen */
             border-radius: 8px;
             color: #fff;
-            font-size: 14px;
+            font-size: 16px;        /* 🔥 zelfde font */
             border: none;
+            min-width: 90px;        /* 🔥 zelfde breedte gedrag */
+            margin: 4px;
+            box-sizing: border-box;
         }
 
         .status-text { font-size: 10px; color: #666; margin-top: 4px; }
@@ -184,7 +187,7 @@
             Data: <span id="dataCount">0</span>
         </div>
 
-        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:10px;">
+        <div style="display:flex; justify-content:center; align-items:stretch; gap:10px; margin-top:10px;">
             <div id="customDropdown" style="width:80%; position:relative;">
                 <div id="selectedDisplay"
                      style="height:44px; line-height:42px; background:#fff; border:1px solid #ccc; border-radius:8px; padding:0 10px; font-size:16px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
