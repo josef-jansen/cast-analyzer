@@ -1219,9 +1219,6 @@ document.getElementById("btnExport").onclick = async () => {
 
         const zip = new JSZip();
 
-        // =========================
-        // 🔥 ACC CSV (MET TIJD)
-        // =========================
         let accCSV = "t,ax,ay,az\n";
         session.sensorData.forEach((d, i) => {
             const t = (d.t !== undefined) ? d.t : i;
@@ -1229,9 +1226,6 @@ document.getElementById("btnExport").onclick = async () => {
         });
         zip.file("acc.csv", accCSV);
 
-        // =========================
-        // 🔥 GYRO CSV (MET TIJD)
-        // =========================
         let gyroCSV = "t,gx,gy,gz\n";
         session.sensorData.forEach((d, i) => {
             const t = (d.t !== undefined) ? d.t : i;
@@ -1239,7 +1233,6 @@ document.getElementById("btnExport").onclick = async () => {
         });
         zip.file("gyro.csv", gyroCSV);
 
-        // META
         const meta = {
             name: fullName,
             axis: session.axis,
@@ -1248,7 +1241,6 @@ document.getElementById("btnExport").onclick = async () => {
         };
         zip.file("meta.json", JSON.stringify(meta, null, 2));
 
-        // VIDEO
         zip.file("video.mp4", session.videoBlob);
 
         const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1258,28 +1250,28 @@ document.getElementById("btnExport").onclick = async () => {
 
             if (navigator.canShare && navigator.canShare({ files: [zipFile] })) {
                 await navigator.share({ files: [zipFile] });
+
+                // ✅ ALLEEN HIER
+                session.status = "e";
+                store.put(session);
+
+                loadArchiveList();
+                selectSession(id, session.baseName, "e");
+
+                elRecStatus.textContent = "Exported";
+                alert("Geëxporteerd!");
             } else {
                 alert("Delen van bestanden wordt niet ondersteund in deze browser.");
             }
-
-            elRecStatus.textContent = "Exported";
-            alert("Geëxporteerd!");
 
         } catch (err) {
             console.error("Fout bij delen:", err);
             alert("Er ging iets mis bij het delen van de ZIP.");
         }
-
-        // STATUS UPDATE
-        session.status = "e";
-        store.put(session);
     };
 
     tx.oncomplete = () => {
-        loadArchiveList();
-
-        // 🔥 NA reload UI opnieuw zetten
-        selectSession(id, selectedDisplay.textContent.replace(/\s*\([sei]\)$/, ""), "e");
+        // leeg laten of alleen logging
     };
 };
 
