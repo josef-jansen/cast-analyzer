@@ -1319,6 +1319,24 @@ async function importSessionFromZip(file) {
     }
 }
 
+// ===== IMPORT BUTTON FIX =====
+const fileInput = document.getElementById("fileImport");
+const btnImport = document.getElementById("btnImport");
+
+btnImport.addEventListener("click", () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    await importSessionFromZip(file);
+
+    // reset zodat je opnieuw kan kiezen
+    fileInput.value = "";
+});
+    
 </script>
 </body>
 </html>
