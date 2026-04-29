@@ -747,34 +747,34 @@ function updateUI() {
    ============================================================ */
 
 function computeScale(points, type) {
+
     const maxAbs = Math.max(...points.map(Math.abs), 0.0001);
     const maxPos = Math.max(...points, 0.0001);
 
-    const isGyro = maxAbs > 20;
+    // =========================
+    // 🔥 GYRO (EXPLICIET)
+    // =========================
+    if (type === "gyro") {
 
-    if (type === "xyz" && isGyro) {
-        const nice = [50,100,200,500,1000];
-        let max = nice.find(n => n >= maxPos) || 1000;
+        const nice = [50, 100, 200, 500, 1000];
 
-        let labels = [];
-        for (let i = 0; i <= 5; i++) labels.push((max/5)*i);
+        let max = nice.find(n => n >= maxAbs);
+        if (!max) max = Math.ceil(maxAbs / 100) * 100;
 
-        return { min: 0, max, labels };
-    }
-
-    if (isGyro) {
-        const nice = [50,100,200,500,1000];
-        let max = nice.find(n => n >= maxAbs) || 1000;
-
-        return { 
-            min: -max, 
-            max, 
-            labels: [-max, -max/2, 0, max/2, max] 
+        return {
+            min: -max,
+            max: max,
+            labels: [-max, -max/2, 0, max/2, max]
         };
     }
 
+    // =========================
+    // 🔥 XYZ (ACC totaal)
+    // =========================
     if (type === "xyz") {
+
         let max;
+
         if (maxPos <= 1) max = 1;
         else if (maxPos <= 2) max = 2;
         else if (maxPos <= 3) max = 3;
@@ -788,7 +788,11 @@ function computeScale(points, type) {
         return { min: 0, max, labels };
     }
 
+    // =========================
+    // 🔥 ACC (X/Y/Z)
+    // =========================
     let max;
+
     if (maxAbs <= 1) max = 1;
     else if (maxAbs <= 2) max = 2;
     else if (maxAbs <= 3) max = 3;
@@ -796,6 +800,7 @@ function computeScale(points, type) {
     else max = 5;
 
     let labels;
+
     if (max === 1) labels = [-1, -0.5, 0, 0.5, 1];
     else if (max === 2) labels = [-2, -1, 0, 1, 2];
     else if (max === 3) labels = [-3, -2, -1, 0, 1, 2, 3];
@@ -804,7 +809,6 @@ function computeScale(points, type) {
 
     return { min: -max, max, labels };
 }
-
 
 /* ============================================================
    RENDER SINGLE GRAPH
