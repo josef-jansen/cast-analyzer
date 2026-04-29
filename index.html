@@ -1273,7 +1273,10 @@ document.getElementById("btnExport").onclick = async () => {
         // STATUS UPDATE
         session.status = "e";
         store.put(session);
-    };
+
+        // 🔥 UI direct syncen
+        selectSession(id, session.baseName, session.status);
+        };
 
     tx.oncomplete = () => {
         loadArchiveList();
