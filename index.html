@@ -1224,7 +1224,7 @@ document.getElementById("btnExport").onclick = async () => {
         // =========================
         let accCSV = "t,ax,ay,az\n";
         session.sensorData.forEach((d, i) => {
-            const t = (d.t !== undefined) ? d.t : i;   // fallback
+            const t = (d.t !== undefined) ? d.t : i;
             accCSV += `${t},${d.ax},${d.ay},${d.az}\n`;
         });
         zip.file("acc.csv", accCSV);
@@ -1273,13 +1273,13 @@ document.getElementById("btnExport").onclick = async () => {
         // STATUS UPDATE
         session.status = "e";
         store.put(session);
-
-        // 🔥 UI direct syncen
-        selectSession(id, session.baseName, session.status);
-        };
+    };
 
     tx.oncomplete = () => {
         loadArchiveList();
+
+        // 🔥 NA reload UI opnieuw zetten
+        selectSession(id, selectedDisplay.textContent.replace(/\s*\([sei]\)$/, ""), "e");
     };
 };
 
