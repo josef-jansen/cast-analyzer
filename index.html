@@ -278,12 +278,7 @@ const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
-// 🔥 FORCEER CENTER BIJ PLAYBACK
 elBack.onloadedmetadata = () => {
-    centerVideo(elBack);
-};
-
-elBack.onplay = () => {
     centerVideo(elBack);
 };
 
@@ -294,19 +289,9 @@ elBack.onplay = () => {
 const APP_VERSION = "v2.0.1";
     
 function centerVideo(el) {
-    // Bluefy levert soms verkeerde videoHeight/videoWidth bij start.
-    // Daarom wachten we tot metadata echt beschikbaar is.
-    if (!el.videoWidth || !el.videoHeight) {
-        el.addEventListener('loadedmetadata', () => centerVideo(el), { once: true });
-        return;
-    }
-
-    // We centreren altijd op het midden van de video.
     el.style.top = '50%';
     el.style.left = '50%';
     el.style.transform = 'translate(-50%, -50%)';
-
-    // Zorg dat de video altijd groter is dan de container
     el.style.width = '100%';
     el.style.height = 'auto';
     el.style.minHeight = '120%';
@@ -431,7 +416,6 @@ function selectSession(id, baseName, status) {
         currentVideoBlob = s.videoBlob;
 
         elBack.src = URL.createObjectURL(currentVideoBlob);
-        centerVideo(elBack);
 
         elBack.currentTime = 0;
         elBack.pause();
@@ -445,7 +429,6 @@ function selectSession(id, baseName, status) {
         updateUI();
     };
 }
-
 
 /* ============================================================
    DELETE SESSION — NIEUW
@@ -625,7 +608,6 @@ document.getElementById('btnStart').onclick = async () => {
 
         currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
         elBack.src = URL.createObjectURL(currentVideoBlob);
-        centerVideo(elBack);
 
         document.getElementById('btnSave').disabled = false;
         slider.disabled = false;
