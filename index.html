@@ -278,6 +278,15 @@ const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
+// 🔥 FORCEER CENTER BIJ PLAYBACK
+elBack.onloadedmetadata = () => {
+    centerVideo(elBack);
+};
+
+elBack.onplay = () => {
+    centerVideo(elBack);
+};
+
 /* ================================================================
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
