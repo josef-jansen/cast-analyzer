@@ -286,7 +286,7 @@ elBack.onloadedmetadata = () => {
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.0.2";
+const APP_VERSION = "v2.0.3";
     
 function centerVideo(el) {
     el.style.top = '50%';
@@ -1394,7 +1394,19 @@ fileInput.addEventListener("change", async (event) => {
     // reset zodat je opnieuw kan kiezen
     fileInput.value = "";
 });
+
+window.addEventListener("load", () => {
+    setTimeout(draw, 200);
+});
     
+window.addEventListener("resize", () => {
+    setTimeout(draw, 100);
+});
+
+window.addEventListener("orientationchange", () => {
+    setTimeout(draw, 100);
+});
+  
 </script>
 </body>
 </html>
