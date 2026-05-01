@@ -286,7 +286,7 @@ elBack.onloadedmetadata = () => {
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.0.1";
+const APP_VERSION = "v2.0.2";
     
 function centerVideo(el) {
     el.style.top = '50%';
@@ -1129,8 +1129,14 @@ function draw() {
         gyroType = "gyro";
     }
 
-    render("cAcc", accPoints, "#00bfff", "Versnelling " + labelSuffix, "m/s²", progress, accType);
-    render("cGyro", gyroPoints, "#ff4500", "Rotatie " + labelSuffix, "°/s", progress, gyroType);
+    let axisColor =
+    axis === 'x' ? "#ff3b30" :   // rood
+    axis === 'y' ? "#34c759" :   // groen
+    axis === 'z' ? "#007aff" :   // blauw
+    "#ffcc00";                  // geel voor xyz
+
+    render("cAcc", accPoints, axisColor, "Versnelling " + labelSuffix, "m/s²", progress, accType);
+    render("cGyro", gyroPoints, axisColor, "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
 
 /* ============================================================
