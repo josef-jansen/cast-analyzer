@@ -573,7 +573,7 @@ document.getElementById('btnSave').onclick = () => {
         elRecStatus.textContent = "Saved";
 
         loadArchiveList();
-        showToast("Opgeslagen!", "success");
+        showToast("Opgeslagen.", "success");
     };
 };
 
@@ -1341,7 +1341,7 @@ document.getElementById("btnExport").onclick = async () => {
                 selectSession(id, session.baseName, "e");
 
                 elRecStatus.textContent = "Exported";
-                showToast("Geëxporteerd!", "success");
+                showToast("Geëxporteerd.", "success");
             } else {
                 showToast("Delen van bestanden wordt niet ondersteund in deze browser.", "warning", 5000);
             }
@@ -1440,7 +1440,7 @@ async function importSessionFromZip(file) {
             const newId = addReq.result;
             loadArchiveList();
             selectSession(newId, baseName, "i");
-            showToast("Import gelukt!", "success");
+            showToast("Import gelukt.", "success");
         };
 
         addReq.onerror = () => {
