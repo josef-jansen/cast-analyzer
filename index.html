@@ -320,6 +320,8 @@ let data = [];
 let chunks = [];
 let axis = "x";
 let currentVideoBlob = null;
+let videoOffsetY = 0;
+let touchStartY = 0;
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
@@ -359,12 +361,12 @@ elBack.onloadedmetadata = () => {
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.0.4";
+const APP_VERSION = "v2.0.5";
     
 function centerVideo(el) {
     el.style.top = '50%';
     el.style.left = '50%';
-    el.style.transform = 'translate(-50%, -50%)';
+    el.style.transform = `translate(-50%, calc(-50% + ${videoOffsetY}px))`;
     el.style.width = '100%';
     el.style.height = 'auto';
     el.style.minHeight = '120%';
@@ -489,6 +491,7 @@ function selectSession(id, baseName, status) {
         currentVideoBlob = s.videoBlob;
 
         elBack.src = URL.createObjectURL(currentVideoBlob);
+        videoOffsetY = 0;
 
         // ✅ RESET SPEED NAAR 1x
         elBack.playbackRate = 1;
@@ -1485,6 +1488,25 @@ window.addEventListener("resize", () => {
 
 window.addEventListener("orientationchange", () => {
     setTimeout(draw, 100);
+});
+
+elBack.addEventListener("touchstart", (e) => {
+    // Alleen bij playback (video zichtbaar)
+    if (elBack.style.display !== "block") return;
+
+    touchStartY = e.touches[0].clientY;
+});
+
+elBack.addEventListener("touchmove", (e) => {
+    if (elBack.style.display !== "block") return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartY;
+
+    videoOffsetY += deltaY;
+    touchStartY = currentY;
+
+    centerVideo(elBack);
 });
   
 </script>
