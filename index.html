@@ -490,6 +490,12 @@ function selectSession(id, baseName, status) {
 
         elBack.src = URL.createObjectURL(currentVideoBlob);
 
+        // ✅ RESET SPEED NAAR 1x
+        elBack.playbackRate = 1;
+
+        speedButtons.forEach(b => b.classList.remove("active"));
+        document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
+
         elBack.currentTime = 0;
         elBack.pause();
 
@@ -681,6 +687,12 @@ document.getElementById('btnStart').onclick = async () => {
 
         currentVideoBlob = new Blob(chunks, { type: "video/mp4" });
         elBack.src = URL.createObjectURL(currentVideoBlob);
+
+        // ✅ RESET SPEED NAAR 1x
+        elBack.playbackRate = 1;
+
+        speedButtons.forEach(b => b.classList.remove("active"));
+        document.querySelector('.speedBtn[data-speed="1"]').classList.add("active");
 
         document.getElementById('btnSave').disabled = false;
         slider.disabled = false;
