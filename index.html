@@ -1440,6 +1440,7 @@ async function importSessionFromZip(file) {
             const newId = addReq.result;
             loadArchiveList();
             selectSession(newId, baseName, "i");
+            showToast("Import gelukt!", "success");
         };
 
         addReq.onerror = () => {
