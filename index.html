@@ -1506,6 +1506,17 @@ elBack.addEventListener("touchmove", (e) => {
     videoOffsetY += deltaY;
     touchStartY = currentY;
 
+    // 🔥 Dynamische begrenzing
+    const container = elBack.parentElement;
+    const containerHeight = container.clientHeight;
+    const videoHeight = elBack.clientHeight;
+
+    const overshoot = Math.max(0, videoHeight - containerHeight);
+    const maxOffset = overshoot / 2;
+
+    if (videoOffsetY > maxOffset) videoOffsetY = maxOffset;
+    if (videoOffsetY < -maxOffset) videoOffsetY = -maxOffset;
+
     centerVideo(elBack);
 });
   
