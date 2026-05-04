@@ -969,9 +969,12 @@ function updateUI() {
 
         const sensorDuration = (tEnd - tStart) / 1000;
 
-        const videoTime = elBack.currentTime;
+        let currentTime = 0;
 
-        const currentTime = (videoTime / elBack.duration) * sensorDuration;
+        if (elBack.duration && elBack.duration > 0) {
+            const videoTime = elBack.currentTime;
+            currentTime = (videoTime / elBack.duration) * sensorDuration;
+        }
 
         timeLabel.innerText =
             currentTime.toFixed(2) + "s / " +
