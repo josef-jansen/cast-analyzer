@@ -1770,7 +1770,28 @@ elBack.addEventListener("touchmove", (e) => {
 
     centerVideo(elBack);
 });
-  
+
+// ============================================================
+// SELECTIE KNOPPEN (BASIS KOPPELING)
+// ============================================================
+
+const btnMarkStart = document.getElementById("btnMarkStart");
+
+if (btnMarkStart) {
+    btnMarkStart.onclick = () => {
+
+        if (!data || data.length < 2) return;
+        if (!elBack.duration || elBack.duration === 0) return;
+
+        selStart = elBack.currentTime / elBack.duration;
+
+        // visuele feedback
+        timeLabel.textContent = "Begin: " + selStart.toFixed(2);
+
+        updateUI();
+    };
+}
+    
 </script>
 </body>
 </html>
