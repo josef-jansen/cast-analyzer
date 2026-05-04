@@ -1801,6 +1801,23 @@ if (btnMarkEnd) {
         updateUI();
     };
 }
+
+// ============================================================
+// SELECTIE — WIS
+// ============================================================
+
+const btnClearSel = document.getElementById("btnClearSel");
+
+if (btnClearSel) {
+    btnClearSel.onclick = () => {
+
+        selStart = null;
+        selEnd   = null;
+
+        // label terug naar normaal
+        updateUI();
+    };
+}
     
 </script>
 </body>
