@@ -1014,9 +1014,33 @@ function updateUI() {
             currentTime = (videoTime / elBack.duration) * sensorDuration;
         }
 
-        timeLabel.innerText =
-            currentTime.toFixed(2) + "s / " +
-            sensorDuration.toFixed(2) + "s";
+        // ====================================================
+        // LABEL LOGICA
+        // ====================================================
+
+        let label = currentTime.toFixed(2) + "s / " + sensorDuration.toFixed(2) + "s";
+
+        if (selStart !== null && selEnd !== null) {
+
+            const startSec = selStart * sensorDuration;
+            const endSec   = selEnd   * sensorDuration;
+
+            label = "Begin: " + startSec.toFixed(2) + "s / Einde: " + endSec.toFixed(2) + "s";
+
+        } else if (selStart !== null) {
+
+            const startSec = selStart * sensorDuration;
+
+            label = "Begin: " + startSec.toFixed(2) + "s";
+
+        } else if (selEnd !== null) {
+
+            const endSec = selEnd * sensorDuration;
+
+            label = "Einde: " + endSec.toFixed(2) + "s";
+        }
+
+        timeLabel.innerText = label;
     }
 
     draw();
@@ -1758,7 +1782,10 @@ elBack.addEventListener("touchmove", (e) => {
 // ============================================================
 
 const btnMarkStart = document.getElementById("btnMarkStart");
+const btnMarkEnd   = document.getElementById("btnMarkEnd");
+const btnClearSel  = document.getElementById("btnClearSel");
 
+// BEGIN
 if (btnMarkStart) {
     btnMarkStart.onclick = () => {
 
@@ -1767,10 +1794,37 @@ if (btnMarkStart) {
 
         selStart = elBack.currentTime / elBack.duration;
 
-        // visuele feedback
-        timeLabel.textContent = "Begin: " + selStart.toFixed(2) + "s";
+        updateUI(); // 🔥 ALLEEN DIT
+    };
+}
 
-        // updateUI();
+// EINDE
+if (btnMarkEnd) {
+    btnMarkEnd.onclick = () => {
+
+        if (!data || data.length < 2) return;
+        if (!elBack.duration || elBack.duration === 0) return;
+
+        selEnd = elBack.currentTime / elBack.duration;
+
+        if (selStart !== null && selEnd < selStart) {
+            const tmp = selStart;
+            selStart = selEnd;
+            selEnd = tmp;
+        }
+
+        updateUI(); // 🔥 ALLEEN DIT
+    };
+}
+
+// WIS
+if (btnClearSel) {
+    btnClearSel.onclick = () => {
+
+        selStart = null;
+        selEnd   = null;
+
+        updateUI(); // 🔥 ALLEEN DIT
     };
 }
 
@@ -1794,9 +1848,6 @@ if (btnMarkEnd) {
             selStart = selEnd;
             selEnd = tmp;
         }
-
-        // 👇 visuele feedback
-        timeLabel.textContent = "Einde: " + selEnd.toFixed(2) + "s";
 
         updateUI();
     };
