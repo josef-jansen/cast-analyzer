@@ -421,13 +421,24 @@
 </div>
 
     <div class="bottom-area">
-        <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
+        <div id="playControls"
+             style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
+
             <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
+
             <button id="playPauseBtn">▶︎</button>
+
             <button class="speedBtn" data-speed="0.25">0.25x</button>
             <button class="speedBtn" data-speed="0.5">0.5x</button>
             <button class="speedBtn" data-speed="1">1x</button>
+        
+            <!-- 👇 NIEUW -->
+            <button id="btnMarkStart">Begin</button>
+            <button id="btnMarkEnd">Einde</button>
+            <button id="btnClearSel">Wis</button>
         </div>
+
+        
 
         <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
     </div>
