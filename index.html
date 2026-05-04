@@ -482,6 +482,34 @@ const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
 
+// ============================================================
+// SELECTIE VIA SLIDER (tap links/rechts)
+// ============================================================
+
+slider.addEventListener("click", (e) => {
+
+    const rect = slider.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = clickX / rect.width;
+
+    if (ratio < 0.5) {
+        // 👈 links = begin
+        selStart = ratio;
+    } else {
+        // 👉 rechts = einde
+        selEnd = ratio;
+    }
+
+    // clamp
+    if (selStart !== null && selEnd !== null && selStart > selEnd) {
+        const tmp = selStart;
+        selStart = selEnd;
+        selEnd = tmp;
+    }
+
+    updateUI();
+});
+
 function showToast(message, type = "info", duration = 3200) {
     const container = document.getElementById("toastContainer");
     if (!container) return;
@@ -1324,13 +1352,6 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
 function draw() {
     if (!data || data.length < 2) return;
-
-    // ============================================================
-    // TEST SELECTIE (tijdelijk)
-    // ============================================================
-
-    selStart = 0.2;
-    selEnd   = 0.5;
 
     // 👉 FIX: filter alleen geldige data
     const valid = data.filter(d => d && d.ax !== undefined);
