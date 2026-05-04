@@ -421,24 +421,13 @@
 </div>
 
     <div class="bottom-area">
-        <div id="playControls"
-             style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
-
+        <div id="playControls" style="display:flex; gap:12px; margin-top:10px; align-items:center;">
             <div id="timeLabel" style="min-width:80px; text-align:right;">0.00s / 0.00s</div>
-
             <button id="playPauseBtn">▶︎</button>
-
             <button class="speedBtn" data-speed="0.25">0.25x</button>
             <button class="speedBtn" data-speed="0.5">0.5x</button>
             <button class="speedBtn" data-speed="1">1x</button>
-        
-            <!-- 👇 NIEUW -->
-            <button id="btnMarkStart">Begin</button>
-            <button id="btnMarkEnd">Einde</button>
-            <button id="btnClearSel">Wis</button>
         </div>
-
-        
 
         <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
     </div>
@@ -451,7 +440,7 @@
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.1.1";
+const APP_VERSION = "v2.1.0";
     
 /* ============================================================
    SUFFIX ENGINE — NIEUW
@@ -477,13 +466,6 @@ let currentVideoBlob = null;
 let videoOffsetY = 0;
 let touchStartY = 0;
 
-// ============================================================
-// SELECTIE (voor later gebruik)
-// ============================================================
-
-let selStart = null;   // 0 → 1 (relatief)
-let selEnd   = null;
-
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
 const elBack = document.getElementById('vBack');
@@ -492,34 +474,6 @@ const slider = document.getElementById('syncSlider');
 const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
-
-// ============================================================
-// SELECTIE VIA SLIDER (tap links/rechts)
-// ============================================================
-
-slider.addEventListener("click", (e) => {
-
-    const rect = slider.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = clickX / rect.width;
-
-    if (ratio < 0.5) {
-        // 👈 links = begin
-        selStart = ratio;
-    } else {
-        // 👉 rechts = einde
-        selEnd = ratio;
-    }
-
-    // clamp
-    if (selStart !== null && selEnd !== null && selStart > selEnd) {
-        const tmp = selStart;
-        selStart = selEnd;
-        selEnd = tmp;
-    }
-
-    updateUI();
-});
 
 function showToast(message, type = "info", duration = 3200) {
     const container = document.getElementById("toastContainer");
@@ -959,7 +913,7 @@ document.getElementById('btnReset').onclick = async () => {
     // Grafieken leegmaken
     clearGraphs();
 };
- 
+
 /* ============================================================
    AXIS SELECTIE
    ============================================================ */
@@ -975,6 +929,7 @@ function setAxis(a) {
 
     updateUI();
 }
+
 
 /* ============================================================
    UI UPDATE
@@ -999,48 +954,10 @@ elBack.onended = () => {
 };
 
 function updateUI() {
-
-    if (data.length > 1) {
-
-        const tStart = data[0].t;
-        const tEnd   = data[data.length - 1].t;
-
-        const sensorDuration = (tEnd - tStart) / 1000;
-
-        let currentTime = 0;
-
-        if (elBack.duration && elBack.duration > 0) {
-            const videoTime = elBack.currentTime;
-            currentTime = (videoTime / elBack.duration) * sensorDuration;
-        }
-
-        // ====================================================
-        // LABEL LOGICA
-        // ====================================================
-
-        let label = currentTime.toFixed(2) + "s / " + sensorDuration.toFixed(2) + "s";
-
-        if (selStart !== null && selEnd !== null) {
-
-            const startSec = selStart * sensorDuration;
-            const endSec   = selEnd   * sensorDuration;
-
-            label = "Begin: " + startSec.toFixed(2) + "s / Einde: " + endSec.toFixed(2) + "s";
-
-        } else if (selStart !== null) {
-
-            const startSec = selStart * sensorDuration;
-
-            label = "Begin: " + startSec.toFixed(2) + "s";
-
-        } else if (selEnd !== null) {
-
-            const endSec = selEnd * sensorDuration;
-
-            label = "Einde: " + endSec.toFixed(2) + "s";
-        }
-
-        timeLabel.innerText = label;
+    if (elBack.duration > 0) {
+        timeLabel.innerText =
+            elBack.currentTime.toFixed(2) + "s / " +
+            elBack.duration.toFixed(2) + "s";
     }
 
     draw();
@@ -1196,19 +1113,6 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
-    // ============================================================
-    // SELECTIE VISUALISATIE
-    // ============================================================
-
-    if (selStart !== null && selEnd !== null) {
-
-        const xStart = pL + selStart * gW;
-        const xEnd   = pL + selEnd   * gW;
-
-        ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
-        ctx.fillRect(xStart, pT, xEnd - xStart, gH);
-    }
-
     // lijn (tijd-as)
     const valid = data.filter(d => d && d.t !== undefined);
 
@@ -1303,19 +1207,6 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.moveTo(w - pR, pT);
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
-
-    // ============================================================
-    // SELECTIE VISUALISATIE (multi)
-    // ============================================================
-
-    if (selStart !== null && selEnd !== null) {
-
-        const xStart = pL + selStart * gW;
-        const xEnd   = pL + selEnd   * gW;
-
-        ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
-        ctx.fillRect(xStart, pT, xEnd - xStart, gH);
-    }
 
     // =========================
     // 🔥 TIJD-BASED X-AS
@@ -1776,100 +1667,7 @@ elBack.addEventListener("touchmove", (e) => {
 
     centerVideo(elBack);
 });
-
-// ============================================================
-// SELECTIE KNOPPEN (BASIS KOPPELING)
-// ============================================================
-
-const btnMarkStart = document.getElementById("btnMarkStart");
-const btnMarkEnd   = document.getElementById("btnMarkEnd");
-const btnClearSel  = document.getElementById("btnClearSel");
-
-// BEGIN
-if (btnMarkStart) {
-    btnMarkStart.onclick = () => {
-
-        if (!data || data.length < 2) return;
-        if (!elBack.duration || elBack.duration === 0) return;
-
-        selStart = elBack.currentTime / elBack.duration;
-
-        updateUI(); // 🔥 ALLEEN DIT
-    };
-}
-
-// EINDE
-if (btnMarkEnd) {
-    btnMarkEnd.onclick = () => {
-
-        if (!data || data.length < 2) return;
-        if (!elBack.duration || elBack.duration === 0) return;
-
-        selEnd = elBack.currentTime / elBack.duration;
-
-        if (selStart !== null && selEnd < selStart) {
-            const tmp = selStart;
-            selStart = selEnd;
-            selEnd = tmp;
-        }
-
-        updateUI(); // 🔥 ALLEEN DIT
-    };
-}
-
-// WIS
-if (btnClearSel) {
-    btnClearSel.onclick = () => {
-
-        selStart = null;
-        selEnd   = null;
-
-        updateUI(); // 🔥 ALLEEN DIT
-    };
-}
-
-// ============================================================
-// SELECTIE — EINDE
-// ============================================================
-
-const btnMarkEnd = document.getElementById("btnMarkEnd");
-
-if (btnMarkEnd) {
-    btnMarkEnd.onclick = () => {
-
-        if (!data || data.length < 2) return;
-        if (!elBack.duration || elBack.duration === 0) return;
-
-        selEnd = elBack.currentTime / elBack.duration;
-
-        // 👇 volgorde corrigeren (belangrijk)
-        if (selStart !== null && selEnd < selStart) {
-            const tmp = selStart;
-            selStart = selEnd;
-            selEnd = tmp;
-        }
-
-        updateUI();
-    };
-}
-
-// ============================================================
-// SELECTIE — WIS
-// ============================================================
-
-const btnClearSel = document.getElementById("btnClearSel");
-
-if (btnClearSel) {
-    btnClearSel.onclick = () => {
-
-        selStart = null;
-        selEnd   = null;
-
-        // label terug naar normaal
-        updateUI();
-    };
-}
-    
+  
 </script>
 </body>
 </html>
