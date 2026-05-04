@@ -6,14 +6,53 @@
     <title>Cast-Analyzer</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; background: #f2f2f7; font-family: -apple-system, sans-serif; }
         
-        .controls { height: 145px; padding: 10px; text-align: center; background: #f2f2f7; border-bottom: 1px solid #ddd; position: relative; z-index: 20; }
+        body, html { 
+            margin: 0;
+            padding: 0;
+
+            height: 100dvh;              /* 🔥 ipv 100vh */
+            height: -webkit-fill-available; /* fallback iPad */
+    
+            overflow: hidden;
+            background: #f2f2f7;
+            font-family: -apple-system, sans-serif;
+    
+            position: fixed;
+            inset: 0;
+        }
         
-        :root { --bottom-area: 130px; --content-h: calc((100vh - 145px - var(--bottom-area)) / 3); }
+        .controls {
+            height: 145px;
+            padding: 10px;
+            text-align: center;
+            background: #f2f2f7;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+            z-index: 20;
+        }
         
-        .section { width: 100%; height: var(--content-h); background: #fff; border-bottom: 1px solid #eee; position: relative; overflow: hidden; }
-        .video-container { background: #000; display: flex; justify-content: center; align-items: center; border-bottom: none; }
+        :root {
+            --bottom-area: 130px;
+            --content-h: calc((100dvh - 145px - var(--bottom-area)) / 3);
+        }
+        
+        .section {
+            width: 100%;
+            height: var(--content-h);
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-container {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: none;
+        }
 
         .bottom-area {
             min-height: var(--bottom-area);
@@ -30,23 +69,43 @@
         }
 
         #syncSlider { 
-            -webkit-appearance: none; width: 90%; height: 12px; 
-            background: #d1d1d6; border-radius: 6px; outline: none; margin: 20px 0; 
+            -webkit-appearance: none;
+            width: 90%;
+            height: 12px; 
+            background: #d1d1d6;
+            border-radius: 6px;
+            outline: none;
+            margin: 20px 0; 
         }
         
         #syncSlider::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none; width: 28px; height: 28px;
-            background: #007aff; border: 3px solid #fff; border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #007aff;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
         }
         
         #timeLabel { 
-            font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; 
-            color: #007aff; background: #fff; padding: 4px 12px;
-            border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-variant-numeric: tabular-nums;
+            font-size: 16px;
+            font-weight: 600; 
+            color: #007aff;
+            background: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        canvas { width: 100% !important; height: 100% !important; display: block; }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
 
         button {
             padding: 0 16px;
@@ -126,7 +185,11 @@
             align-self: flex-start;
         }
 
-        .status-text { font-size: 10px; color: #666; margin-top: 4px; }
+        .status-text {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+        }
 
         .graph-container {
             background: #1c1c1e;
@@ -170,15 +233,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
-
             width: auto;
             max-width: 80vw;
-
             pointer-events: none;
             z-index: 3000;
         }
@@ -187,23 +247,17 @@
             width: auto;
             min-width: 220px;
             max-width: 80vw;
-
             padding: 16px 24px;
             border-radius: 12px;
-
             color: #fff;
             background: rgba(20, 20, 20, 0.92);
-
             font-size: 18px;
             font-weight: 500;
             text-align: center;
-
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-
             opacity: 0;
             transform: scale(0.9);
             transition: opacity 200ms ease, transform 200ms ease;
-
             pointer-events: auto;
         }
 
@@ -212,9 +266,18 @@
             transform: translateY(0);
         }
 
-        .toast-success { background: rgba(52, 199, 89, 0.96); }
-        .toast-error { background: rgba(255, 59, 48, 0.96); }
-        .toast-warning { background: rgba(255, 149, 0, 0.96); }
+        .toast-success {
+            background: rgba(52, 199, 89, 0.96);
+        }
+        
+        .toast-error {
+            background: rgba(255, 59, 48, 0.96);
+        }
+        
+        .toast-warning {
+            background: rgba(255, 149, 0, 0.96);
+        }
+        
 </style>
 </head>
 
@@ -299,6 +362,12 @@
 
 <script>
 
+/* ================================================================
+   VERSIE NUMMER VAN DE INDEX.HTML
+   ================================================================*/
+
+const APP_VERSION = "v2.0.6";
+    
 /* ============================================================
    SUFFIX ENGINE — NIEUW
    ============================================================ */
@@ -357,12 +426,6 @@ elBack.onloadedmetadata = () => {
     centerVideo(elBack);
 };
 
-/* ================================================================
-   VERSIE NUMMER VAN DE INDEX.HTML
-   ================================================================*/
-
-const APP_VERSION = "v2.0.5";
-    
 function centerVideo(el) {
     el.style.top = '50%';
     el.style.left = '50%';
@@ -1227,6 +1290,15 @@ function draw() {
     render("cGyro", gyroPoints, axisColor, "Rotatie " + labelSuffix, "°/s", progress, gyroType);
 }
 
+    
+/* ============================================================
+   REFRESH UI
+   ============================================================ */
+
+function refreshUI() {
+    setTimeout(draw, 100);
+}    
+    
 /* ============================================================
    PLAY / PAUSE
    ============================================================ */
@@ -1478,18 +1550,20 @@ fileInput.addEventListener("change", async (event) => {
     fileInput.value = "";
 });
 
-window.addEventListener("load", () => {
-    setTimeout(draw, 200);
+window.addEventListener("load", refreshUI);
+    
+window.addEventListener("resize", refreshUI);
+    
+window.addEventListener("orientationchange", refreshUI);
+
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+        document.body.style.transform = "translateX(0)";
+        window.scrollTo(0, 0);
+        refreshUI();
+    }
 });
     
-window.addEventListener("resize", () => {
-    setTimeout(draw, 100);
-});
-
-window.addEventListener("orientationchange", () => {
-    setTimeout(draw, 100);
-});
-
 elBack.addEventListener("touchstart", (e) => {
     // Alleen bij playback (video zichtbaar)
     if (elBack.style.display !== "block") return;
