@@ -1768,9 +1768,37 @@ if (btnMarkStart) {
         selStart = elBack.currentTime / elBack.duration;
 
         // visuele feedback
-        timeLabel.textContent = "Begin: " + selStart.toFixed(2);
+        timeLabel.textContent = "Begin: " + selStart.toFixed(2) + "s";
 
         // updateUI();
+    };
+}
+
+// ============================================================
+// SELECTIE — EINDE
+// ============================================================
+
+const btnMarkEnd = document.getElementById("btnMarkEnd");
+
+if (btnMarkEnd) {
+    btnMarkEnd.onclick = () => {
+
+        if (!data || data.length < 2) return;
+        if (!elBack.duration || elBack.duration === 0) return;
+
+        selEnd = elBack.currentTime / elBack.duration;
+
+        // 👇 volgorde corrigeren (belangrijk)
+        if (selStart !== null && selEnd < selStart) {
+            const tmp = selStart;
+            selStart = selEnd;
+            selEnd = tmp;
+        }
+
+        // 👇 visuele feedback
+        timeLabel.textContent = "Einde: " + selEnd.toFixed(2) + "s";
+
+        updateUI();
     };
 }
     
