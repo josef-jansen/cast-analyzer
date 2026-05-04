@@ -1228,6 +1228,19 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
+    // ============================================================
+    // SELECTIE VISUALISATIE (multi)
+    // ============================================================
+
+    if (selStart !== null && selEnd !== null) {
+
+        const xStart = pL + selStart * gW;
+        const xEnd   = pL + selEnd   * gW;
+
+        ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
+        ctx.fillRect(xStart, pT, xEnd - xStart, gH);
+    }
+
     // =========================
     // 🔥 TIJD-BASED X-AS
     // =========================
