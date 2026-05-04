@@ -949,6 +949,19 @@ document.getElementById('btnReset').onclick = async () => {
     clearGraphs();
 };
 
+// ============================================================
+// SELECTIE — BEGIN
+// ============================================================
+
+document.getElementById("btnMarkStart").onclick = () => {
+
+    if (!elBack.duration || elBack.duration === 0) return;
+
+    selStart = elBack.currentTime / elBack.duration;
+
+    updateUI();
+};
+    
 /* ============================================================
    AXIS SELECTIE
    ============================================================ */
