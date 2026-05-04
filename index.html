@@ -433,7 +433,7 @@
             <button class="speedBtn" data-speed="1">1x</button>
         
             <!-- 👇 NIEUW -->
-            <button id="btnMarkStart" onclick="alert('klik werkt')">Begin</button>
+            <button id="btnMarkStart">Begin</button>
             <button id="btnMarkEnd">Einde</button>
             <button id="btnClearSel">Wis</button>
         </div>
@@ -959,24 +959,7 @@ document.getElementById('btnReset').onclick = async () => {
     // Grafieken leegmaken
     clearGraphs();
 };
-
-// ============================================================
-// SELECTIE — BEGIN
-// ============================================================
-
-document.getElementById("btnMarkStart").onclick = () => {
-
-    if (!data || data.length < 2) return;
-    if (!elBack.duration || elBack.duration === 0) return;
-
-    selStart = elBack.currentTime / elBack.duration;
-
-    // 👇 VISUELE FEEDBACK
-    timeLabel.textContent = "Begin: " + selStart.toFixed(2);
-
-    updateUI();
-};
-    
+ 
 /* ============================================================
    AXIS SELECTIE
    ============================================================ */
@@ -992,7 +975,6 @@ function setAxis(a) {
 
     updateUI();
 }
-
 
 /* ============================================================
    UI UPDATE
