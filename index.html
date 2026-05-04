@@ -961,10 +961,21 @@ elBack.onended = () => {
 };
 
 function updateUI() {
-    if (elBack.duration > 0) {
+
+    if (data.length > 1) {
+
+        const tStart = data[0].t;
+        const tEnd   = data[data.length - 1].t;
+
+        const sensorDuration = (tEnd - tStart) / 1000;
+
+        const videoTime = elBack.currentTime;
+
+        const currentTime = (videoTime / elBack.duration) * sensorDuration;
+
         timeLabel.innerText =
-            elBack.currentTime.toFixed(2) + "s / " +
-            elBack.duration.toFixed(2) + "s";
+            currentTime.toFixed(2) + "s / " +
+            sensorDuration.toFixed(2) + "s";
     }
 
     draw();
