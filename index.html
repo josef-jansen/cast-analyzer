@@ -440,7 +440,7 @@
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.1.0";
+const APP_VERSION = "v2.1.1";
     
 /* ============================================================
    SUFFIX ENGINE — NIEUW
@@ -465,6 +465,13 @@ let axis = "x";
 let currentVideoBlob = null;
 let videoOffsetY = 0;
 let touchStartY = 0;
+
+// ============================================================
+// SELECTIE (voor later gebruik)
+// ============================================================
+
+let selStart = null;   // 0 → 1 (relatief)
+let selEnd   = null;
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
@@ -1113,6 +1120,19 @@ function render(id, points, color, label, unit, progress, type) {
     ctx.lineTo(w - pR, h - pB);
     ctx.stroke();
 
+    // ============================================================
+    // SELECTIE VISUALISATIE
+    // ============================================================
+
+    if (selStart !== null && selEnd !== null) {
+
+        const xStart = pL + selStart * gW;
+        const xEnd   = pL + selEnd   * gW;
+
+        ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
+        ctx.fillRect(xStart, pT, xEnd - xStart, gH);
+    }
+
     // lijn (tijd-as)
     const valid = data.filter(d => d && d.t !== undefined);
 
@@ -1277,6 +1297,13 @@ function renderMulti(id, series, title, unit, progress, type = "multi") {
 
 function draw() {
     if (!data || data.length < 2) return;
+
+    // ============================================================
+    // TEST SELECTIE (tijdelijk)
+    // ============================================================
+
+    selStart = 0.2;
+    selEnd   = 0.5;
 
     // 👉 FIX: filter alleen geldige data
     const valid = data.filter(d => d && d.ax !== undefined);
