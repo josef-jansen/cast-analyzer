@@ -482,7 +482,9 @@ const slider = document.getElementById('syncSlider');
 const timeLabel = document.getElementById('timeLabel');
 const optionsList = document.getElementById('optionsList');
 const selectedDisplay = document.getElementById('selectedDisplay');
-
+    
+const btnMarkStart = document.getElementById('btnMarkStart');
+    
 function showToast(message, type = "info", duration = 3200) {
     const container = document.getElementById("toastContainer");
     if (!container) return;
@@ -1398,6 +1400,14 @@ playPauseBtn.addEventListener("click", () => {
     }
 });
 
+const btnMarkStart = document.getElementById("btnMarkStart");
+
+btnMarkStart.onclick = () => {
+    selStart = slider.value / 1000;
+
+    // visuele feedback
+    timeLabel.textContent = "Start: " + selStart.toFixed(2);
+};
 
 /* ============================================================
    SPEED BUTTONS
