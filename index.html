@@ -282,14 +282,14 @@
    ==== LAYOUT BASIS (PORTRET) ====
    ============================================================ */
 
-.main {
-    display: block;
-}
+        .main {
+            display: block;
+        }
 
-.left-panel,
-.right-panel {
-    display: block;
-}
+        .left-panel,
+        .right-panel {
+            display: block;
+        }
 
 
 /* ============================================================
@@ -429,6 +429,12 @@
             <button class="speedBtn" data-speed="1">1x</button>
         </div>
 
+        <div style="display:flex; gap:8px; margin-top:6px;">
+            <button id="btnMarkStart">Start</button>
+            <button id="btnMarkEnd">Einde</button>
+            <button id="btnClearSel">Reset</button>
+        </div>
+
         <input type="range" id="syncSlider" min="0" max="1000" value="0" disabled>
     </div>
 
@@ -440,7 +446,7 @@
    VERSIE NUMMER VAN DE INDEX.HTML
    ================================================================*/
 
-const APP_VERSION = "v2.1.0";
+const APP_VERSION = "v2.1.1";
     
 /* ============================================================
    SUFFIX ENGINE — NIEUW
@@ -465,6 +471,8 @@ let axis = "x";
 let currentVideoBlob = null;
 let videoOffsetY = 0;
 let touchStartY = 0;
+let selStart = null; // 0..1 (percentage)
+let selEnd   = null; // 0..1
 
 const elRecStatus = document.getElementById('recStatus');
 const elLive = document.getElementById('vLive');
